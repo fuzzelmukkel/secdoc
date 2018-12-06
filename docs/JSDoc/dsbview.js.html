@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: dsbview.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: dsbview.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * dsbview.js - Funktionen für die DSB-Ansicht
+ * 
+ * @file Umfasst die Funktionalitäten der DSB-Ansicht
+ * 
+ * @requires assets/js/mains.js
+ * @requires assets/js/datatables.min.js
+ * @requires assets/js/datatables_german.json
+ *
+ * @author Thorsten Küfer &lt;thorsten.kuefer@uni-muenster.de>
+ * @author Dustin Gawron &lt;dustin.gawron@uni-muenster.de>
+ * @license {@link https://opensource.org/licenses/MIT MIT}
+ * @copyright (c) 2018 Westfälische Wilhelms-Universität Münster
+ */
+
+/*
+ * Tabellen befüllen
+ */
+$.get(backendPath, { 'action': 'listdsb', 'debug': debug }).done((data) => {
+  if(!data['success']) {
+    showError('Abrufen der Verfahrensliste', data['error']);
+    setSaveLabel('none');
+    return;
+  }
+  
+  var abgTable = $('#abgeschlossen tbody').first();
+  var inbTable = $('#inbearbeitung tbody').first();
+  
+  // Für jedes Verfahren einen Tabelleneinträg anlegen
+  for(var c=0; c &lt; data['count']; c++) {
+    var newEntry = $('&lt;tr>&lt;/tr>');
+    newEntry.append('&lt;td>' + data['data'][c]['Bezeichnung'] + ' &lt;i data-toggle="tooltip" class="fa fa-info-circle" title="' + data['data'][c]['Beschreibung'] + '">&lt;/i>&lt;/td>');
+    newEntry.append('&lt;td>' + data['data'][c]['Fachabteilung'] + '&lt;/td>');
+    newEntry.append('&lt;td>' + (data['data'][c]['FachKontakt'] !== null ? data['data'][c]['FachKontakt'] : '-- nicht angegeben --') + '&lt;/td>');
+    newEntry.append('&lt;td>' + (data['data'][c]['TechKontakt'] !== null ? data['data'][c]['TechKontakt'] : '-- nicht angegeben --') + '&lt;/td>');
+    newEntry.append('&lt;td>' + data['data'][c]['Erstelldatum'] + '&lt;/td>');
+    newEntry.append('&lt;td>' + data['data'][c]['Aktualisierung'] + '&lt;/td>');
+    newEntry.append('&lt;td>&lt;textarea class="form-control">' + htmlDecode(data['data'][c]['DSBKommentar']) + '&lt;/textarea>&lt;/td>');
+    newEntry.append('&lt;td>&lt;a href="?id=' + data['data'][c]['ID'] + (debug ? '&amp;debug=true' : '') + '" target="_blank">&lt;button type="button" class="btn" style="margin-top: 2px !important;">Bearbeiten&lt;/button>&lt;/a>&lt;button type="button" class="btn pdfdownload" style="margin-top: 2px !important;" data-id="' + data['data'][c]['ID'] + '">PDF anzeigen&lt;/button>&lt;/td>');
+    
+    // Event-Listener zum Speichern von Änderungen an den Kommentaren
+    newEntry.find('textarea').first().data('id', data['data'][c]['ID']);
+    newEntry.find('textarea').first().on('input change', function(event){
+      let tar = $(event.target);
+      let timeout = 5000;
+      clearTimeout(tar.data('timer'));
+      
+      // Bei onchange direkt abspeichern
+      if(event.type === 'change') {
+        timeout = 0;
+      }
+      tar.data('timer', setTimeout(function() {
+        setSaveLabel('saving');
+        $.post(backendPath, JSON.stringify({'action':'updatecomment', 'id': tar.data('id'), 'data': { 'comment': htmlEncode(tar.val()) }, 'debug': debug})).done((data) => {
+          if(!data['success']) {
+            showError('Speichern des Kommentars', data['error']);
+            setSaveLabel('failed');
+            return;
+          }
+          setSaveLabel('saved');
+        }).fail((jqXHR, error, errorThrown) => {
+          showError('Speichern des Kommentars', 'HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
+          setSaveLabel('failed');
+        });
+      }, timeout));
+    });
+    
+    // PDF-Download ermöglichen
+    newEntry.find('button.pdfdownload').first().on('click', function(event){
+      getPDFFromServer($(event.target).data('id'));
+    });
+    
+    if(parseInt(data['data'][c]['Status']) === 0) {
+      inbTable.append(newEntry);
+    }
+    else {
+      abgTable.append(newEntry);
+    }
+  }
+  
+  // DataTables anpassen und initialisieren
+  /**
+   * Formatiert die Tabelle für den Druck um
+   * @private
+   * @param {String} inner  HTML einer Tabellenzelle
+   * @param {Number} coldex Spaltennummer
+   * @param {Number} rowdex Zeilennummer
+   * @return {String} Formatiertes HTML für den Druck
+   */
+  function printFormat(inner, coldex, rowdex) {
+    let el = $($.parseHTML(inner));
+    if(el.is('textarea')) return el.val();
+    return inner;
+  }
+  
+  $.extend(true, $.fn.dataTable.defaults, {
+      language: {
+        url: 'assets/js/datatables_german.json'
+      },
+      columnDefs: [{
+          targets: 'no-sort',
+          orderable: false
+      }],
+      dom: 'Bfrtilp',
+  });
+  
+  $('#abgeschlossen table').DataTable({
+    buttons: [{
+        extend: 'print',
+        title: 'Abgeschlossene Verfahren',
+        exportOptions: {
+          stripHtml: false,
+          columns: ':not(.no-print)',
+          format: {
+            body: printFormat
+          }
+        }
+    }],
+    initComplete: function() {
+      $('#abgeschlossen table').DataTable().buttons().container().addClass('inline');
+    }
+  });
+  $('#inbearbeitung table').DataTable({
+    buttons: [{
+        extend: 'print',
+        title: 'Verfahren in Bearbeitung',
+        exportOptions: {
+          stripHtml: false,
+          columns: ':not(.no-print)',
+          format: {
+            body: printFormat
+          }
+        }
+    }],
+    initComplete: function() {
+      $('#inbearbeitung table').DataTable().buttons().container().addClass('inline');
+    }
+  });
+  
+  setSaveLabel('refreshed');
+}).fail((jqXHR, error, errorThrown) => {
+  showError('Abrufen der Verfahrensliste', 'HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
+  setSaveLabel('none');
+}).always(() => {
+  setOverlay(false);
+});
+
+// Statistiken holen und anzeigen
+$.get(backendPath, { 'action': 'getstats', 'debug': debug }).done((data) => {
+  if(!data['success']) {
+    showError('Abrufen der Statistiken', data['error']);
+    return;
+  }
+  
+  var newEntry = $('&lt;tr>&lt;/tr>');
+  newEntry.append('&lt;td>' + data['data']['gesamt'] + '&lt;/td>');
+  newEntry.append('&lt;td>' + data['data']['inbearbeitung'] + '&lt;/td>');
+  newEntry.append('&lt;td>' + data['data']['abgeschlossen'] + '&lt;/td>');
+  newEntry.append('&lt;td>' + data['data']['gelöscht'] + '&lt;/td>');
+  newEntry.append('&lt;td>' + data['data']['zuletztbearbeitet'] + '&lt;/td>');
+  
+  $('#statistik tbody').append(newEntry);  
+}).fail((jqXHR, error, errorThrown) => {
+  showError('Abrufen der Statistiken', 'HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
+  setSaveLabel('none');
+});
+
+// Timer beenden
+console.timeEnd('Gesamte Vorbereitungszeit');</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#addTableRow">addTableRow</a></li><li><a href="global.html#backendPath">backendPath</a></li><li><a href="global.html#changedValues">changedValues</a></li><li><a href="global.html#copyFromServer">copyFromServer</a></li><li><a href="global.html#copyId">copyId</a></li><li><a href="global.html#debug">debug</a></li><li><a href="global.html#debugLog">debugLog</a></li><li><a href="global.html#deleteFromServer">deleteFromServer</a></li><li><a href="global.html#endlessCounts">endlessCounts</a></li><li><a href="global.html#endlessTables">endlessTables</a></li><li><a href="global.html#endlessTemplates">endlessTemplates</a></li><li><a href="global.html#genHTMLforPDF">genHTMLforPDF</a></li><li><a href="global.html#getPDFFromServer">getPDFFromServer</a></li><li><a href="global.html#GetURLParameter">GetURLParameter</a></li><li><a href="global.html#htmlDecode">htmlDecode</a></li><li><a href="global.html#htmlEncode">htmlEncode</a></li><li><a href="global.html#initEndlessTables">initEndlessTables</a></li><li><a href="global.html#initTypeahead">initTypeahead</a></li><li><a href="global.html#lawsMapping">lawsMapping</a></li><li><a href="global.html#loadEmpty">loadEmpty</a></li><li><a href="global.html#loadFromJSON">loadFromJSON</a></li><li><a href="global.html#loadFromServer">loadFromServer</a></li><li><a href="global.html#loadId">loadId</a></li><li><a href="global.html#modal">modal</a></li><li><a href="global.html#myFinish">myFinish</a></li><li><a href="global.html#myInit">myInit</a></li><li><a href="global.html#myNext">myNext</a></li><li><a href="global.html#myPrevious">myPrevious</a></li><li><a href="global.html#myTabChange">myTabChange</a></li><li><a href="global.html#myTabClick">myTabClick</a></li><li><a href="global.html#page">page</a></li><li><a href="global.html#promises">promises</a></li><li><a href="global.html#removeTableRows">removeTableRows</a></li><li><a href="global.html#saveAsObject">saveAsObject</a></li><li><a href="global.html#saveOnServer">saveOnServer</a></li><li><a href="global.html#setOverlay">setOverlay</a></li><li><a href="global.html#setSaveLabel">setSaveLabel</a></li><li><a href="global.html#showError">showError</a></li><li><a href="global.html#showVerfahrensliste">showVerfahrensliste</a></li><li><a href="global.html#statusMapping">statusMapping</a></li><li><a href="global.html#typeaheadCache">typeaheadCache</a></li><li><a href="global.html#userIsDSB">userIsDSB</a></li><li><a href="global.html#version">version</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Tue Oct 16 2018 13:20:19 GMT+0200 (Mitteleuropäische Sommerzeit)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

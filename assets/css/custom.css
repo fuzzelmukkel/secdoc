@@ -1,0 +1,107 @@
+/*
+ * custom.css - WWU-Anpassungen sind hier zu finden
+ * 
+ * Autor: Thorsten Küfer <thorsten.kuefer@uni-muenster.de>
+ * Copyright (c) 2018 Westfälische Wilhelms-Universität Münster
+ * Licensed under AGPL-3.0-or-later (https://www.gnu.org/licenses/agpl.html)  
+ */
+
+/* Border Radius aus Paper Bootstrap Wizard auch auf Buttons in button-group-sm anwenden. */
+.btn-group-sm > .btn {
+  border-radius: 20px;
+}
+
+/* DataTables Navigation nicht ausblenden falls deaktiviert. Überschreibt Regel aus Paper Bootstrap Wizard */
+.pagination > .disabled {
+  display: inline;
+}
+
+.text-ul {
+  text-decoration: underline;
+}
+
+.text-ul-dot {
+  text-decoration: underline;
+  text-decoration-style: dotted;
+}
+
+.logo-container-left {
+    left: 50px;
+    position: absolute;
+    top: 20px;
+    z-index: 3;
+}
+
+.logo-container-right {
+    right: 50px;
+    position: absolute;
+    top: 20px;
+    z-index: 3;
+}
+
+.logo-container-left .logo,
+.logo-container-right .logo {
+    overflow: hidden;
+    width: 200px;
+    float: left;
+}
+
+.logo-container-left .brand,
+.logo-container-right .brand {
+    font-size: 18px;
+    color: #FFFFFF;
+    line-height: 20px;
+    float: left;
+    margin-left: 10px;
+    margin-top: 10px;
+    width: 0   /* aktuell deaktiviert */
+}
+
+/* Tooltip Anpassungen */
+.tooltip-inner {
+    max-width: 400px;
+}
+
+i[data-toggle="tooltip"] {
+    cursor: help;
+}
+
+/* Overlay für den Ladebildschirm */
+.loadingOverlay {
+  position:fixed;
+  top:0;
+  left:0;
+  background-color:black;
+  z-index:1500;
+  display:block;
+  width:100%;
+  height:100%;
+  opacity:0.4
+}
+
+.loadingOverlayContent {
+  position:relative;
+  top:25%;
+  text-align:center;
+  color:white;
+}
+
+/* Dropdown Anpassungen für Selectpicker */
+.dropdown-menu .inner,
+.dropdown-menu .outer {
+  max-width: 500px;
+}
+
+.dropdown-menu .inner .text {
+  white-space: normal;
+  margin: 5px 0px; 
+}
+
+/* Fix: Selectpicker Dropdown wird vom Footer überdeckt */
+.footer {
+    z-index: 0;
+}
+
+.inline {
+    display: inline;
+}

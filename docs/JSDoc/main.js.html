@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: main.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: main.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * main.js - Zentrale Funktionen für das secdoc-Tool
+ * 
+ * @file Kapselt die zentralen Funktionen und steuert das Laden der Unterseiten
+ * 
+ * @requires assets/js/jquery-3.3.1.min.js
+ *
+ * @author Thorsten Küfer &lt;thorsten.kuefer@uni-muenster.de>
+ * @author Dustin Gawron &lt;dustin.gawron@uni-muenster.de>
+ * @license {@link https://opensource.org/licenses/MIT MIT}
+ * @copyright (c) 2018 Westfälische Wilhelms-Universität Münster
+ */
+
+// Zeitmessung starten
+console.time('Gesamte Vorbereitungszeit');
+
+/*
+ * Globale Variablen initialisieren
+ */
+// Allgemeine Variablen
+/**
+ * Steuert die Debug-Ausgaben
+ * @global
+ * @type {Boolean}
+ */
+var debug = (GetURLParameter('debug') === 'true' || GetURLParameter('debug') == 1) ? true : false;
+/**
+ * Aktuelle Versions-Nummer
+ * @global
+ * @type {String}
+ */
+var version = '';
+/**
+ * Angabe der Ziel-Unterseite
+ * @global
+ * @type {String}
+ */
+var page = ['dsbview'].includes(GetURLParameter('page')) ? GetURLParameter('page') : 'wizard';
+/**
+ * Gibt an, ob der Nutzer ein Datenschutzbeauftragter ist
+ * @global
+ * @type {Boolean}
+ */
+var userIsDSB = false;
+/**
+ * Relativer Pfad zur verwaltung.php
+ * @global
+ * @type {String}
+ */
+var backendPath = 'assets/ajax/verwaltung.php';
+/**
+ * JQuery Object des Modal-Elements
+ * @global
+ * @type {jQuery-Object}
+ */
+var modal = $('#modalWindow'); // Modal-Fenster für Meldungen/Fehler
+
+
+// Mappings
+/**
+ * Mapping für die Stati von Verfahren
+ * @global
+ * @type {Object}
+ */
+var statusMapping = {'0': 'In Bearbeitung', '1': 'Zur Freigabe', '2': 'In Betrieb', '9': 'Unbekannt'};
+
+/*
+ * Debug Modus initialisieren
+ */
+var reqNumber = 0;
+if(debug) {
+  $('#debug').removeClass('hidden');
+  // Zeitmessung und Debugausgaben für Ajax-Anfragen initialisieren
+  $(document).ajaxSend((event, request, settings) => { console.time('Anfragezeit für Request #' + reqNumber + ' - ' + settings.type + ':' + settings.url); settings.reqNumber = reqNumber; reqNumber++; });
+  $(document).ajaxComplete((event, request, settings) => {
+    console.timeEnd('Anfragezeit für Request #' + settings.reqNumber + ' - ' + settings.type + ':' + settings.url);
+    debugLog(null, {'settings.url': settings.url, 'settings.type': settings.type, 'settings.async': settings.async, 'settings.crossDomain': settings.crossDomain, 'request.readyState': request.readyState, 'request.responseText': request.responseText, 'request.status': request.status});
+    if(request.responseJSON &amp;&amp; request.responseJSON['debug']) {
+      $('#debug').find('pre').append(request.responseJSON['debug']);
+    }
+  });
+}
+
+/*
+ * Ausgabe wichtiger Variablen zu Debug-Zwecken
+ */
+debugLog('URL Parameter:', {'debug': debug});
+debugLog('Backend Pfade:', {'verwaltung.php': backendPath});
+
+/*
+ * Hilfsfunktionen
+ */
+/**
+ * Liest Parameter aus der URL
+ * @see {@link https://stackoverflow.com/a/21903119 Stackoverflow}
+ * @example
+ * // Gibt 0 zurück, wenn die aktuelle URL "...?id=0" ist
+ * GetURLParamter('id');
+ * @param {String} sParam Parametername
+ * @returns {String|Boolean} Gibt den Wert des Parameters zurück oder false, falls der Parameter nicht gesetzt ist
+ */
+function GetURLParameter(sParam) {
+    var sPageURL = window.location.search.substring(1);
+    var sURLVariables = sPageURL.split('&amp;');
+    for (var i = 0; i &lt; sURLVariables.length; i++) {
+        var sParameterName = sURLVariables[i].split('=');
+        if (sParameterName[0] === sParam) return sParameterName[1];
+    }
+    return false;
+}
+
+/**
+ * Ersetzt Symbole (&amp;, &lt;, > ", ') durch HTML-Entities, um HTML-Code Injection zu verhindern
+ * @see {@link https://stackoverflow.com/a/6234804 Stackoverflow}
+ * @example
+ * // Gibt "&amp;lt;h1&amp;gt;" zurück
+ * htmlEncode('&lt;h1>');
+ * @param {String} unsafe Eingabestring
+ * @return {String} Eingabestring mit ersetzten Symbolen
+ */
+function htmlEncode(unsafe) {
+    return unsafe
+         .replace(/&amp;/g, "&amp;amp;")
+         .replace(/&lt;/g, "&amp;lt;")
+         .replace(/>/g, "&amp;gt;")
+         .replace(/"/g, "&amp;quot;")
+         .replace(/'/g, "&amp;#039;");
+}
+
+/**
+ * Ersetzt HTML-Entities durch Symbole, um sie korrekt darzustellen in Eingabefeldern
+ * @see {@link https://stackoverflow.com/a/34064434 Stackoverflow}
+ * @example
+ * // Gibt "&lt;h1>" zurück
+ * htmlDecode('&amp;lt;h1&amp;gt;');
+ * @param {String} input Eingabestring
+ * @return {String} Eingabestring mit ersetzten HTML-Entities
+ */
+function htmlDecode(input) {
+  var doc = new DOMParser().parseFromString(input, "text/html");
+  return doc.documentElement.textContent;
+}
+
+/**
+ * Generiert eine Debug-Ausgabe, falls der globale debug-Parameter 'true' ist
+ * @param {Object} msg Ausgabenachricht (kann null sein) (wird mittels console.log(msg) ausgegeben)
+ * @param {Object} obj (optional) Objekt, was formatiert ausgegeben werden soll (wird mittels console.table(obj) ausgegeben)
+ * @return {undefined}
+ */
+function debugLog(msg, obj = null) {
+  if(!debug) return;
+  if(msg !== null) console.debug(msg);
+  if(obj !== null) console.table(obj);
+}
+
+/**
+ * Setzt das Label zum aktuellen Speicher-Status
+ * @param {String} action Aktueller Speicherstatus
+ * @param {Date} currDate (optional) Aktuelles Datum
+ * @returns {undefined}
+ */
+function setSaveLabel(action, currDate = new Date()) {
+  var options = { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' };
+  var saveTime = currDate.toLocaleDateString('de-DE', options);
+  $('#successLabel, #savingLabel, #failedLabel, #refreshedLabel').addClass('hidden');
+  switch(action) {
+    case 'saving':
+      $('#savingLabel').removeClass('hidden');
+      break;
+
+    case 'saved':
+      $('#saveTime').text(saveTime);
+      $('#successLabel').removeClass('hidden');
+      $('input[name="meta_lastupdate"').val(saveTime);
+      break;
+
+    case 'failed':
+      $('#failedLabel').removeClass('hidden');
+      break;
+      
+    case 'refreshed':
+      $('#loadTime').text(saveTime);
+      $('#refreshedLabel').removeClass('hidden');
+      break;
+  }
+}
+
+/**
+ * Aktiviert oder daktiviert das Overlay während Ladevorgängen
+ * @param {Boolean} active True aktiviert das Overlay, false deaktiviert es
+ * @returns {undefined}
+ */
+function setOverlay(active = true) {
+  if(active) $('.loadingOverlay').removeClass('hidden');
+  if(!active) $('.loadingOverlay').addClass('hidden');
+}
+
+/**
+ * Zeigt dem Nutzer eine Fehlermeldung an
+ * @param {String} action  Aktion, bei der der Fehler aufgetreten ist
+ * @param {String} message (optional) Fehlermeldung
+ * @returns {undefined}
+ */
+function showError(action, message = false) {
+  console.error('Fehler beim ' + action + ' - Fehlermeldung: ' + message);
+  modal.find('.modal-title').text('Fehler');
+  if(message) {
+    modal.find('.modal-body').html('&lt;div class="alert alert-danger">&lt;p>Beim ' + action + ' ist ein Fehler aufgetreten!&lt;/p> &lt;p>&lt;strong>Fehlermeldung:&lt;/strong> ' + message + '&lt;/p>&lt;/div>');
+  }
+  else {
+    modal.find('.modal-body').html('&lt;div class="alert alert-danger">&lt;p>Beim ' + action + ' ist ein unbekannter Fehler aufgetreten! Bitte versuchen Sie es in Kürze erneut!&lt;/p>&lt;/div>');
+  }
+  modal.modal();
+}
+
+/**
+ * Fragt die PDF für das Verfahren mit der übergebenen ID an und öffnet einen "Öffnen/Speichern"-Dialog
+ * @param {Number} id ID für die gewünschte PDF
+ * @return {undefined}
+ */
+function getPDFFromServer(id) {
+  $.post(backendPath, JSON.stringify({'action':'getpdf', 'id': id, 'debug': debug})).done((data) => {
+    if(!data['success']) {
+      showError('Laden der PDF', data['error']);
+      return;
+    }
+
+    // Base64 Kodierung umkehren und Blob zum Download erstellen
+    let pdfData = atob(data['data'].replace(/\s/g, ''));
+    let pdfBuffer = new Uint8Array(new ArrayBuffer(pdfData.length));
+    for(let i=0; i &lt; pdfData.length; i++) {
+      pdfBuffer[i] = pdfData.charCodeAt(i);
+    }
+    let blob = new Blob([pdfBuffer], {type: "application/pdf"});
+
+    // PDF-Anzeige starten (Unterscheidung, ob Edge genutzt wird)
+    if(window.navigator &amp;&amp; window.navigator.msSaveOrOpenBlob) {
+      window.navigator.msSaveOrOpenBlob(blob, 'Verfahren-' + id + '.pdf');
+    }
+    else {
+      let url = window.URL.createObjectURL(blob);
+      let download = $('&lt;a>&lt;/a>');
+      download.attr('href', url).attr('download', 'Verfahren-' + id + '.pdf').addClass('hidden');;
+      $('body').append(download);
+      download[0].click();
+      window.URL.revokeObjectURL(url);
+      download.remove();
+    }
+  }).fail((jqXHR, error, errorThrown) => {
+    showError('Laden der PDF', 'HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
+  });
+}
+
+/*
+ * Nutzerkennung holen und anzeigen
+ */
+$.getJSON(backendPath + '?action=searchperson' + (debug ? '&amp;debug=true' : '')).done((data) => {
+  if(data.length !== 0 &amp;&amp; data['data'].length !== 0) {
+    $('#userLabel').text(data['data'][0]['name']);
+    $('#userLabel').attr('title', 'SSO-Kennung: ' + data['data'][0]['value']);
+    version = data['version'];
+    userIsDSB = data['data'][0]['userIsDSB'];
+  }
+  else {
+    console.error('Fehler beim Abruf der Nutzerkennung! Antwort: ' + data);
+    $('#userLabel').text('Unbekannt');
+  }
+  console.info(version);
+}).fail((jqXHR, error, errorThrown) => {
+  console.error('Fehler beim Abruf der Nutzerkennung! HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
+  $('#userLabel').text('Unbekannt');
+});
+
+/*
+ * Angefragte Unterseite laden
+ */
+$.get('assets/html/' + page + '.inc.html').done((data) => { $('#content').html(data); }).fail((jqXHR, error, errorThrown) => {
+  console.error('Fehler beim Laden der Unterseite "' + page + '"! HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
+  showError('Laden der Unterseite "' + page + '"');
+});</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#addTableRow">addTableRow</a></li><li><a href="global.html#backendPath">backendPath</a></li><li><a href="global.html#changedValues">changedValues</a></li><li><a href="global.html#copyFromServer">copyFromServer</a></li><li><a href="global.html#copyId">copyId</a></li><li><a href="global.html#debug">debug</a></li><li><a href="global.html#debugLog">debugLog</a></li><li><a href="global.html#deleteFromServer">deleteFromServer</a></li><li><a href="global.html#endlessCounts">endlessCounts</a></li><li><a href="global.html#endlessTables">endlessTables</a></li><li><a href="global.html#endlessTemplates">endlessTemplates</a></li><li><a href="global.html#genHTMLforPDF">genHTMLforPDF</a></li><li><a href="global.html#getPDFFromServer">getPDFFromServer</a></li><li><a href="global.html#GetURLParameter">GetURLParameter</a></li><li><a href="global.html#htmlDecode">htmlDecode</a></li><li><a href="global.html#htmlEncode">htmlEncode</a></li><li><a href="global.html#initEndlessTables">initEndlessTables</a></li><li><a href="global.html#initTypeahead">initTypeahead</a></li><li><a href="global.html#lawsMapping">lawsMapping</a></li><li><a href="global.html#loadEmpty">loadEmpty</a></li><li><a href="global.html#loadFromJSON">loadFromJSON</a></li><li><a href="global.html#loadFromServer">loadFromServer</a></li><li><a href="global.html#loadId">loadId</a></li><li><a href="global.html#modal">modal</a></li><li><a href="global.html#myFinish">myFinish</a></li><li><a href="global.html#myInit">myInit</a></li><li><a href="global.html#myNext">myNext</a></li><li><a href="global.html#myPrevious">myPrevious</a></li><li><a href="global.html#myTabChange">myTabChange</a></li><li><a href="global.html#myTabClick">myTabClick</a></li><li><a href="global.html#page">page</a></li><li><a href="global.html#promises">promises</a></li><li><a href="global.html#removeTableRows">removeTableRows</a></li><li><a href="global.html#saveAsObject">saveAsObject</a></li><li><a href="global.html#saveOnServer">saveOnServer</a></li><li><a href="global.html#setOverlay">setOverlay</a></li><li><a href="global.html#setSaveLabel">setSaveLabel</a></li><li><a href="global.html#showError">showError</a></li><li><a href="global.html#showVerfahrensliste">showVerfahrensliste</a></li><li><a href="global.html#statusMapping">statusMapping</a></li><li><a href="global.html#typeaheadCache">typeaheadCache</a></li><li><a href="global.html#userIsDSB">userIsDSB</a></li><li><a href="global.html#version">version</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Tue Oct 16 2018 13:20:19 GMT+0200 (Mitteleuropäische Sommerzeit)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
