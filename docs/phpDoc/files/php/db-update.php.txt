@@ -3,7 +3,6 @@
   /**
    * db-update.php - SQLite-DB (secdoc.db) mit Personen- und Organisationseinheitdaten zur schnelleren AJAX-Abfrage befüllen
    * 
-   * 
    * TK, 18.07.2018 - Erste Version
    * 
    * @author Thorsten Küfer <thorsten.kuefer@uni-muenster.de>
@@ -18,7 +17,6 @@
   # Skript-Einstellungen
   set_time_limit(0);
 
-  err('Dieses Skript ist deaktiviert. Bitte vor Aufruf diese Anweisung auskommentieren.');
   header('Content-type: text/plain; charset=utf-8');
   ob_end_flush();
 
@@ -152,7 +150,10 @@
     {
       foreach ($rows as $row)
       {
-        print "INSERT INTO ORGANISATIONSEINHEITEN VALUES('$row[ID]', '$row[NAME]');\n";
+        if (preg_match('/^\w/', $row['ID']) && preg_match('/^\w/', $row['NAME']))
+        {              
+          print "INSERT INTO ORGANISATIONSEINHEITEN VALUES('$row[ID]', '$row[NAME]');\n";
+        }
       }
     }
   }

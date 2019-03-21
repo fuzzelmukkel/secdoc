@@ -2,7 +2,6 @@
   /**
    * DBCon.class.php - Enthält die DBCon-Klasse zur Verbindung mit der Datenbank
    *
-   *
    * @author Thorsten Küfer <thorsten.kuefer@uni-muenster.de>
    * @author Dustin Gawron <dustin.gawron@uni-muenster.de>
    * @copyright (c) 2018 Westfälische Wilhelms-Universität Münster
@@ -16,12 +15,12 @@
    * 
    * Tabelle: Verfahren
    * <pre>
-   * +-----------+------------+------------+------------+-------------+------------+-----------+-----------+----------+----------------+------+------------+----+
-   * |ID         |Erstelldatum|Bezeichnung |Beschreibung|Fachabteilung|IVV         |FachKontakt|TechKontakt|Ersteller |Bearbeitergruppe|Status|Sichtbarkeit|JSON|
-   * +-----------+------------+------------+------------+-------------+------------+-----------+-----------+----------+----------------+------+------------+----+
-   * |INT        |DATE        |VARCHAR(100)|TEXT        |VARCHAR(100) |VARCHAR(100)|VARCHAR(8) |VARCHAR(8) |VARCHAR(8)|VARCHAR(8)      |INT   |INT         |BLOB|
-   * |PRIMARY KEY|            |            |            |             |            |           |           |          |                |      |            |    |
-   * +-----------+------------+------------+------------+-------------+------------+-----------+-----------+----------+----------------+------+------------+----+
+   * +-----------+------------+------------+------------+-------------+------------+-----------+-----------+----------+----------------+------+------------+----+------------+
+   * |ID         |Erstelldatum|Bezeichnung |Beschreibung|Fachabteilung|IVV         |FachKontakt|TechKontakt|Ersteller |Bearbeitergruppe|Status|Sichtbarkeit|JSON|DSBKommentar|
+   * +-----------+------------+------------+------------+-------------+------------+-----------+-----------+----------+----------------+------+------------+----+------------+
+   * |INT        |DATE        |VARCHAR(100)|TEXT        |VARCHAR(100) |VARCHAR(100)|VARCHAR(8) |VARCHAR(8) |VARCHAR(8)|VARCHAR(8)      |INT   |INT         |BLOB|TEXT        |
+   * |PRIMARY KEY|            |            |            |             |            |           |           |          |                |      |            |    |            |
+   * +-----------+------------+------------+------------+-------------+------------+-----------+-----------+----------+----------------+------+------------+----+------------+
    * </pre>
    * * Status: 0 = In Bearbeitung, 2 = Fertiggestellt, 3 = Gelöscht
    * * Sichtbarkeit: 0 = Nur für Bearbeiter (Ersteller, FachKontakt, TechKontakt und Bearbeitergruppe), 3 = Jeder eingeloggte Nutzer
@@ -95,7 +94,7 @@
     /** @var bool Zeigt an, ob eine Datenbank-Verbindung aktiv ist */
     protected $connected = FALSE;
     /** @var string Enthält den Dateinamen für die DB */
-    protected $filename = 'verfahren.db';
+    protected $filename = 'demo.db';
     /** @var string Enthält einen Standardpfad zur DB-Datei, falls keiner übergeben wurde */
     protected $path = '/secdoc/';
 
@@ -110,7 +109,7 @@
     const TABLES = [
         "CREATE TABLE verfahren (
             ID INTEGER PRIMARY KEY,                                               -- Eindeutige ID für ein Verfahren (kann automatisch inkrementiert werden oder manuell gesetzt werden)
-            Erstelldatum DATE DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')), -- Aktuelles Datum
+            Erstelldatum DATE DEFAULT '',                                         -- Einführungsdatum des Verfahrens
             Bezeichnung VARCHAR(100) NOT NULL DEFAULT  '',                        -- Bezeichnung des Verfahren
             Beschreibung TEXT NOT NULL DEFAULT  '',                               -- Ausführlichere Beschreibung des Verfahrens
             Fachabteilung VARCHAR(100) NOT NULL DEFAULT  '',                      -- Name der betreuenden Fachabteilung
@@ -217,12 +216,12 @@
       $this->pdo->exec("PRAGMA foreign_keys = ON;");
 
       # Check table version
-      $version = $this->pdo->query("PRAGMA user_version")->fetchColumn();
-      trigger_error("[SecDoc] DBCon.class.php -> Datenbank Version $version geöffnet.");
-      if(self::DBVERSION != $version) {
-        if($version == 2) {
-          trigger_error("[SecDoc] DBCon.class.php -> Aktualisiere Datenbank von Version $version zu " . self::DBVERSION . "!");
-          error_log("[SecDoc] DBCon.class.php -> Aktualisiere Datenbank von Version $version zu " . self::DBVERSION . "!");
+      $db_version = $this->pdo->query("PRAGMA user_version")->fetchColumn();
+      trigger_error("[SecDoc] DBCon.class.php -> Datenbank Version $db_version geöffnet.");
+      if(self::DBVERSION != $db_version) {
+        if($db_version == 2) {
+          trigger_error("[SecDoc] DBCon.class.php -> Aktualisiere Datenbank von Version $db_version zu " . self::DBVERSION . "!");
+          error_log("[SecDoc] DBCon.class.php -> Aktualisiere Datenbank von Version $db_version zu " . self::DBVERSION . "!");
           $this->pdo->exec("BEGIN;");
           $this->pdo->exec("PRAGMA foreign_keys = ON;");
           $this->pdo->exec("ALTER TABLE verfahren RENAME TO verfahren2;");
@@ -239,9 +238,9 @@
           $this->pdo->exec("PRAGMA user_version = 3;");
           $this->pdo->exec("COMMIT;");
         }
-        else if($version == 3) {
-          trigger_error("[SecDoc] DBCon.class.php -> Aktualisiere Datenbank von Version $version zu " . self::DBVERSION . "!");
-          error_log("[SecDoc] DBCon.class.php -> Aktualisiere Datenbank von Version $version zu " . self::DBVERSION . "!");
+        else if($db_version == 3) {
+          trigger_error("[SecDoc] DBCon.class.php -> Aktualisiere Datenbank von Version $db_version zu " . self::DBVERSION . "!");
+          error_log("[SecDoc] DBCon.class.php -> Aktualisiere Datenbank von Version $db_version zu " . self::DBVERSION . "!");
           $this->pdo->exec("BEGIN;");
           $this->pdo->exec("PRAGMA foreign_keys = ON;");
           $this->pdo->exec(self::TABLES[2]);
@@ -259,16 +258,16 @@
           $this->pdo->exec("PRAGMA user_version = 4;");
           $this->pdo->exec("COMMIT;");
         }
-        else if($version == 4) {
-          trigger_error("[SecDoc] DBCon.class.php -> Aktualisiere Datenbank von Version $version zu " . self::DBVERSION . "!");
-          error_log("[SecDoc] DBCon.class.php -> Aktualisiere Datenbank von Version $version zu " . self::DBVERSION . "!");
+        else if($db_version == 4) {
+          trigger_error("[SecDoc] DBCon.class.php -> Aktualisiere Datenbank von Version $db_version zu " . self::DBVERSION . "!");
+          error_log("[SecDoc] DBCon.class.php -> Aktualisiere Datenbank von Version $db_version zu " . self::DBVERSION . "!");
           $this->pdo->exec("BEGIN;");
           $this->pdo->exec("ALTER TABLE verfahren ADD COLUMN DSBKommentar TEXT DEFAULT '';");
           $this->pdo->exec("PRAGMA user_version = 5;");
           $this->pdo->exec("COMMIT;");
         }
         else {
-          throw new Exception("Datenbank kann nicht genutzt werden, da die Version nicht übereinstimmt und nicht aktualisiert werden kann! (Ist: $version - Soll: " . self::DBVERSION . ")");
+          throw new Exception("Datenbank kann nicht genutzt werden, da die Version nicht übereinstimmt und nicht aktualisiert werden kann! (Ist: $db_version - Soll: " . self::DBVERSION . ")");
         }
       }
 
@@ -367,7 +366,9 @@
      */
     public function listVerfahrenOwn($userId, $userGroups, $search = '') {
       if($this->isConnected()) {
-        $sth = $this->pdo->prepare('SELECT ID, Erstelldatum, Bezeichnung, Beschreibung, Fachabteilung, Status, Ersteller, FachKontakt, TechKontakt, Bearbeitergruppe, Sichtbarkeit, Kennung AS LetzterBearbeiter, MAX(Datum) AS Aktualisierung FROM verfahren LEFT JOIN verfahren_historie ON verfahren.ID = verfahren_historie.Verfahrens_Id WHERE NOT Status = 3 AND (Ersteller = ? OR TechKontakt = ? OR FachKontakt = ? OR Bearbeitergruppe IN (' . implode(', ', array_fill(0, count($userGroups), '?')) . '))' . (!empty($search) ? ' AND Bezeichnung LIKE ?' : '') . ' GROUP BY ID ORDER BY Bezeichnung COLLATE NOCASE;');
+        $sth = $this->pdo->prepare('SELECT ID, Erstelldatum, Bezeichnung, Beschreibung, Fachabteilung, Status, Ersteller, FachKontakt, TechKontakt, Bearbeitergruppe, Sichtbarkeit, IFNULL(Name, verfahren_historie.Kennung) AS LetzterBearbeiter, IFNULL(Anzeigename, "") AS BearbeiterDetails, MAX(Datum) AS Aktualisierung '
+                . 'FROM verfahren LEFT JOIN verfahren_historie ON verfahren.ID = verfahren_historie.Verfahrens_Id LEFT JOIN personen ON verfahren_historie.Kennung = personen.Kennung '
+                . 'WHERE NOT Status = 3 AND (Ersteller = ? OR TechKontakt = ? OR FachKontakt = ? OR Bearbeitergruppe IN (' . implode(', ', array_fill(0, count($userGroups), '?')) . '))' . (!empty($search) ? ' AND Bezeichnung LIKE ?' : '') . ' GROUP BY ID ORDER BY Bezeichnung COLLATE NOCASE;');
         $sth->execute(!empty($search) ? array_merge(array_fill(0, 3, $userId), $userGroups, '%' . $search . '%') : array_merge(array_fill(0, 3, $userId), $userGroups));
         
         ob_start();
@@ -434,7 +435,9 @@
     public function listVerfahrenDSB($search = '') {
       if($this->isConnected()) {
         $result = array();
-        $sth = $this->pdo->prepare('SELECT ID, Bezeichnung, Beschreibung, Erstelldatum, Fachabteilung, person1.Anzeigename AS FachKontakt, person2.Anzeigename AS TechKontakt, Status, Sichtbarkeit, DSBKommentar, MAX(Datum) AS Aktualisierung FROM verfahren LEFT JOIN verfahren_historie ON verfahren.ID = verfahren_historie.Verfahrens_Id LEFT JOIN personen AS person1 ON verfahren.FachKontakt = person1.Kennung LEFT JOIN personen AS person2 ON verfahren.TechKontakt = person2.Kennung WHERE NOT Status = 3' . (!empty($search) ? ' AND Bezeichnung LIKE ?' : '') . ' GROUP BY ID ORDER BY Bezeichnung COLLATE NOCASE;');
+        $sth = $this->pdo->prepare('SELECT ID, Bezeichnung, Beschreibung, Erstelldatum, Fachabteilung, IFNULL(person1.Anzeigename, verfahren.FachKontakt) AS FachKontakt, IFNULL(person2.Anzeigename, verfahren.TechKontakt) AS TechKontakt, Status, Sichtbarkeit, DSBKommentar, MAX(Datum) AS Aktualisierung '
+                . 'FROM verfahren LEFT JOIN verfahren_historie ON verfahren.ID = verfahren_historie.Verfahrens_Id LEFT JOIN personen AS person1 ON verfahren.FachKontakt = person1.Kennung LEFT JOIN personen AS person2 ON verfahren.TechKontakt = person2.Kennung '
+                . 'WHERE NOT Status = 3' . (!empty($search) ? ' AND Bezeichnung LIKE ?' : '') . ' GROUP BY ID ORDER BY Bezeichnung COLLATE NOCASE;');
         $sth->execute(!empty($search) ? ['%' . $search . '%'] : []);
         
         ob_start();
@@ -830,7 +833,7 @@
      */
     public function getHistorie($verfahrensId) {
       if($this->isConnected()) {
-        $sth = $this->pdo->prepare('SELECT * FROM verfahren_historie WHERE Verfahrens_Id = ? ORDER BY Datum DESC;');
+        $sth = $this->pdo->prepare('SELECT Verfahrens_Id, Datum, personen.Kennung, personen.Name, personen.Anzeigename FROM verfahren_historie LEFT JOIN personen ON verfahren_historie.Kennung = personen.Kennung WHERE Verfahrens_Id = ? ORDER BY Datum DESC;');
         $sth->execute([$verfahrensId]);
         
         ob_start();
@@ -852,11 +855,12 @@
      * 
      * @param string $term         Suchbegriff
      * @param bool   $onlyEmployee (optional) Wenn TRUE, dann werden nur Mitarbeiter angezeigt
+     * @param bool   $isID         (optional) Wenn TRUE, dann wird $term als exakte Nutzerkennung gesucht
      * @return array Array der Suchergebnisse
      * @throws PDOException
      * @throws Exception
      */
-    public function searchPerson($term, $onlyEmployee = FALSE) {
+    public function searchPerson($term, $onlyEmployee = FALSE, $isID = FALSE) {
       if(!$this->isConnected()) {
         throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
       }
@@ -872,8 +876,15 @@
       }
 
       if(count($terms) === 1) {
-        $sth = $this->pdo->prepare($sql . ' (Kennung LIKE ? OR Name LIKE ?);');
-        $sth->execute([$terms[0], $terms[0]]);
+        if($isID) {
+          $sth = $this->pdo->prepare($sql . ' (Kennung = ?);');
+          $sth->execute([$term]);
+        }
+        else {
+          $sth = $this->pdo->prepare($sql . ' (Kennung LIKE ? OR Name LIKE ?);');
+          $sth->execute([$terms[0], $terms[0]]);
+        }
+        
         ob_start();
         $sth->debugDumpParams();
         $sqlDump = ob_get_clean();
@@ -1036,13 +1047,11 @@
       }
       
       $sth = $this->pdo->prepare("
-        SELECT COUNT(ID) AS value FROM verfahren
-        UNION
-        SELECT COUNT(ID) AS value  FROM verfahren WHERE Status = 0
-        UNION
-        SELECT COUNT(ID) AS value  FROM verfahren WHERE Status = 2
-        UNION
-        SELECT COUNT(Verfahrens_Id) AS value FROM (SELECT Verfahrens_Id FROM verfahren_historie WHERE Datum > datetime('now', '-7 days', 'localtime') GROUP BY Verfahrens_Id);");
+        SELECT
+        (SELECT COUNT(ID) FROM verfahren) AS gesamt,
+        (SELECT COUNT(ID)  FROM verfahren WHERE Status = 0) AS inbearbeitung,
+        (SELECT COUNT(ID)  FROM verfahren WHERE Status = 2) AS abgeschlossen,
+        (SELECT COUNT(Verfahrens_Id) FROM (SELECT Verfahrens_Id FROM verfahren_historie WHERE Datum > datetime('now', '-7 days', 'localtime') GROUP BY Verfahrens_Id)) AS zuletztbearbeitet;");
       
       $sth->execute();
       
@@ -1051,13 +1060,13 @@
       $sqlDump = ob_get_clean();
       print "DBCon.class.php -> getStats() Execute: $sqlDump";
       
-      $tmp = $sth->fetchAll();
+      $tmp = $sth->fetch();
       $result = [
-          'gesamt' => (int) $tmp[3]['value'],
-          'inbearbeitung' => (int) $tmp[2]['value'],
-          'abgeschlossen' => (int) $tmp[1]['value'],
-          'gelöscht' => $tmp[3]['value'] - $tmp[2]['value'] - $tmp[1]['value'],
-          'zuletztbearbeitet' => (int) $tmp[0]['value']
+          'gesamt' => (int) $tmp['gesamt'],
+          'inbearbeitung' => (int) $tmp['inbearbeitung'],
+          'abgeschlossen' => (int) $tmp['abgeschlossen'],
+          'gelöscht' => $tmp['gesamt'] - $tmp['inbearbeitung'] - $tmp['abgeschlossen'],
+          'zuletztbearbeitet' => (int) $tmp['zuletztbearbeitet']
       ];
       
       return $result;

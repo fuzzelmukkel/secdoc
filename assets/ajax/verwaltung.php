@@ -83,162 +83,7 @@
    */
   function generateTXT(DBCon $dbcon, string $userId, array $userGroups, bool $userIsDSB, int $verfahrensId): bool
   {
-      global $includes_dir;
-
-      // Daten auslesen
-      $data = $dbcon->getVerfahren($verfahrensId, $userId, $userGroups, $userIsDSB);
-      if (($data === false) ||
-          (empty($data)) ||
-          (empty($data[0]['JSON']))) {
-          /**
-           * Beim Auslesen der Daten ist ein Fehler aufgetreten.
-           * Daher muss an dieser Stelle abgebrochen werden.
-           */
-          trigger_error('[SecDoc] verwaltung.php -> Kann keine Verfahrensdaten auslesen!');
-          error_log('[SecDoc] verwaltung.php -> Kann keine Verfahrensdaten auslesen!');
-          return false;
-      }
-      $verfahrensdaten = json_decode($data[0]['JSON'], true);// Text generieren
-      $verfahrensbezeichnung = Utils::valueOrDefault($verfahrensdaten['allgemein_bezeichnung']);
-      $verfahrenszweck = Utils::valueOrDefault($verfahrensdaten['allgemein_zweck']);
-      $output = '<p>'. sprintf(
-              gettext('Das Verfahren <strong>%s</strong> verarbeitet zum Zweck <strong>%s</strong> die folgenden personenbezogenen Daten.'),
-              $verfahrensbezeichnung,
-              $verfahrenszweck
-          ) .'</p>';
-      $output .= sprintf(
-          '<table><thead><tr><th>%s</th><th>%s</th><th>%s</th><th>%s</th><th>%s</th></tr></thead><tbody>',
-          gettext("Kategorie"),
-          gettext("Betroffene"),
-          gettext("Herkunft"),
-          gettext("Rechtsgrundlage"),
-          gettext("Löschfrist")
-      );
-      if (array_key_exists('daten_kategorien_nummer', $verfahrensdaten) && is_array($verfahrensdaten['daten_kategorien_nummer'])) {
-        for ($i = 0; $i < count($verfahrensdaten['daten_kategorien_nummer']); $i++) {
-            $id = $verfahrensdaten['daten_kategorien_nummer'][$i];
-            $kategoriename = Utils::valueOrDefault(
-                  $verfahrensdaten['daten_kategorien_beschreibung'][$i]
-            );
-            $kategorieherkunft = Utils::valueOrDefault(
-                $verfahrensdaten['daten_kategorien_herkunft'][$i]
-            );
-            // Auslesen und Zuordnen der jeweils betroffenen Personengruppen
-            $betroffene = array();
-            if (is_array($verfahrensdaten['daten_personen_kategorie'])) {
-                foreach ($verfahrensdaten['daten_personen_kategorie'] AS $personID => $zuweisungen) {
-                    foreach ($zuweisungen AS $kategorieID) {
-                        if ($kategorieID == $id) {
-                            array_push(
-                                $betroffene,
-                                Utils::valueOrDefault(
-                                    $verfahrensdaten['daten_personen_betroffene'][$personID]
-                                )
-                            );
-                        }
-                    }
-                }
-            }
-            // Auslesen und Zuordnen der jeweiligen Rechtsgrundlage und ggf. eine passende erläuterung
-            $rechtsgrundlagen = array();
-            if (is_array($verfahrensdaten['daten_grundlagen_kategorie'])) {
-                foreach ($verfahrensdaten['daten_grundlagen_kategorie'] AS $grundlageID => $zuweisungen) {
-                    foreach ($zuweisungen AS $kategorieID) {
-                        if ($kategorieID == $id) {
-                            if (!isset($verfahrensdaten['daten_grundlagen_bezeichnung'][$grundlageID])) {
-                                /**
-                                 * Der gewaehlte Rechtstext (oder viel mehr die ID)
-                                 * konnte nicht ausgelesen werden. Um Fehler zu
-                                 * vermeiden ueberspringen wir diesen Durchlauf
-                                 * einfach.
-                                 */
-                                continue;
-                            }
-                            $rechtstextID = $verfahrensdaten['daten_grundlagen_bezeichnung'][$grundlageID];
-                            $rechtstext = '';
-                            $rechtsdaten = $dbcon->getRechtsgrundlagen($rechtstextID);
-                            if ((is_array($rechtsdaten)) &&
-                                (count($rechtsdaten) > 0)) {
-                                $rechtstext = $rechtsdaten[0]['Beschreibung'];
-                            }
-                            if ((isset($verfahrensdaten['daten_grundlagen_erlaeuterung'][$grundlageID])) &&
-                                (!empty(trim($verfahrensdaten['daten_grundlagen_erlaeuterung'][$grundlageID])))) {
-                                $erlaeuterung = $verfahrensdaten['daten_grundlagen_erlaeuterung'][$grundlageID];
-                                $rechtstext .= ' <em>Erl&auml;uterung: '. $erlaeuterung .'</em>';
-                            }
-                            array_push(
-                                $rechtsgrundlagen,
-                                $rechtstext
-                            );
-                        }
-                    }
-                }
-            }
-            // Auslesen und Zuordnen der jeweiligen Löschfristen
-            $fristen = array();
-            if (is_array($verfahrensdaten['daten_loeschung_kategorie'])) {
-                foreach ($verfahrensdaten['daten_loeschung_kategorie'] AS $fristID => $zuweisungen) {
-                    foreach ($zuweisungen AS $kategorieID) {
-                        if ($kategorieID == $id) {
-                            array_push(
-                                $fristen,
-                                $verfahrensdaten['daten_loeschung_frist'][$fristID]
-                            );
-                        }
-                    }
-                }
-            }
-            /**
-             * Aus den ggf. in einem Array abgelegten Rechtsgrundlagen generieren
-             * wir einen Text. Falls es mehrere Rechtsgrundlagen gibt, wird eine
-             * Liste erzeugt.
-             */
-            if (count($rechtsgrundlagen) === 0) {
-                $rechtsgrundlagen = Utils::valueOrDefault(null);
-            } else if (count($rechtsgrundlagen) > 1) {
-                $rechtsgrundlagen = '<ul><li>'. implode('</li><li>', $rechtsgrundlagen) .'</li></ul>';
-            } else {
-                $rechtsgrundlagen = $rechtsgrundlagen[0];
-            }
-            if (count($fristen) === 0) {
-                array_push($fristen, Utils::valueOrDefault(null));
-            }
-            $output .= sprintf(
-                '<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>',
-                $kategoriename,
-                implode(', ', $betroffene),
-                $kategorieherkunft,
-                $rechtsgrundlagen,
-                implode('. ', $fristen)
-            );
-        }
-      }
-      $output .= '</tbody></table>';
-      /**
-       * Am Ende betten wir unseren eigentlichen Output noch einmal in das
-       * Article- und div tag um korrekt in Imperiaseiten eingebunden werden
-       * zu koennen.
-       */
-      $output = '<article class="module extended"><div class="module-content">'. $output .'</div></article>';
-      // Auf Datei zugreifen, schreiben und schliessen.
-      $filename = sprintf(
-          '%s/%d.txt',
-          $includes_dir,
-          $verfahrensId
-      );
-      $fh = fopen($filename, 'w');
-      if (!$fh) {
-          error_log(
-              sprintf(
-                  'Kann nicht in Datei "%s" schreiben!',
-                  $filename
-              )
-          );
-          return false;
-      }
-      $written_bytes = fwrite($fh, $output);
-      return ((fclose($fh)) &&
-          ($written_bytes === strlen($output)));
+    return true;
   }
 
   /**
@@ -360,128 +205,7 @@ EOH;
    */
   function generateEmail(DBCon $dbcon, string $userId, array $userGroups, bool $userIsDSB, int $verfahrensId): bool
   {
-    global $pdf_dir;
-
-    // Daten auslesen
-    $data = $dbcon->getVerfahren($verfahrensId, $userId, $userGroups, $userIsDSB);
-    if (($data === false) || (empty($data)) || (empty($data[0]['JSON']))) {
-      /**
-       * Beim Auslesen der Daten ist ein Fehler aufgetreten.
-       * Daher muss an dieser Stelle abgebrochen werden.
-       */
-      trigger_error('[SecDoc] verwaltung.php -> Kann keine Verfahrensdaten auslesen!');
-      error_log('[SecDoc] verwaltung.php -> Kann keine Verfahrensdaten auslesen!');
-      return false;
-    }
-
-    // Infos für E-Mail zusammenstellen
-    $anrede = "Sehr geehrte Damen und Herren";
-    $subject = "[SecDoc] Neues Verfahren angelegt: «{$data[0]['Bezeichnung']}»";
-    $empfaenger = array_unique(
-      array(
-        $data[0]['Ersteller'],
-        $data[0]['FachKontakt'],
-        $data[0]['TechKontakt']
-      )
-    );
-    $empfaenger = array_filter($empfaenger); // leere ELemente ausfiltern
-    $bcc = '';
-    //$bcc = get_email_from_nid('unidsb'); /* TODO: Kopie an Datenschutzbeauftragte? */
-
-    // HTML-Entities dekodieren
-    $data[0]['Beschreibung'] = htmlspecialchars_decode($data[0]['Beschreibung']);
-
-    $text = <<<EOT
-Sie erhalten diese E-Mail, da im Verfahrensdokumentationssystem der WWU (SecDoc) das Verfahren «{$data[0]['Bezeichnung']}» abgeschlossen wurde und Sie als Kontaktperson eingetragen sind.
-
-Beschreibung:
-{$data[0]['Beschreibung']}
-
-Die gesamte Verfahrensdokumentation ist als PDF-Datei angehängt.
-
-EOT;
-    $text = strip_tags($text);   # HTML- und evtl. Links entfernen => kein bösartiger Code in signierter E-Mail!
-
-    $text .= <<<EOT
-
-Es wurde ein Include-Baustein zur Verwendung in Webseiten bzw. Webanwendungen als Ergänzung zur zentralen Datenschutzerklärung erstellt. Sie können den passenden Text im Webserverpark mit Hilfe von SSI per <!--#include virtual="/sys/secdoc/$verfahrensId.txt" --> bzw. PHP per readfile("/www/data/sys/includes/secdoc/$verfahrensId.txt") einbinden.
-EOT;
-
-    # Anhang für imap_handle_attachments() vorbereiten
-    $temp_filename = $pdf_dir . DIRECTORY_SEPARATOR . $verfahrensId . '.pdf';
-    $last_update = date('YmdHi', strtotime($data[0]['Aktualisierung']));
-    if (!is_readable($temp_filename)) {
-      /**
-       * Die PDF Datei kann nicht von der erwarteten Stelle aus gelesen werden.
-       * Entweder liegt sie dort nicht, oder die Berechtigungen stimmen nicht.
-       */
-      trigger_error(
-        sprintf(
-          '[SecDoc] verwaltung.php -> PDF-Datei "%s" nicht gefunden/lesbar',
-          $temp_filename
-        )
-      );
-      error_log(sprintf('[SecDoc] verwaltung.php -> PDF-Datei "%s" nicht gefunden/lesbar', $temp_filename));
-      return false;
-    }
-    $attachment = array(
-      'name'     => "Verfahrensdokumentation_{$verfahrensId}_{$last_update}.pdf",
-      'tmp_name' => $temp_filename,
-      'size'     => filesize($temp_filename),
-      'type'     => 'application/pdf',
-      'nodelete' => 1,
-      'error'    => 0
-    );
-
-    $signatur = <<<EOT
-Mit freundlichen Grüßen
-Ihr ZIV
-
--- 
-Westfälische Wilhelms-Universität Münster (WWU)
-Zentrum für Informationsverarbeitung (ZIV)
-Röntgenstr. 7-13
-48149 Münster
-Tel.: +49 251 83 31600
-E-Mail: secdoc@uni-muenster.de
-Web: https://www.uni-muenster.de/ZIV.CERT/secdoc
-EOT;
-
-    $ret = true;
-    foreach ($empfaenger as $to)
-    {
-      $anrede = Utils::getUserAnrede($to);
-      $to = Utils::getUserEmail($to);
-      $cc = '';
-
-      $body = <<<EOT
-$anrede,
-
-$text
-
-$signatur
-EOT;
-
-      # Falls Nutzer kein E-Mail-Postfach hat (sollte nicht vorkommen)
-      if (empty($to)) {
-        continue;
-      }
-      $mailstatus = Utils::imapSendMimeMail(
-        $to,
-        $cc,
-        $bcc,
-        # TODO Reply-To an $userId
-        $subject,
-        $body,
-        array(
-          $attachment
-        )
-      );
-      if (!$mailstatus) {
-        $ret = false;
-      }
-    }
-    return $ret;
+    return true;
   }
 
   /**
@@ -738,6 +462,9 @@ EOT;
          * gestellt wurde.
          */
         $output['gentxt'] = generateTXT($dbcon, $userId, $userGroups, $userIsDSB, $verfahrensId);
+        
+        # Status zurücksetzen auf "In Bearbeitung", falls es zuvor als "In Betrieb" gekennzeichnet war
+        $dbcon->updateStatus($verfahrensId, $userId, $userGroups, 0, $userIsDSB);
       }
 
       if($success === FALSE) {
@@ -749,32 +476,6 @@ EOT;
       break;
     }
 
-    # Aktualisiert nur den Status eines Verfahrens
-    case 'updatestatus': {
-      if(empty($verfahrensId)) {
-        returnError('Keine ID für ein Verfahren wurde übergeben!');
-      }
-
-      if(empty($data) || !isset($data['status'])) {
-        returnError('Keine JSON-kodierter Inhalt zum Statusupdate wurde übergeben (Fehlt: status)!');
-      }
-
-      $statusOld = $dbcon->getStatus($verfahrensId, $userId, $userGroups, $userIsDSB);
-
-      if($statusOld === intval($data['status'])) {
-        $output['changed'] = FALSE;
-      }
-      else {
-        $success = $dbcon->updateStatus($verfahrensId, $userId, $userGroups, $data['status'], $userIsDSB);
-
-        if($success === FALSE) {
-          returnError('Kein Verfahren wurde aktualisiert, da entweder das Verfahren nicht gefunden wurde oder Sie keine Berechtigung haben!');
-        }
-        $output['changed'] = TRUE;
-      }
-      break;
-    }
-
     # Schließt das Verfahren ab
     case 'finish': {
       if(empty($verfahrensId)) {
@@ -782,7 +483,7 @@ EOT;
       }
 
       if(empty($data)) {
-        returnError('Keine JSON-kodierter Inhalt zum Abschluss wurde übergeben (title, status, pdfCode)!');
+        returnError('Keine JSON-kodierter Inhalt zum Abschluss wurde übergeben (title, pdfCode)!');
       }
 
       // Überprüfen, ob das Verfahren nicht durch eine andere Person seit dem letzten Laden bearbeitet wurde
@@ -792,13 +493,13 @@ EOT;
         break;
       }
 
-      $success = $dbcon->updateStatus($verfahrensId, $userId, $userGroups, $data['status'], $userIsDSB);
+      $success = $dbcon->updateStatus($verfahrensId, $userId, $userGroups, 2, $userIsDSB);
 
       if($success === 0) {
         returnError('Kein Verfahren wurde aktualisiert, da entweder das Verfahren nicht gefunden wurde oder Sie keine Berechtigung haben!');
       }
 
-      if(intval($data['status']) === 2 && $success) {
+      if($success) {
         $output['gentxt'] = generateTXT($dbcon, $userId, $userGroups, $userIsDSB, $verfahrensId);
         $output['genpdf'] = generatePDF($data['title'], $data['pdfCode'], $verfahrensId);
         $output['genmail'] = FALSE;
@@ -922,8 +623,12 @@ EOT;
     case 'searchperson': {
       if(empty($search)) {
         $search = $userId;
+        $result = $dbcon->searchPerson($search, FALSE, TRUE);
       }
-      $result = $dbcon->searchPerson($search);
+      else {
+        $result = $dbcon->searchPerson($search);
+      }
+      
       $resultMod = [];
       foreach($result as $val) {
         array_push($resultMod, ['value' => $val['Kennung'], 'label' => $val['Name'], 'name' => $val['Name']]);
@@ -1039,7 +744,7 @@ EOT;
 
     # Falls keine bekannte Aktion angegeben wurde
     default: {
-      $output['error'] = 'Es wurde kein oder kein unterstützter Modus (list, listdsb, get, create, update, updatestatus, delete, finish, updatecomment, history, laws, searchperson, serachabteilung, searchivv, getusergroups, searchapp, searchos, searchipdns, getaufstellungsort, getstats) angegeben!';
+      $output['error'] = 'Es wurde kein oder kein unterstützter Modus (list, listdsb, get, create, update, delete, finish, updatecomment, history, laws, searchperson, serachabteilung, searchivv, getusergroups, searchapp, searchos, searchipdns, getaufstellungsort, getstats) angegeben!';
       break;
     }
   }

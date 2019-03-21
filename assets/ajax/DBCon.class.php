@@ -94,7 +94,7 @@
     /** @var bool Zeigt an, ob eine Datenbank-Verbindung aktiv ist */
     protected $connected = FALSE;
     /** @var string Enthält den Dateinamen für die DB */
-    protected $filename = 'verfahren.db';
+    protected $filename = 'demo.db';
     /** @var string Enthält einen Standardpfad zur DB-Datei, falls keiner übergeben wurde */
     protected $path = '/secdoc/';
 
@@ -855,11 +855,12 @@
      * 
      * @param string $term         Suchbegriff
      * @param bool   $onlyEmployee (optional) Wenn TRUE, dann werden nur Mitarbeiter angezeigt
+     * @param bool   $isID         (optional) Wenn TRUE, dann wird $term als exakte Nutzerkennung gesucht
      * @return array Array der Suchergebnisse
      * @throws PDOException
      * @throws Exception
      */
-    public function searchPerson($term, $onlyEmployee = FALSE) {
+    public function searchPerson($term, $onlyEmployee = FALSE, $isID = FALSE) {
       if(!$this->isConnected()) {
         throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
       }
@@ -875,8 +876,15 @@
       }
 
       if(count($terms) === 1) {
-        $sth = $this->pdo->prepare($sql . ' (Kennung LIKE ? OR Name LIKE ?);');
-        $sth->execute([$terms[0], $terms[0]]);
+        if($isID) {
+          $sth = $this->pdo->prepare($sql . ' (Kennung = ?);');
+          $sth->execute([$term]);
+        }
+        else {
+          $sth = $this->pdo->prepare($sql . ' (Kennung LIKE ? OR Name LIKE ?);');
+          $sth->execute([$terms[0], $terms[0]]);
+        }
+        
         ob_start();
         $sth->debugDumpParams();
         $sqlDump = ob_get_clean();

@@ -22,36 +22,10 @@
      * @return array Liste der zutreffenden Systeme
      */
     public static function searchipdns($term): array {
-
-      require_once('../../../case/include/func.inc.php');
-
-      global $oci_handle;
-
-      # Verbindungen mit WBDB herstellen
-      if (empty($oci_handle))
-      {
-        $oci_handle  = ocidb_connect();
-      }
-
-      $term = strtolower($term);
-      $sql = "SELECT Concat(name, Concat('.', subdom)) as name, ip_addr FROM wb_cert.v_netznamen WHERE (ip_addr like '$term%' or Lower(Concat(name, Concat('.', subdom))) like '$term%') AND rownum <= 25 order by name,ip_addr";
-      if ($GLOBALS['DEBUG'])
-      { print '<p class="debug"><b>Notice</b>: oci_execute(): ' . htmlspecialchars($sql) . '</p>'; }
-      $stmt = oci_parse($oci_handle, $sql);
-      oci_execute($stmt);
-      if ($e = oci_error($stmt))
-      { err($e['code'] . ": " . htmlspecialchars($e['message'])); }
-      $num = oci_fetch_all($stmt, $rows);
-      if ($num>0)
-      {
-        $arr = array();
-        foreach ($rows['NAME'] as $id => $dns)
-        {
-          $ip = $rows['IP_ADDR'][$id];
-          array_push($arr, array('value' => $ip, 'label' => "$dns [$ip]"));
-        }
-        return $arr;
-      }
+      $arr = array();
+      array_push($arr, array('value' => '127.0.0.1', 'label' => "localhost (127.0.0.1)"));
+      array_push($arr, array('value' => '::1', 'label' => "localhost (ipv6)"));
+      return $arr;
     }
 
    /**
@@ -62,11 +36,7 @@
     * @return bool Gibt TRUE zurück, falls der Nutzer eine der notwendigen Berechtigungen hat, sonst FALSE
     */
     public static function checkUserGroups($ownedGroups, $searchGroups): bool {
-     $access = FALSE;
-     foreach($searchGroups as $group) {
-       $access = in_array($group, $ownedGroups);
-       if($access) break;
-     }
+     $access = TRUE;
      return $access;
    }
 
@@ -120,19 +90,7 @@
      * @return type
      */
     public static function imapSendMimeMail($to, $cc, $bcc, $subject, $body, $attachments) {
-
-      require_once('../../../case/include/func.inc.php');
-
-      global $debug;
-
-      # X.509 Konfiguration testen
-      $x509_info = imap_check_x509();
-      if ($x509_info && $debug)
-      {
-        trigger_error("X.509-Zertifikat ausgestellt für $x509_info");
-      }
-
-      return imap_send_mime_mail($to, $cc, $bcc, $subject, $body, $attachments);
+      return TRUE;
     }
 
     /**
@@ -143,24 +101,11 @@
      * @return string Aufstellungsort oder ein Platzhalter, falls kein Ort bekannt
      */
     public static function getAufstellungsort($ip) {
-
-      require_once('../../../case/include/func.inc.php');
-
-      global $oci_handle;
-
-      # Verbindungen mit WBDB herstellen
-      if (empty($oci_handle))
-      {
-        $oci_handle  = ocidb_connect();
-      }
-
-      if ($ret = get_info_from_ip($ip))
-      {
-        $ret = "$ret[2], $ret[3], $ret[4]";
-        return $ret;
-      }
-      else
-      {
+      if ($ip == '127.0.0.1') {
+        return "Mein Büro";
+      } elseif ($ip == '::1') {
+        return "ZIV, Raum 111, Einsteinstr. 60";
+      } else {
         return "Kein Aufstellungsort in Netzdatenbank eingetragen.";
       }
     }
@@ -171,12 +116,7 @@
      * @return string Kennung des Nutzers oder einen leeren String, falls keine Kennung gefunden wurde
      */
     public static function getCurrentUserId(): string {
-      $userId = '';
-
-      if(is_string($_SERVER['HTTP_X_TRUSTED_REMOTE_USER'])) { $userId = $_SERVER['HTTP_X_TRUSTED_REMOTE_USER']; }
-      elseif(is_string($_SERVER['REDIRECT_REMOTE_USER']))   { $userId = $_SERVER['REDIRECT_REMOTE_USER']; }
-      elseif(is_string($_SERVER['REMOTE_USER']))            { $userId = $_SERVER['REMOTE_USER']; }
-
+      $userId = 'demouser';
       return $userId;
     }
 
@@ -187,11 +127,7 @@
      * @return array Liste der Nutzergruppen
      */
     public static function getUserGroups($userId) {
-
-      require_once('/www/data/groups.php');
-
-      $userGroups = array_filter($groups[$userId], function($group) { return (preg_match('/(^@|=)/i', $group) !== 1) ? TRUE : FALSE; });
-
+      $userGroups = array('demogroup');
       return $userGroups;
     }
 
@@ -203,18 +139,8 @@
      * @return string Name der Nutzergruppe
      */
     public static function getGroupName($groupId) {
-
-      require_once('../../../case/include/func.inc.php');
-
-      global $oci_handle;
-
-      # Verbindungen mit WBDB herstellen
-      if (empty($oci_handle))
-      {
-        $oci_handle  = ocidb_connect();
-      }
-
-      return get_name_from_group($groupId);
+      #return get_name_from_group($groupId);
+      return 'Gruppe für SecDoc Demosystem';
     }
 
     /**
@@ -225,19 +151,8 @@
      * @return string Anrede
      */
     public static function getUserAnrede($userId) {
-
-      require_once('../../../case/include/func.inc.php');
-
-      global $oci_handle;
-
-      # Verbindungen mit WBDB herstellen
-      if (empty($oci_handle))
-      {
-        $oci_handle  = ocidb_connect();
-      }
-
-      return get_anrede_from_nid($userId);
-
+      #return get_anrede_from_nid($userId);
+      return 'Sehr geehrte Damen und Herren';
     }
 
     /**
@@ -247,20 +162,9 @@
      * @param string $userId Nutzerkennung
      * @return string E-Mail-Adresse oder false
      */
-    public static function getUserEmail($userId) {
-
-      require_once('../../../case/include/func.inc.php');
-
-      global $oci_handle;
-
-      # Verbindungen mit WBDB herstellen
-      if (empty($oci_handle))
-      {
-        $oci_handle  = ocidb_connect();
-      }
-
-      return user_check_email($userId);
-
+    public static function getUserAlias($userId) {
+      #return get_alias_from_nid($userId);
+      return 'demo.user@demo.domain';
     }
 
     /**
@@ -271,10 +175,8 @@
      * @return string|bool Passwort oder False bei Fehler
      */
     public static function readUserPassword($userId) {
-
-      require_once('../../../case/include/func.inc.php');
-
-      return user_get_password($userId);
+      #return user_read_pass($userId);
+      return '';
     }
   }
 ?>

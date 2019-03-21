@@ -1,21 +1,20 @@
 <?php
   /**
    * config.inc.php - Zentrale Konfigurations-Einstellungen für SecDoc
-   * 
-   * 
+   *
    * @author Thorsten Küfer <thorsten.kuefer@uni-muenster.de>
    * @copyright (c) 2018 Westfälische Wilhelms-Universität Münster
    * @license AGPL-3.0-or-later <https://www.gnu.org/licenses/agpl.html>
-   * 
+   *
    */
 
   # Globale Variablen
-  $prog_name = "SecDoc";
-  $version = "1.1 (2018.10.16)";
+  $prog_name = "SecDoc Demosystem";
+  $prog_version = "1.1 (2019.02.27)";
   $debug = isset($_REQUEST['debug']) ? filter_var($_REQUEST['debug'], FILTER_VALIDATE_BOOLEAN) : FALSE; # Für Live-System ausschalten, im Testsystem ist Debug-Modus standardmäßig an
-  $debugGroups = ['u0info', 'u0infoti', 'u0ivsb']; # Nutzergruppen, die Zugriff auf die Debug-Ausgaben haben
+  $debugGroups = ['demogroup']; # Nutzergruppen, die Zugriff auf die Debug-Ausgaben haben
   $GLOBALS['DEBUG'] = $debug;
-  $dsbIDs = [];
+  $dsbIDs = ['demouser'];
 
   # Zeitmessung starten
   $timer = array(array('Skript-Start', microtime(TRUE)));
@@ -46,14 +45,14 @@
   require_once('Utils.class.php');
 
   # Mail-Konfiguration
-  ini_set('SMTP', 'mail.uni-muenster.de');
-  ini_set('smtp_port', 25);
-  ini_set('sendmail_from', 'SecDoc <secdoc@uni-muenster.de>');
+  #ini_set('SMTP', 'mail.uni-muenster.de');
+  #ini_set('smtp_port', 25);
+  #ini_set('sendmail_from', 'SecDoc <secdoc@uni-muenster.de>');
   #set_time_limit(60);                    # Skript Timeout in Sekunden ein/ausschalten
 
   # Basispfad
   $base_dir = dirname($_SERVER['DOCUMENT_ROOT']);     # => "/www/data/ZIV.CERT"
-  $base_dir = $base_dir ? $base_dir : "/www/data/ZIV.CERT";
+  $base_dir = $base_dir ? $base_dir : "/www/data/ZIVtest";
   $ckusrgrp = "/www/bin/ckusrgrp -n";
 
   $temp_dir     = "$base_dir/temp";        # Hier landen temporäre Dateien
@@ -61,20 +60,19 @@
   $secret_dir   = "$base_dir/secret";      # Hier liegen Passwörter und Zertifikate
   $font_dir     = "$base_dir/fonts";       # Fonts für JpGraph (http://jpgraph.net/)
   $db_dir       = "$base_dir/secdoc";      # Hier liegt die SecDoc SQlite Datenbank
-  $includes_dir = "$base_dir/htdocs/sys/secdoc";      # Hier liegen die HTML Include-Bausteine
-  $pdf_dir      = "$base_dir/secdoc/PDF";             # Hier liegen die PDF-Dateien (temporär für E-Mail-Versand)
-
+  $includes_dir = "$temp_dir/htdocs/sys/secdoc";      # Hier liegen die HTML Include-Bausteine
+  $pdf_dir      = "$temp_dir/secdoc/PDF";             # Hier liegen die PDF-Dateien (temporär für E-Mail-Versand)
   $vendor_dir   = '../vendor/autoload.php'; # Pfad zur Composer autoload.php für MPDF
 
   # Passwörter und X.509-Zertifikat
-  $key_filename  = "$secret_dir/cert.access.dat";  # Enthält alle von CERT_online benötigten Passwörter
-  $info_filename = "$secret_dir/cert.access.txt";  # Enthält Informationen zum jeweiligen Zugang
+  #$key_filename  = "$secret_dir/cert.access.dat";  # Enthält alle von CERT_online benötigten Passwörter
+  #$info_filename = "$secret_dir/cert.access.txt";  # Enthält Informationen zum jeweiligen Zugang
 
   # ----------------------------------------
   # IMAP.UNI-MUENSTER.DE
   # ----------------------------------------
-  $imap_user   = "secdoc";  # Benötigt für Signierung
-  #$imap_pass   = user_get_password($imap_user);
+  #$imap_user   = "secdoc";  # Benötigt für Signierung
+  #$imap_pass   = user_read_pass($imap_user);
   #$imap_inbox  = "{imap.uni-muenster.de/ssl}INBOX";
   #$imap_inbox  = "{eximap.uni-muenster.de/tls}INBOX";
   #$imap_handle = imap_connect($imap_inbox);
@@ -84,11 +82,14 @@
   # ----------------------------------------
   # Verbindungen mit WBDB herstellen
   # Servername steht in tnsnames.ora
-  $oci_user    = "wb_cert";
-  $oci_pass    = Utils::readUserPassword($oci_user);
-  $oci_dbname  = "wbdb";
+  #$oci_user    = "wb_cert";
+  #$oci_pass    = Utils::readUserPassword($oci_user);
+  #$oci_dbname  = "wbdb";
   #$oci_handle  = ocidb_connect();     # nur noch bei Bedarf => Utils.class.php
 
   #$x509_info = imap_check_x509();
+
+  # Infos über eingeloggten Bearbeiter holen (wird genutzt von imap_send_mime_mail())
+  $cert_bearbeiter = Utils::getCurrentUserId();
 ?>
 

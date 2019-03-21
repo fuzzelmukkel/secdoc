@@ -28,15 +28,15 @@
         <article>
             <pre class="prettyprint source linenums"><code>/**
  * main.js - Zentrale Funktionen für das secdoc-Tool
- * 
+ *
  * @file Kapselt die zentralen Funktionen und steuert das Laden der Unterseiten
- * 
+ *
  * @requires assets/js/jquery-3.3.1.min.js
  *
  * @author Thorsten Küfer &lt;thorsten.kuefer@uni-muenster.de>
  * @author Dustin Gawron &lt;dustin.gawron@uni-muenster.de>
- * @license {@link https://opensource.org/licenses/MIT MIT}
  * @copyright (c) 2018 Westfälische Wilhelms-Universität Münster
+ * @license AGPL-3.0-or-later &lt;https://www.gnu.org/licenses/agpl.html>
  */
 
 // Zeitmessung starten
@@ -199,13 +199,13 @@ function setSaveLabel(action, currDate = new Date()) {
     case 'saved':
       $('#saveTime').text(saveTime);
       $('#successLabel').removeClass('hidden');
-      $('input[name="meta_lastupdate"').val(saveTime);
+      $('input[name="meta_lastupdate"]').val(saveTime);
       break;
 
     case 'failed':
       $('#failedLabel').removeClass('hidden');
       break;
-      
+
     case 'refreshed':
       $('#loadTime').text(saveTime);
       $('#refreshedLabel').removeClass('hidden');
@@ -238,6 +238,7 @@ function showError(action, message = false) {
   else {
     modal.find('.modal-body').html('&lt;div class="alert alert-danger">&lt;p>Beim ' + action + ' ist ein unbekannter Fehler aufgetreten! Bitte versuchen Sie es in Kürze erneut!&lt;/p>&lt;/div>');
   }
+  modal.find('.modal-body').append('&lt;p>&lt;button type="button" class="center-block btn btn-primary" data-dismiss="modal" aria-label="Close">Schließen&lt;/button>&lt;/p>');
   modal.modal();
 }
 
@@ -247,28 +248,38 @@ function showError(action, message = false) {
  * @return {undefined}
  */
 function getPDFFromServer(id) {
+  setOverlay();
+
   $.post(backendPath, JSON.stringify({'action':'getpdf', 'id': id, 'debug': debug})).done((data) => {
     if(!data['success']) {
       showError('Laden der PDF', data['error']);
       return;
     }
 
+    if(data['data']['status'] === 0) {
+      modal.find('.modal-title').text('Hinweis');
+      modal.find('.modal-body').html('&lt;div class="alert alert-warning">&lt;p>Da sich das Verfahren wieder im Zustand "In Bearbeitung" befindet, stimmen die Angaben in der PDF unter Umständen nicht mehr mit der aktualisierten Version überein! Die PDF wird nur bei einem erneuten Abschluss des Verfahrens aktualisiert.&lt;/p>&lt;/div>');
+      modal.find('.modal-body').append('&lt;p>&lt;button type="button" class="center-block btn btn-primary" data-dismiss="modal" aria-label="Close">Schließen&lt;/button>&lt;/p>');
+      modal.modal();
+    }
+
     // Base64 Kodierung umkehren und Blob zum Download erstellen
-    let pdfData = atob(data['data'].replace(/\s/g, ''));
+    let pdfData = atob(data['data']['pdf'].replace(/\s/g, ''));
     let pdfBuffer = new Uint8Array(new ArrayBuffer(pdfData.length));
     for(let i=0; i &lt; pdfData.length; i++) {
       pdfBuffer[i] = pdfData.charCodeAt(i);
     }
     let blob = new Blob([pdfBuffer], {type: "application/pdf"});
+    let lastUpdate = new Date(data['data']['lastupdate'].replace(' ', 'T'));  // Safari benötigt das Format YYYY-MM-DDTHH:MM:SS (mit T)
 
     // PDF-Anzeige starten (Unterscheidung, ob Edge genutzt wird)
     if(window.navigator &amp;&amp; window.navigator.msSaveOrOpenBlob) {
-      window.navigator.msSaveOrOpenBlob(blob, 'Verfahren-' + id + '.pdf');
+      window.navigator.msSaveOrOpenBlob(blob, 'Verfahrensdokumentation_' + id + '_' + lastUpdate.getFullYear() + ('0' + (lastUpdate.getMonth() + 1)).slice(-2) + ('0' + lastUpdate.getDate()).slice(-2) + ('0' + lastUpdate.getHours()).slice(-2) + ('0' + lastUpdate.getMinutes()).slice(-2)  + '.pdf');
     }
     else {
       let url = window.URL.createObjectURL(blob);
       let download = $('&lt;a>&lt;/a>');
-      download.attr('href', url).attr('download', 'Verfahren-' + id + '.pdf').addClass('hidden');;
+      download.attr('href', url).attr('download', 'Verfahrensdokumentation_' + id + '_' + lastUpdate.getFullYear() + ('0' + (lastUpdate.getMonth() + 1)).slice(-2) + ('0' + lastUpdate.getDate()).slice(-2) + ('0' + lastUpdate.getHours()).slice(-2) + ('0' + lastUpdate.getMinutes()).slice(-2)  + '.pdf').addClass('hidden');;
       $('body').append(download);
       download[0].click();
       window.URL.revokeObjectURL(url);
@@ -276,6 +287,8 @@ function getPDFFromServer(id) {
     }
   }).fail((jqXHR, error, errorThrown) => {
     showError('Laden der PDF', 'HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
+  }).always(() => {
+    setOverlay(false);
   });
 }
 
@@ -305,7 +318,8 @@ $.getJSON(backendPath + '?action=searchperson' + (debug ? '&amp;debug=true' : ''
 $.get('assets/html/' + page + '.inc.html').done((data) => { $('#content').html(data); }).fail((jqXHR, error, errorThrown) => {
   console.error('Fehler beim Laden der Unterseite "' + page + '"! HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
   showError('Laden der Unterseite "' + page + '"');
-});</code></pre>
+});
+</code></pre>
         </article>
     </section>
 
@@ -315,13 +329,13 @@ $.get('assets/html/' + page + '.inc.html').done((data) => { $('#content').html(d
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#addTableRow">addTableRow</a></li><li><a href="global.html#backendPath">backendPath</a></li><li><a href="global.html#changedValues">changedValues</a></li><li><a href="global.html#copyFromServer">copyFromServer</a></li><li><a href="global.html#copyId">copyId</a></li><li><a href="global.html#debug">debug</a></li><li><a href="global.html#debugLog">debugLog</a></li><li><a href="global.html#deleteFromServer">deleteFromServer</a></li><li><a href="global.html#endlessCounts">endlessCounts</a></li><li><a href="global.html#endlessTables">endlessTables</a></li><li><a href="global.html#endlessTemplates">endlessTemplates</a></li><li><a href="global.html#genHTMLforPDF">genHTMLforPDF</a></li><li><a href="global.html#getPDFFromServer">getPDFFromServer</a></li><li><a href="global.html#GetURLParameter">GetURLParameter</a></li><li><a href="global.html#htmlDecode">htmlDecode</a></li><li><a href="global.html#htmlEncode">htmlEncode</a></li><li><a href="global.html#initEndlessTables">initEndlessTables</a></li><li><a href="global.html#initTypeahead">initTypeahead</a></li><li><a href="global.html#lawsMapping">lawsMapping</a></li><li><a href="global.html#loadEmpty">loadEmpty</a></li><li><a href="global.html#loadFromJSON">loadFromJSON</a></li><li><a href="global.html#loadFromServer">loadFromServer</a></li><li><a href="global.html#loadId">loadId</a></li><li><a href="global.html#modal">modal</a></li><li><a href="global.html#myFinish">myFinish</a></li><li><a href="global.html#myInit">myInit</a></li><li><a href="global.html#myNext">myNext</a></li><li><a href="global.html#myPrevious">myPrevious</a></li><li><a href="global.html#myTabChange">myTabChange</a></li><li><a href="global.html#myTabClick">myTabClick</a></li><li><a href="global.html#page">page</a></li><li><a href="global.html#promises">promises</a></li><li><a href="global.html#removeTableRows">removeTableRows</a></li><li><a href="global.html#saveAsObject">saveAsObject</a></li><li><a href="global.html#saveOnServer">saveOnServer</a></li><li><a href="global.html#setOverlay">setOverlay</a></li><li><a href="global.html#setSaveLabel">setSaveLabel</a></li><li><a href="global.html#showError">showError</a></li><li><a href="global.html#showVerfahrensliste">showVerfahrensliste</a></li><li><a href="global.html#statusMapping">statusMapping</a></li><li><a href="global.html#typeaheadCache">typeaheadCache</a></li><li><a href="global.html#userIsDSB">userIsDSB</a></li><li><a href="global.html#version">version</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#addTableRow">addTableRow</a></li><li><a href="global.html#backendPath">backendPath</a></li><li><a href="global.html#changedValues">changedValues</a></li><li><a href="global.html#copyFromServer">copyFromServer</a></li><li><a href="global.html#copyId">copyId</a></li><li><a href="global.html#debug">debug</a></li><li><a href="global.html#debugLog">debugLog</a></li><li><a href="global.html#deleteFromServer">deleteFromServer</a></li><li><a href="global.html#endlessCounts">endlessCounts</a></li><li><a href="global.html#endlessTables">endlessTables</a></li><li><a href="global.html#endlessTemplates">endlessTemplates</a></li><li><a href="global.html#genHTMLforPDF">genHTMLforPDF</a></li><li><a href="global.html#getPDFFromServer">getPDFFromServer</a></li><li><a href="global.html#GetURLParameter">GetURLParameter</a></li><li><a href="global.html#htmlDecode">htmlDecode</a></li><li><a href="global.html#htmlEncode">htmlEncode</a></li><li><a href="global.html#initEndlessTables">initEndlessTables</a></li><li><a href="global.html#initTypeahead">initTypeahead</a></li><li><a href="global.html#lawsMapping">lawsMapping</a></li><li><a href="global.html#loadEmpty">loadEmpty</a></li><li><a href="global.html#loadFromJSON">loadFromJSON</a></li><li><a href="global.html#loadFromServer">loadFromServer</a></li><li><a href="global.html#loadId">loadId</a></li><li><a href="global.html#markedAsFinished">markedAsFinished</a></li><li><a href="global.html#modal">modal</a></li><li><a href="global.html#myFinish">myFinish</a></li><li><a href="global.html#myInit">myInit</a></li><li><a href="global.html#myNext">myNext</a></li><li><a href="global.html#myPrevious">myPrevious</a></li><li><a href="global.html#myTabChange">myTabChange</a></li><li><a href="global.html#myTabClick">myTabClick</a></li><li><a href="global.html#page">page</a></li><li><a href="global.html#promises">promises</a></li><li><a href="global.html#removeTableRows">removeTableRows</a></li><li><a href="global.html#saveAsObject">saveAsObject</a></li><li><a href="global.html#saveOnServer">saveOnServer</a></li><li><a href="global.html#setOverlay">setOverlay</a></li><li><a href="global.html#setSaveLabel">setSaveLabel</a></li><li><a href="global.html#showError">showError</a></li><li><a href="global.html#showVerfahrensliste">showVerfahrensliste</a></li><li><a href="global.html#statusMapping">statusMapping</a></li><li><a href="global.html#typeaheadCache">typeaheadCache</a></li><li><a href="global.html#userIsDSB">userIsDSB</a></li><li><a href="global.html#version">version</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Tue Oct 16 2018 13:20:19 GMT+0200 (Mitteleuropäische Sommerzeit)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Wed Mar 13 2019 15:51:24 GMT+0100 (Mitteleuropäische Normalzeit)
 </footer>
 
 <script> prettyPrint(); </script>

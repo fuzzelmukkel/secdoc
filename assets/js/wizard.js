@@ -42,6 +42,12 @@ var copyId = GetURLParameter('copy') === false ? false : parseInt(GetURLParamete
  */
 var changedValues = false;
 /**
+ * Gibt an, ob das Verfahren als abgeschlossen markiert wurde
+ * @global
+ * @type {Boolean}
+ */
+var markedAsFinished = false;
+/**
  * Sammlung von Promises für AJAX-Anfragen, die zu Beginn durchgeführt werden müssen
  * @global
  * @type {Array}
@@ -153,7 +159,6 @@ function myNext(tab, nav, idx) {
   // Nur neu abspeichern, wenn etwas geändert wurde
   if(changedValues) {
     saveOnServer();
-    changedValues = false;
   }
   return true;
 }
@@ -191,7 +196,6 @@ function myFinish() {
   var savePromise = Promise.resolve();
   if(changedValues) {
     savePromise = saveOnServer();
-    changedValues = false;
   }
 
   if(!savePromise) {
@@ -210,11 +214,12 @@ function myFinish() {
       // HTML-Code für PDF-Version generieren
       var pdfCode = genHTMLforPDF();
 
-      $.post(backendPath, JSON.stringify({'action': 'finish', 'debug': debug, 'id':  loadId, 'data': { 'title': $('[name="allgemein_bezeichnung"]').val(), 'status': 2, 'pdfCode': pdfCode, 'lastupdate': $('[name="meta_lastupdate"]').val()} })).done((data) => {
+      $.post(backendPath, JSON.stringify({'action': 'finish', 'debug': debug, 'id':  loadId, 'data': { 'title': $('[name="allgemein_bezeichnung"]').val(), 'pdfCode': pdfCode, 'lastupdate': $('[name="meta_lastupdate"]').val()} })).done((data) => {
         if(!data['success']) {
           showError('Abschließen des Verfahrens', data['error']);
           return;
         }
+        markedAsFinished = true;
         modal.find('.modal-title').text('Verfahrensdokumentation abgeschlossen');
         var modalBody = modal.find('.modal-body');
         modalBody.html('<p>Hiermit wurde die Verfahrensdokumentation als abgeschlossen gekennzeichnet.</p>');
@@ -275,7 +280,7 @@ function showVerfahrensliste(startup = false) {
         newEntry.append('<td>' + data['data'][c]['Status'] + '</td>');
         newEntry.append('<td>' + data['data'][c]['LetzterBearbeiter'] + ' <i data-toggle="tooltip" class="fa fa-info-circle" title="' + (data['data'][c]['BearbeiterDetails'] ? data['data'][c]['BearbeiterDetails'] : '<Keine Details vorhanden>') + '"></i></td>');
         newEntry.append('<td>' + data['data'][c]['Aktualisierung'] + '</td>');
-        newEntry.append('<td><div class="btn-group inline"><a class="btn" href="?id=' + currId + (debug ? '&debug=true' : '') + '" target="_blank"><i class="fa fa-edit"></i> Bearbeiten</a><a class="btn" href="?copy=' + currId + '" target="_blank"><i class="fa fa-copy"></i> Kopieren</a><button type="button" data-id="' + currId + '" class="btn pdfdownload" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '>PDF anzeigen</button></div> <button type="button" data-id="' + currId +'" class="btn del btn-danger" ' + (data['data'][c]['Löschbar'] === true ? '' : 'disabled')  + '><i class="fa fa-minus"></i> Löschen</button></td>');
+        newEntry.append('<td><div class="btn-group inline"><a class="btn" href="?id=' + currId + (debug ? '&debug=true' : '') + '" target="_blank"><i class="fa fa-edit"></i> Bearbeiten</a><a class="btn" href="?copy=' + currId + '" target="_blank"><i class="fa fa-copy"></i> Kopieren</a><button type="button" data-id="' + currId + '" class="btn pdfdownload" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '>PDF anzeigen</button></div> <button type="button" data-id="' + currId +'" data-name="' + data['data'][c]['Bezeichnung'] +'" class="btn del btn-danger" ' + (data['data'][c]['Löschbar'] === true ? '' : 'disabled')  + '><i class="fa fa-minus"></i> Löschen</button></td>');
         modalBody.find('#eigeneVerfahren tbody').append(newEntry);
       }
     }
@@ -287,7 +292,7 @@ function showVerfahrensliste(startup = false) {
 
     // Handler für das Löschen von Verfahren
     modalBody.on('click', 'button.del', function() {
-      var confirmed = confirm('Achtung: Von diesem Verfahren könnten andere Verfahren abhängen! Wollen Sie das Verfahren wirklich löschen?');
+      var confirmed = confirm('Achtung: Von diesem Verfahren könnten andere Verfahren abhängen! Wollen Sie das Verfahren "' + $(this).data('name') + '" wirklich löschen?');
       if(confirmed) {
         deleteFromServer($(this).data('id'));
         let row = $(this).parents('tr');
@@ -455,12 +460,14 @@ function loadFromJSON(values) {
 
 /**
  * Sendet die aktuellen Eingaben an den Server und versucht diese abzuspeichern
- * @returns {Promise|Boolean} Sollte das Formular fehldene Elemente enhalten false, sonst das Promise-Objekt der Ajax-Anfrage
+ * @returns {Promise|Boolean} Sollte das Formular fehlende Elemente enhalten oder das Speichern abgelehnt werden false, sonst das Promise-Objekt der Ajax-Anfrage
  */
 function saveOnServer() {
   setSaveLabel('saving');
   var idField = $('input[name=meta_id]');
   var currentState = saveAsObject();
+  
+  // Zeigt eine Fehlermeldung an, falls notwendige Felder leer sind
   if(!validator.form()) {
     setSaveLabel('failed');
     var errorList = $('<ul></ul>');
@@ -470,6 +477,7 @@ function saveOnServer() {
     showError('Speichern des Verfahrens', 'Es wurden nicht alle notwendigen Felder ausgefüllt:' + errorList[0].outerHTML);
     return false;
   }
+  
   // Falls ID == 0 wird ein neues Verfahren auf dem Server angelegt
   if(!loadId) {
     return $.post(backendPath, JSON.stringify({'action':'create', 'debug': debug, 'data': currentState})).done(function(data) {
@@ -478,6 +486,7 @@ function saveOnServer() {
         idField.val(loadId);
         history.replaceState({}, document.title, window.location.href.split('?')[0] + '?id=' + loadId);
         setSaveLabel('saved', new Date(data['data']['Date']));
+        changedValues = false;
       }
       else {
         showError('Anlegen eines Verfahrens', data['error']);
@@ -490,14 +499,33 @@ function saveOnServer() {
   }
   // Falls die ID != 0 ist, wird ein vorhandenes Verfahren aktualisiert
   else {
+    // Erfragt eine Bestätigung, falls das Verfahren bereits im Betrieb sein sollte
+    if(markedAsFinished) {
+      var confirmSave = confirm('Wenn Sie die aktuellen Änderungen abspeichern, wird der Status des Verfahrens auf "In Bearbeitung" zurückgesetzt. Wollen Sie wirklich fortfahren?');
+      if(!confirmSave) {
+        setSaveLabel('failed');
+        return false;
+      }
+    }
+    
     return $.post(backendPath, JSON.stringify({'action':'update', 'debug': debug, 'id': loadId, 'data': currentState})).done(function(data) {
       if(!data['success']) {
         showError('Speichern des Verfahrens', data['error']);
         setSaveLabel('failed');
       }
       else {
-        setSaveLabel('saved', new Date(data['data']['Date']));
+        setSaveLabel('saved', new Date(data['data']['Date'].replace(' ', 'T')));  // Safari benötigt das Format YYYY-MM-DDTHH:MM:SS (mit T)
         history.replaceState({}, document.title, window.location.href.split('?')[0] + '?id=' + loadId);
+        changedValues = false;
+        
+        // Hinweis anzeigen, falls Status zurückgesetzt wurde
+        if(markedAsFinished) {
+          modal.find('.modal-title').text('Status zurückgesetzt');
+          modal.find('.modal-body').html('<p>Das Verfahren wurde zurück auf "In Bearbeitung" gesetzt und muss erneut abgeschlossen werden, um es erneut als "In Betrieb" zu kennzeichnen.</p>');
+          modal.find('.modal-body').append('<p><button type="button" class="center-block btn btn-primary" data-dismiss="modal" aria-label="Close">Schließen</button></p>');
+          modal.modal();
+          markedAsFinished = false;
+        }
       }
     }).fail((jqXHR, error, errorThrown) => {
       showError('Speichern des Verfahrens', 'HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
@@ -522,13 +550,14 @@ function loadFromServer(id) {
         return;
       }
       loadFromJSON(data['data'][0]['JSON']);
+      markedAsFinished = (parseInt(data['data'][0]['Status']) === 2);
       loadId = parseInt(data['data'][0]['ID']);
       $('input[name="meta_id"]').val(loadId);
-      $('input[name="meta_lastupdate"').val(data['data'][0]['Aktualisierung']);
+      $('input[name="meta_lastupdate"]').val(data['data'][0]['Aktualisierung']);
       if(!data['data'][0]['Editierbar']) {
         $('input, textarea, select, button[id!="showVerfahrensliste"]').prop('disabled', true);
       }
-      setSaveLabel('saved', new Date(data['data'][0]['Aktualisierung']));
+      setSaveLabel('saved', new Date(data['data'][0]['Aktualisierung'].replace(' ', 'T')));  // Safari benötigt das Format YYYY-MM-DDTHH:MM:SS (mit T)
       document.title = data['data'][0]['Bezeichnung'] + ' - ' + document.title;
       changedValues = false;
     }
@@ -1073,6 +1102,17 @@ Promise.all(promises).then(function() {
       target.parent('div').parents('div').first().next('div').addClass('hidden');
     }
   });
+  
+  // Blendet ein Eingabefeld für AV-Verträge bei Bedarf ein
+  $('#datenzugriff_empfaenger_extern').on('change', 'input[name="datenzugriff_empfaenger_extern_auftragsverarbeitung[]"]', function(event) {
+    var target = $(event.target);
+    if(target[0].checked) {
+      target.closest('div').find('input[type=text]').first().removeClass('hidden');
+    }
+    else {
+      target.closest('div').find('input[type=text]').first().addClass('hidden').val('');
+    }
+  });
 
   // Entfernt die Optionen Klienten einzutragen, falls es sich um eine Webanwendung handelt
   $('input[name=systeme_klienten_webanwendung]').change(function() {
@@ -1100,6 +1140,17 @@ Promise.all(promises).then(function() {
     }
   });
 
+  // Blendet bei Bedarf Eingabefelder für zusätzliche Dokumente ein
+  $('input.additionalDocs').change(function() {
+    var target = $(this);
+    if(target[0].checked) {
+      target.closest('div').find('input[type=text]').first().removeClass('hidden');
+    }
+    else {
+      target.closest('div').find('input[type=text]').first().addClass('hidden').val('');
+    }
+  });
+  
   // Zeigt die aktuelle Beschreibung der abhängigen Verfahren an
   $('#abschluss_abhaengigkeit').on('change', 'input[name="abschluss_abhaengigkeit_id[]"]', function() {
     var idField = $(this);
@@ -1185,23 +1236,15 @@ Promise.all(promises).then(function() {
 
   // Manuelles Speichern über das Speicher-Status-Label
   $('#successLabel, #savingLabel, #failedLabel').click(function() {saveOnServer();}).css({'cursor': 'pointer'});
-
-  // Setzt den Status zurück auf "In Bearbeitung", falls Ansprechpartner geändert werden
-  $('[name="allgemein_fachlich_kennung"], [name="allgemein_technisch_kennung"]').change(() => {
-    $.post(backendPath, JSON.stringify({'action':'updateStatus', 'id': loadId, 'data': { 'status': '0' }, 'debug': debug})).done((data) => {
-      if(!data['success']) {
-        console.error('Fehler beim Zurücksetzen des Status! Fehler: ' + data['error']);
-        return;
-      }
-      if(data['changed']) {
-        modal.find('.modal-title').text('Status zurückgesetzt');
-        modal.find('.modal-body').html('<p>Durch das Ändern von Ansprechpartnern wurde der Status des Verfahrens zurück auf "In Bearbeitung" gesetzt.</p><p>Das Verfahren muss erneut abgeschlossen werden, um es als "In Betrieb" zu kennzeichnen und die neuen Ansprechpartner zu informieren.</p>');
-        modal.find('.modal-body').append('<p><button type="button" class="center-block btn btn-primary" data-dismiss="modal" aria-label="Close">Schließen</button></p>');
-        modal.modal();
-      }
-    }).fail((jqXHR, error, errorThrown) => {
-      console.error('Fehler beim Zurücksetzen des Status! HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
-    });
+  
+  // Warnung vor dem Schließen der Webseite, falls ungespeicherte Änderungen vorhanden sind
+  $(window).on('beforeunload', (e) => {
+    if(!changedValues) return; // nichts zurück geben, um die Meldung zu unterdrücken!
+    
+    let msg = 'Es sind noch ungespeicherte Eingaben vorhanden! Diese gehen beim Verlassen verloren. Sind Sie sicher, dass sie die Seite verlassen möchten?'; // Wird von den meisten Browsern mittlerweile ignoriert
+    e.preventDefault();
+    e.returnValue = msg; // For Chrome
+    return msg;
   });
 
   console.timeEnd('Spezielle Handler initialisieren');

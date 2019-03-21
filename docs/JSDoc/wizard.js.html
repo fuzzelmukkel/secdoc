@@ -28,9 +28,9 @@
         <article>
             <pre class="prettyprint source linenums"><code>/**
  * wizard.js - Funktionen für den Verfahrens-Wizard
- * 
+ *
  * @file Setzt die dynamischen Funktionen der Verfahrenseingabe um und ergänzt den Wizard
- * 
+ *
  * @requires assets/js/main.js
  * @requires assets/js/bootstrap-select.min.js
  * @requires assets/js/jquery.typeahead.min.js
@@ -40,8 +40,8 @@
  *
  * @author Thorsten Küfer &lt;thorsten.kuefer@uni-muenster.de>
  * @author Dustin Gawron &lt;dustin.gawron@uni-muenster.de>
- * @license {@link https://opensource.org/licenses/MIT MIT}
  * @copyright (c) 2018 Westfälische Wilhelms-Universität Münster
+ * @license AGPL-3.0-or-later &lt;https://www.gnu.org/licenses/agpl.html>
  */
 
 // Zeitmessung starten
@@ -69,6 +69,12 @@ var copyId = GetURLParameter('copy') === false ? false : parseInt(GetURLParamete
  * @type {Boolean}
  */
 var changedValues = false;
+/**
+ * Gibt an, ob das Verfahren als abgeschlossen markiert wurde
+ * @global
+ * @type {Boolean}
+ */
+var markedAsFinished = false;
 /**
  * Sammlung von Promises für AJAX-Anfragen, die zu Beginn durchgeführt werden müssen
  * @global
@@ -175,13 +181,12 @@ function myNext(tab, nav, idx) {
     validator.focusInvalid();
     return false;
   }
-  
+
   debugLog('Speichere Tab ' + $(tab).text().trim());
 
   // Nur neu abspeichern, wenn etwas geändert wurde
   if(changedValues) {
     saveOnServer();
-    changedValues = false;
   }
   return true;
 }
@@ -216,38 +221,49 @@ function myFinish() {
   debugLog('Wizard beendet...');
   setOverlay();
   // Nur neu abspeichern, wenn etwas geändert wurde
+  var savePromise = Promise.resolve();
   if(changedValues) {
-    saveOnServer();
-    changedValues = false;
+    savePromise = saveOnServer();
   }
-  
-  // Bestätigung zum Abschluss erfragen
-  var confirmFinish = confirm('Wollen Sie das Verfahren wirklich abschließen? Im Anschluss wird eine PDF-Version generiert und per E-Mail an alle eingetragenen Ansprechpartner und Ersteller verschickt.');
-  if(!confirmFinish) {
+
+  if(!savePromise) {
     setOverlay(false);
     return;
   }
-  
-  // HTML-Code für PDF-Version generieren
-  var pdfCode = genHTMLforPDF();
-  
-  $.post(backendPath, JSON.stringify({'action': 'finish', 'debug': debug, 'id':  loadId, 'data': { 'title': $('[name="allgemein_bezeichnung"]').val(), 'status': 2, 'pdfCode': pdfCode, 'lastupdate': $('[name="meta_lastupdate"]').val()} })).done((data) => {
-    if(!data['success']) {
-      showError('Abschließen des Verfahrens', data['error']);
-      return;
-    }
-    modal.find('.modal-title').text('Verfahrensdokumentation abgeschlossen');
-    modal.find('.modal-body').html('&lt;p>Hiermit wurde die Verfahrensdokumentation als abgeschlossen gekennzeichnet.&lt;/p>');
-    if(data['genpdf'] &amp;&amp; data['genmail']) modal.find('.modal-body').append('&lt;p class="alert alert-success">Die eingetragenen Ansprechpartner wurden per E-Mail informiert und haben eine PDF-Version der Dokumentation erhalten.&lt;/p>');
-    if(data['gentxt']) modal.find('.modal-body').append('&lt;p class="alert alert-success">Es wurde ein Include-Baustein zur Verwendung in Webseiten bzw. Webanwendungen als Ergänzung zur zentralen Datenschutzerklärung erstellt. Sie können den passenden Text im Webserverpark mit Hilfe von SSI per &lt;code>&amp;lt;!--#include virtual="/sys/secdoc/' + loadId + '.txt" --&amp;gt;&lt;/code> bzw. PHP per &lt;code>readfile("/www/data/sys/includes/secdoc/' + loadId + '.txt")&lt;/code> einbinden.&lt;/p>');
-    if(!data['genpdf']) modal.find('.modal-body').append('&lt;p class="alert alert-danger">Bei der Erstellung der PDF-Datei ist ein Fehler aufgetreten, bitte versuchen Sie es später erneut.&lt;/p>');
-    if(!data['genmail']) modal.find('.modal-body').append('&lt;p class="alert alert-danger">Beim Verschicken der E-Mail ist ein Fehler aufgetreten, bitte versuchen Sie es später erneut.&lt;/p>');
-    if(!data['gentxt']) modal.find('.modal-body').append('&lt;p class="alert alert-danger">Beim Erzeugen des Informations-Textes zum Einbinden in Webseiten ist ein Fehler aufgetreten, bitte versuchen Sie es später erneut.&lt;/p>');
-    modal.find('.modal-body').append('&lt;p>Die Dokumentation kann jederzeit aktualisiert werden und über den "Abschluss"-Knopf eine neue E-Mail sowie PDF-Datei erzeugt werden.&lt;/p>');
-    modal.modal();
-  }).fail((jqXHR, error, errorThrown) => {
-    showError('Abschließen des Verfahrens', 'HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
-  }).always(() => { setOverlay(false); });
+  else {
+    savePromise.then(() => {
+      // Bestätigung zum Abschluss erfragen
+      var confirmFinish = confirm('Wollen Sie das Verfahren wirklich abschließen? Im Anschluss wird eine PDF-Version generiert und per E-Mail an alle eingetragenen Ansprechpartner und Ersteller verschickt.');
+      if(!confirmFinish) {
+        setOverlay(false);
+        return;
+      }
+
+      // HTML-Code für PDF-Version generieren
+      var pdfCode = genHTMLforPDF();
+
+      $.post(backendPath, JSON.stringify({'action': 'finish', 'debug': debug, 'id':  loadId, 'data': { 'title': $('[name="allgemein_bezeichnung"]').val(), 'pdfCode': pdfCode, 'lastupdate': $('[name="meta_lastupdate"]').val()} })).done((data) => {
+        if(!data['success']) {
+          showError('Abschließen des Verfahrens', data['error']);
+          return;
+        }
+        markedAsFinished = true;
+        modal.find('.modal-title').text('Verfahrensdokumentation abgeschlossen');
+        var modalBody = modal.find('.modal-body');
+        modalBody.html('&lt;p>Hiermit wurde die Verfahrensdokumentation als abgeschlossen gekennzeichnet.&lt;/p>');
+        if(data['genpdf'] &amp;&amp; data['genmail']) modalBody.append('&lt;p class="alert alert-success">Die eingetragenen Ansprechpartner wurden per E-Mail informiert und haben eine PDF-Version der Dokumentation erhalten.&lt;/p>');
+        if(data['gentxt']) modalBody.append('&lt;p class="alert alert-success">Es wurde ein Include-Baustein zur Verwendung in Webseiten bzw. Webanwendungen als Ergänzung zur zentralen Datenschutzerklärung erstellt. Sie können den passenden Text im Webserverpark mit Hilfe von SSI per &lt;code>&amp;lt;!--#include virtual="/sys/secdoc/' + loadId + '.txt" --&amp;gt;&lt;/code> bzw. PHP per &lt;code>readfile("/www/data/sys/includes/secdoc/' + loadId + '.txt")&lt;/code> einbinden.&lt;/p>');
+        if(!data['genpdf']) modalBody.append('&lt;p class="alert alert-danger">Bei der Erstellung der PDF-Datei ist ein Fehler aufgetreten, bitte versuchen Sie es später erneut.&lt;/p>');
+        if(!data['genmail']) modalBody.append('&lt;p class="alert alert-danger">Beim Verschicken der E-Mail ist ein Fehler aufgetreten, bitte versuchen Sie es später erneut.&lt;/p>');
+        if(!data['gentxt']) modalBody.append('&lt;p class="alert alert-danger">Beim Erzeugen des Informations-Textes zum Einbinden in Webseiten ist ein Fehler aufgetreten, bitte versuchen Sie es später erneut.&lt;/p>');
+        modalBody.append('&lt;p>Die Dokumentation kann jederzeit aktualisiert werden und über den "Abschluss"-Knopf eine neue E-Mail sowie PDF-Datei erzeugt werden.&lt;/p>');
+        modalBody.append('&lt;p>&lt;button type="button" class="center-block btn btn-primary" data-dismiss="modal" aria-label="Close">Schließen&lt;/button>&lt;/p>');
+        modal.modal();
+      }).fail((jqXHR, error, errorThrown) => {
+        showError('Abschließen des Verfahrens', 'HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
+      }).always(() => { setOverlay(false); });
+    });
+  }
 }
 
 /*
@@ -264,8 +280,7 @@ function showVerfahrensliste(startup = false) {
   modal.find('.modal-title').text('Liste bestehender Verfahren');
   var modalBody = modal.find('.modal-body');
   modalBody.html('&lt;p>Wählen Sie ein Verfahren aus der Liste, um es zu bearbeiten oder einzusehen, oder legen Sie ein neues Verfahren an. Sie können nur Verfahren bearbeiten, für die Ihre Nutzerkennung als fachlicher oder technischer Verantwortlicher oder als Ersteller hinterlegt ist.&lt;/p>');
-  //modalBody.append('&lt;h6>Meine Verfahren&lt;/h6>&lt;div class="col-sm-12 table-responsive">&lt;table id="eigeneVerfahren" class="table table-striped table-hover btn-table">&lt;thead>&lt;tr>&lt;th>Bezeichnung&lt;/th>&lt;th>Organisationseinheit&lt;/th>&lt;th>Status&lt;/th>&lt;th>Letzter Bearbeiter&lt;/th>&lt;th class="no-sort">Letzte Aktualisierung&lt;/th>&lt;/tr>&lt;/thead>&lt;tbody>&lt;/tbody>&lt;/table>&lt;/div>');
-  modalBody.append('&lt;h6>Meine Verfahren&lt;/h6>&lt;div class="col-sm-12 table-responsive">&lt;table id="eigeneVerfahren" class="table table-striped table-hover btn-table">&lt;thead>&lt;tr>&lt;th>Bezeichnung&lt;/th>&lt;th>Organisationseinheit&lt;/th>&lt;th>Status&lt;/th>&lt;th>Letzter Bearbeiter&lt;/th>&lt;th class="no-sort">Letzte Aktualisierung&lt;/th>&lt;th>&lt;/th>&lt;/tr>&lt;/thead>&lt;tbody>&lt;/tbody>&lt;/table>&lt;/div>');
+  modalBody.append('&lt;h6>Meine Verfahren&lt;/h6>&lt;div class="col-sm-12 table-responsive">&lt;table id="eigeneVerfahren" class="table table-striped table-hover btn-table">&lt;thead>&lt;tr>&lt;th class="no-sort no-print">&lt;/th>&lt;th>Bezeichnung&lt;/th>&lt;th>Organisationseinheit&lt;/th>&lt;th>Status&lt;/th>&lt;th>Letzter Bearbeiter&lt;/th>&lt;th>Letzte Aktualisierung&lt;/th>&lt;th class="no-sort none">&lt;/th>&lt;/tr>&lt;/thead>&lt;tbody>&lt;/tbody>&lt;/table>&lt;/div>');
 
   $.get(backendPath, { 'action': 'list', 'debug': debug }).done((data) => {
     if(!data['success']) {
@@ -286,17 +301,18 @@ function showVerfahrensliste(startup = false) {
 
       // Editierbare/Eigene Verfahren
       if(data['data'][c]['Editierbar'] === true) {
-        //newEntry = $('&lt;tr>&lt;td data-sort="' + data['data'][c]['Bezeichnung'] + '">' + data['data'][c]['Bezeichnung'] + ' &lt;i data-toggle="tooltip" class="fa fa-info-circle" title="' + data['data'][c]['Beschreibung'] + '">&lt;/i>&lt;br>&lt;a href="?id=' + currId + (debug ? '&amp;debug=true' : '') + '" target="_blank">&lt;button type="button" class="btn">&lt;i class="fa fa-edit">&lt;/i> Bearbeiten&lt;/button>&lt;/a>&lt;/td>&lt;td data-sort="' + data['data'][c]['Fachabteilung'] + '">' + data['data'][c]['Fachabteilung']  + '&lt;br>&lt;a href="?copy=' + currId + '" target="_blank">&lt;button type="button" class="btn">&lt;i class="fa fa-copy">&lt;/i> Kopieren&lt;/button>&lt;/a>&lt;/td>&lt;td>' + data['data'][c]['Status'] + '&lt;/td>&lt;td>' + data['data'][c]['LetzterBearbeiter'] + ' &lt;i class="fa fa-info-circle userdetail" data-user="' + data['data'][c]['LetzterBearbeiter'] + '" title="">&lt;/i>&lt;/td>&lt;td>' + data['data'][c]['Aktualisierung'] + '&lt;br>&lt;button type="button" data-id="' + currId +'" class="btn del btn-danger" ' + (data['data'][c]['Löschbar'] === true ? '' : 'disabled')  + '>&lt;i class="fa fa-minus">&lt;/i> Löschen&lt;/button>&lt;/td>&lt;/tr>');
+        //newEntry = $('&lt;tr>&lt;td data-sort="' + data['data'][c]['Bezeichnung'] + '">' + data['data'][c]['Bezeichnung'] + ' &lt;i data-toggle="tooltip" class="fa fa-info-circle" title="' + data['data'][c]['Beschreibung'] + '">&lt;/i>&lt;br>&lt;a class="btn" href="?id=' + currId + (debug ? '&amp;debug=true' : '') + '" target="_blank">&lt;i class="fa fa-edit">&lt;/i> Bearbeiten&lt;/a>&lt;/td>&lt;td data-sort="' + data['data'][c]['Fachabteilung'] + '">' + data['data'][c]['Fachabteilung']  + '&lt;br>&lt;a class="btn" href="?copy=' + currId + '" target="_blank">&lt;i class="fa fa-copy">&lt;/i> Kopieren&lt;/a>&lt;/td>&lt;td>' + data['data'][c]['Status'] + '&lt;/td>&lt;td>' + data['data'][c]['LetzterBearbeiter'] + ' &lt;i class="fa fa-info-circle userdetail" data-user="' + data['data'][c]['LetzterBearbeiter'] + '" title="">&lt;/i>&lt;/td>&lt;td>' + data['data'][c]['Aktualisierung'] + '&lt;br>&lt;button type="button" data-id="' + currId +'" class="btn del btn-danger" ' + (data['data'][c]['Löschbar'] === true ? '' : 'disabled')  + '>&lt;i class="fa fa-minus">&lt;/i> Löschen&lt;/button>&lt;/td>&lt;/tr>');
+        newEntry.append('&lt;td style="width: 16px;">&lt;/td>');
         newEntry.append('&lt;td>' + data['data'][c]['Bezeichnung'] + ' &lt;i data-toggle="tooltip" class="fa fa-info-circle" title="' + data['data'][c]['Beschreibung'] + '">&lt;/i>&lt;/td>');
         newEntry.append('&lt;td>' + data['data'][c]['Fachabteilung']  + '&lt;/td>');
         newEntry.append('&lt;td>' + data['data'][c]['Status'] + '&lt;/td>');
-        newEntry.append('&lt;td>' + data['data'][c]['LetzterBearbeiter'] + ' &lt;i class="fa fa-info-circle userdetail" data-user="' + data['data'][c]['LetzterBearbeiter'] + '" title="">&lt;/i>&lt;/td>');
+        newEntry.append('&lt;td>' + data['data'][c]['LetzterBearbeiter'] + ' &lt;i data-toggle="tooltip" class="fa fa-info-circle" title="' + (data['data'][c]['BearbeiterDetails'] ? data['data'][c]['BearbeiterDetails'] : '&lt;Keine Details vorhanden>') + '">&lt;/i>&lt;/td>');
         newEntry.append('&lt;td>' + data['data'][c]['Aktualisierung'] + '&lt;/td>');
-        newEntry.append('&lt;td>&lt;div class="btn-group inline">&lt;a class="btn" href="?id=' + currId + (debug ? '&amp;debug=true' : '') + '" target="_blank">&lt;i class="fa fa-edit">&lt;/i> Bearbeiten&lt;/a>&lt;a class="btn" href="?copy=' + currId + '" target="_blank">&lt;i class="fa fa-copy">&lt;/i> Kopieren&lt;/a>&lt;button type="button" data-id="' + currId + '" class="btn pdfdownload">PDF anzeigen&lt;/button>&lt;/div> &lt;button type="button" data-id="' + currId +'" class="btn del btn-danger" ' + (data['data'][c]['Löschbar'] === true ? '' : 'disabled')  + '>&lt;i class="fa fa-minus">&lt;/i> Löschen&lt;/button>&lt;/td>');
+        newEntry.append('&lt;td>&lt;div class="btn-group inline">&lt;a class="btn" href="?id=' + currId + (debug ? '&amp;debug=true' : '') + '" target="_blank">&lt;i class="fa fa-edit">&lt;/i> Bearbeiten&lt;/a>&lt;a class="btn" href="?copy=' + currId + '" target="_blank">&lt;i class="fa fa-copy">&lt;/i> Kopieren&lt;/a>&lt;button type="button" data-id="' + currId + '" class="btn pdfdownload" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '>PDF anzeigen&lt;/button>&lt;/div> &lt;button type="button" data-id="' + currId +'" data-name="' + data['data'][c]['Bezeichnung'] +'" class="btn del btn-danger" ' + (data['data'][c]['Löschbar'] === true ? '' : 'disabled')  + '>&lt;i class="fa fa-minus">&lt;/i> Löschen&lt;/button>&lt;/td>');
         modalBody.find('#eigeneVerfahren tbody').append(newEntry);
       }
     }
-    
+
     // Handler für PDF-Anzeige
     modalBody.on('click', 'button.pdfdownload', function(event){
       getPDFFromServer($(event.target).data('id'));
@@ -304,44 +320,41 @@ function showVerfahrensliste(startup = false) {
 
     // Handler für das Löschen von Verfahren
     modalBody.on('click', 'button.del', function() {
-      var confirmed = confirm('Achtung: Von diesem Verfahren könnten andere Verfahren abhängen! Wollen Sie das Verfahren wirklich löschen?');
+      var confirmed = confirm('Achtung: Von diesem Verfahren könnten andere Verfahren abhängen! Wollen Sie das Verfahren "' + $(this).data('name') + '" wirklich löschen?');
       if(confirmed) {
         deleteFromServer($(this).data('id'));
-        //$(this).closest('tr').detach();
         let row = $(this).parents('tr');
         if(row.hasClass('child')) row = row.prev();
         $(this).parents('table').DataTable().row(row).remove().draw();
         if(parseInt($(this).data('id')) === loadId) loadEmpty(); // Leere das geladene Verfahren nur, wenn es das gelöschte ist
       }
     });
-    
-    // Handler für Bearbeiter-Details
-    modalBody.find('.userdetail').hover(function() {
-      var details = $(this);
-      if(!details.attr('title') &amp;&amp; !details.data('requested')) {
-        details.css('cursor', 'wait');
-        $.getJSON(backendPath + '?action=searchperson&amp;search=' + $(this).data('user') + (debug ? '&amp;debug=true' : '')).done((data) => {
-          details.attr('title', (data['data'][0] === undefined ? '&lt;Keine Details vorhanden>' : data['data'][0]['label']));
-          details.css('cursor', 'help');
-          details.tooltip('show');
-        }).fail((jqXHR, error, errorThrown) => {
-          console.error('Fehler beim Abruf der Nutzerdetails! HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
-        });
-        details.data('requested', true);
-      }
-    });
 
-    // DataTables initialisieren
-    modalBody.find('[data-toggle="tooltip"]').tooltip();
+    // Tooltips und DataTables initialisieren
+    modalBody.find('[data-toggle="tooltip"]').tooltip({container: 'body'});
     modalBody.find('table').DataTable({
       language: {
         url: 'assets/js/datatables_german.json'
       },
-      columnDefs: [{
+      columnDefs: [
+        {
           targets: 'no-sort',
           orderable: false
-      }],
-      responsive: true
+        },
+        {
+          className: 'control',
+          orderable: false,
+          targets:   0
+        }
+      ],
+      responsive: {
+        details: {
+          type: 'column',
+          target: 'tr'
+        }
+      },
+      order: [ 1, 'asc' ],
+      autoWidth: false
     });
   }).fail((jqXHR, error, errorThrown) => {
     showError('Abrufen der Verfahrensliste', 'HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
@@ -350,7 +363,7 @@ function showVerfahrensliste(startup = false) {
     setOverlay(false);
     console.timeEnd('Verfahrensliste laden');
     if(show) {
-      modalBody.append('&lt;p>&lt;span>&lt;button type="button" class="btn loadEmpty btn-success">Neues Verfahren anlegen&lt;/button>&lt;/span>' + (userIsDSB ? '&lt;span class="pull-right">&lt;a href="?page=dsbview' + (debug ? '&amp;debug=true' : '') + '">&lt;button type="button" class="btn">DSB Ansicht&lt;/button>&lt;/a>&lt;/span>' : '') + '&lt;/p>');
+      modalBody.append('&lt;p>&lt;span>&lt;button type="button" class="btn loadEmpty btn-success">Neues Verfahren anlegen&lt;/button>&lt;/span>' + (userIsDSB ? '&lt;span class="pull-right">&lt;a class="btn" href="?page=dsbview' + (debug ? '&amp;debug=true' : '') + '">DSB Ansicht&lt;/a>&lt;/span>' : '') + '&lt;/p>');
       modalBody.find('.loadEmpty').click(function() {
         history.replaceState({}, document.title, window.location.href.split('?')[0]);
         loadEmpty();
@@ -388,7 +401,7 @@ function loadEmpty() {
  * @example { "meta_id":0, "allgemein_bezeichnung":"Test Verfahren", ... }
  * @returns {Object}
  */
-function saveAsObject() {  
+function saveAsObject() {
   var output = {};
   var inputs = $('form').find('input[type!=button], textarea, select, checkbox');
   for (var inp of inputs) {
@@ -475,29 +488,33 @@ function loadFromJSON(values) {
 
 /**
  * Sendet die aktuellen Eingaben an den Server und versucht diese abzuspeichern
- * @returns {undefined}
+ * @returns {Promise|Boolean} Sollte das Formular fehlende Elemente enhalten oder das Speichern abgelehnt werden false, sonst das Promise-Objekt der Ajax-Anfrage
  */
 function saveOnServer() {
   setSaveLabel('saving');
   var idField = $('input[name=meta_id]');
   var currentState = saveAsObject();
+  
+  // Zeigt eine Fehlermeldung an, falls notwendige Felder leer sind
   if(!validator.form()) {
     setSaveLabel('failed');
     var errorList = $('&lt;ul>&lt;/ul>');
     $(validator.toShow).each(function() {
       errorList.append('&lt;li>' + $(this).closest('.form-group').find('label').first().text().trim() + '&lt;/li>');
     });
-    showError('Anlegen eines Verfahrens', 'Es wurden nicht alle notwendigen Felder ausgefüllt:' + errorList[0].outerHTML);
-    return;
+    showError('Speichern des Verfahrens', 'Es wurden nicht alle notwendigen Felder ausgefüllt:' + errorList[0].outerHTML);
+    return false;
   }
+  
   // Falls ID == 0 wird ein neues Verfahren auf dem Server angelegt
   if(!loadId) {
-    $.post(backendPath, JSON.stringify({'action':'create', 'debug': debug, 'data': currentState})).done(function(data) {
+    return $.post(backendPath, JSON.stringify({'action':'create', 'debug': debug, 'data': currentState})).done(function(data) {
       if(data['success']) {
         loadId = parseInt(data['data']['ID']);
         idField.val(loadId);
         history.replaceState({}, document.title, window.location.href.split('?')[0] + '?id=' + loadId);
         setSaveLabel('saved', new Date(data['data']['Date']));
+        changedValues = false;
       }
       else {
         showError('Anlegen eines Verfahrens', data['error']);
@@ -510,14 +527,33 @@ function saveOnServer() {
   }
   // Falls die ID != 0 ist, wird ein vorhandenes Verfahren aktualisiert
   else {
-    $.post(backendPath, JSON.stringify({'action':'update', 'debug': debug, 'id': loadId, 'data': currentState})).done(function(data) {
+    // Erfragt eine Bestätigung, falls das Verfahren bereits im Betrieb sein sollte
+    if(markedAsFinished) {
+      var confirmSave = confirm('Wenn Sie die aktuellen Änderungen abspeichern, wird der Status des Verfahrens auf "In Bearbeitung" zurückgesetzt. Wollen Sie wirklich fortfahren?');
+      if(!confirmSave) {
+        setSaveLabel('failed');
+        return false;
+      }
+    }
+    
+    return $.post(backendPath, JSON.stringify({'action':'update', 'debug': debug, 'id': loadId, 'data': currentState})).done(function(data) {
       if(!data['success']) {
-        showError('Speichern', data['error']);
+        showError('Speichern des Verfahrens', data['error']);
         setSaveLabel('failed');
       }
       else {
-        setSaveLabel('saved', new Date(data['data']['Date']));
+        setSaveLabel('saved', new Date(data['data']['Date'].replace(' ', 'T')));  // Safari benötigt das Format YYYY-MM-DDTHH:MM:SS (mit T)
         history.replaceState({}, document.title, window.location.href.split('?')[0] + '?id=' + loadId);
+        changedValues = false;
+        
+        // Hinweis anzeigen, falls Status zurückgesetzt wurde
+        if(markedAsFinished) {
+          modal.find('.modal-title').text('Status zurückgesetzt');
+          modal.find('.modal-body').html('&lt;p>Das Verfahren wurde zurück auf "In Bearbeitung" gesetzt und muss erneut abgeschlossen werden, um es erneut als "In Betrieb" zu kennzeichnen.&lt;/p>');
+          modal.find('.modal-body').append('&lt;p>&lt;button type="button" class="center-block btn btn-primary" data-dismiss="modal" aria-label="Close">Schließen&lt;/button>&lt;/p>');
+          modal.modal();
+          markedAsFinished = false;
+        }
       }
     }).fail((jqXHR, error, errorThrown) => {
       showError('Speichern des Verfahrens', 'HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
@@ -542,13 +578,14 @@ function loadFromServer(id) {
         return;
       }
       loadFromJSON(data['data'][0]['JSON']);
+      markedAsFinished = (parseInt(data['data'][0]['Status']) === 2);
       loadId = parseInt(data['data'][0]['ID']);
       $('input[name="meta_id"]').val(loadId);
-      $('input[name="meta_lastupdate"').val(data['data'][0]['Aktualisierung']);
+      $('input[name="meta_lastupdate"]').val(data['data'][0]['Aktualisierung']);
       if(!data['data'][0]['Editierbar']) {
         $('input, textarea, select, button[id!="showVerfahrensliste"]').prop('disabled', true);
       }
-      setSaveLabel('saved', new Date(data['data'][0]['Aktualisierung']));
+      setSaveLabel('saved', new Date(data['data'][0]['Aktualisierung'].replace(' ', 'T')));  // Safari benötigt das Format YYYY-MM-DDTHH:MM:SS (mit T)
       document.title = data['data'][0]['Bezeichnung'] + ' - ' + document.title;
       changedValues = false;
     }
@@ -576,8 +613,9 @@ function copyFromServer(id) {
       loadFromJSON(data['data'][0]['JSON']);
       loadId = 0;
       $('input[name=meta_id]').val(loadId);
+      $('input[name=allgemein_bezeichnung]').val('[Kopie] ' + $('input[name=allgemein_bezeichnung]').val()); /* Kopie vor Bezeichnung setzen */
       history.replaceState({}, document.title, window.location.href.split('?')[0]);
-      changedValues = false;
+      changedValues = true;
     }
     else {
       showError('Kopieren eines Verfahrens', data['error']);
@@ -608,36 +646,36 @@ function deleteFromServer(id) {
  */
 function genHTMLforPDF() {
   console.time('HTML-Code-Generierung für PDF');
-  
+
   /* Alle leeren Tabellenzeilen entfernen */
   endlessTables.forEach(function(table) {
     removeTableRows(table, true);
   });
-  
+
   var toSend = $('&lt;div>&lt;/div>');
 
   /* Überschrift */
   toSend.append('&lt;h2 class="text-center">Dokumentation der Verarbeitungstätigkeit&lt;/h2>');
   toSend.append('&lt;h3 class="text-center">' + $('[name="allgemein_bezeichnung"]').val() + '&lt;/h3>');
-  toSend.append('&lt;span class="pull-right" style="color: darkgray;">Lfd. Nr. ' + loadId + '&lt;/span>&lt;br>');
-  toSend.append('&lt;span class="text-center" style="color: darkgray;">Letzte Aktualisierung: ' + $('#saveTime').text() + '&lt;/span>');
+  toSend.append('&lt;h4 class="pull-left" style="color: darkgray;">Letzte Aktualisierung: ' + $('#saveTime').text() + '&lt;/h4>');
+  toSend.append('&lt;h4 class="pull-right" style="color: darkgray;">Lfd. Nr.: ' + loadId + '&lt;/h4>');
 
   /* Daten aus Wizard einsammeln */
   $('.tab-content .tab-pane').each(function(idx) {
     toSend.append($(this).clone().addClass('active'));
   });
-  
+
   /* Maßnahmen Eingabefelder aus Bootstrap-Accordion holen */
   toSend.find('textarea[name="massnahmen_vertraulichkeit"], textarea[name="massnahmen_integritaet"], textarea[name="massnahmen_verfuegbarkeit"]').each(function() {
     $(this).closest('.printHide').before($(this));
   });
-  
+
   /* Link hinzufügen */
-  var link = window.location.href.split('?')[0].replace('sso', 'www') + '?id=' + loadId;
+  var link = window.location.href.split('?')[0].replace(/x?sso/i, 'www') + '?id=' + loadId;
   toSend.append('&lt;div class="text-center">&lt;h5 class="info-text text-ul">Verfahren online einsehen&lt;/h5>&lt;p>&lt;a href="' + link + '">' + link + '&lt;/a>&lt;/p>&lt;/div>');
 
   /* Layout-Anpassungen (Buttons durch Text ersetzen, Typeahead und andere aktive Elemente entschärfen) */
-  toSend.find('select[data-tool="selectpicker"], select.selectpicker, [id$="_add"], .typeahead__cancel-button, .typeahead__result').remove();
+  toSend.find('select[data-tool="selectpicker"], select.selectpicker, [id$="_add"], .typeahead__cancel-button, .typeahead__hint, .typeahead__result').remove();
   toSend.find('table[data-tool="endlessTable"] tr').each(function(idx) {
     $(this).find('th:last, td:last').remove();
   });
@@ -648,20 +686,21 @@ function genHTMLforPDF() {
       tbl.parent().remove();
     }
   });
-  
+
   /* HTML in Eingabefeldern entschärfen */
   toSend.find('input, textarea').each(function(idx){
     $(this).val(htmlEncode($(this).val()));
   });
 
   /* Eingabeelemente durch grau hinterlegten Text ersezten */
-  toSend.find('input[type!=checkbox][type!=hidden], textarea, select').replaceWith(function() { if($(this).parents('td').length>0) { return '&lt;p>' + $(this).val() + '&lt;/p>'; } else { return '&lt;p style="background-color: lightgray">' + $(this).val() + '&lt;/p>'; }});
+  toSend.find('input[type!=checkbox][type!=hidden], textarea, select').replaceWith(function() { if($(this).parents('td').length>0) { return '&lt;p>' + $(this).val() + '&lt;/p>'; } else { return '&lt;p style="background-color: lightyellow">' + $(this).val() + '&lt;/p>'; }});
 
   /* Weitere Design-Anpassunge */
   toSend.find('.printHide').addClass('hidden');
   toSend.find('.printOnly').removeClass('hidden');
   toSend.find('h5').addClass('text-center');
   toSend.find('table, td, th').attr('style', 'border: 1px solid darkgray; padding: 5px;');
+  toSend.find('th').css('background-color', 'lightgray');
   //toSend.find('#systeme_klienten, #systeme_server').find('label').attr('style', 'font-style: italic;');  // funktioniert nicht
   toSend.find('#systeme_klienten, #systeme_server').find('label').replaceWith(function() { return '&lt;span style="font-style: italic; text-decoration: underline">' + $(this).text() + '&lt;/span>'; });
   toSend.find('input[type=checkbox]').each(function(idx) {
@@ -674,7 +713,7 @@ function genHTMLforPDF() {
         checkbox.parent().replaceWith('&lt;label>&lt;span style="color: red;">&amp;#10006;&lt;/span> Es ist keine Datenschutzfolgeabschätzung notwendig&lt;/label>');
         return;
       }
-      
+
       checkbox.parent().parent().addClass('hidden');
       if(['allgemein_verantwortlich_extern', 'datenzugriff_empfaenger_extern'].includes(checkbox.attr('name'))) {
         checkbox.closest('div').prev().addClass('hidden');
@@ -706,7 +745,7 @@ function initTypeahead(node) {
   if(nodeData['typeahead']) {
     return null;
   }
-  
+
   // Überprüft ob eine explizite URL gegeben ist, sonst wird die hinterlegte verwaltung.php genutzt
   if(nodeData['url'] === undefined) {
     nodeData['url'] = backendPath + '?action=' + nodeData['action'] + (debug ? '&amp;debug=true' : '') + '&amp;search=';
@@ -746,7 +785,7 @@ function initTypeahead(node) {
         break;
       }
     }
-    
+
     if(found) {
       return true;
     }
@@ -813,10 +852,10 @@ function initTypeahead(node) {
           if(!typeaheadCache[nodeData['url']]) {
             typeaheadCache[nodeData['url']] = {};
           }
-          
+
           var query = this.query.toLowerCase();
           if(query === '') query = '&lt;empty>';
-          
+
           // Falls der Cache ausgeschaltet ist, wird nur die leere Suche gespeichert (Damit die eigene Kennung zumindest gecached wird)
           if(nodeData['cache'] === false &amp;&amp; query !== '&lt;empty>') {
             var temp = $.getJSON(nodeData['url'] + this.query);
@@ -975,6 +1014,7 @@ function addTableRow(table) {
         usedIn.each(function() {
           modal.find('.modal-body ul').append('&lt;li>' + $(this).closest('div').prevAll().find('h5, h6').last().text() + '&lt;/li>'); // Listet die Titel aller Tabellen auf, in denen die jeweilige Zeile referenziert wird
         });
+        modal.find('.modal-body').append('&lt;p>&lt;button type="button" class="center-block btn btn-primary" data-dismiss="modal" aria-label="Close">Schließen&lt;/button>&lt;/p>');
         modal.modal();
       }
       // Wird die zu löschende Zeile nicht referenziert, wird sie gelöscht
@@ -1044,12 +1084,12 @@ Promise.all(promises).then(function() {
     console.error('Kann ohne Rechtsgrundlagen nicht fortfahren! Beende...');
     return;
   }
-  
+
   // Rechtsgrundlagen zur Auswahl hinzufügen
   lawsMapping.forEach(function(row) {
     $('[name="daten_grundlagen_bezeichnung[]"]').append('&lt;option value="' + row['ID'] + '">' + row['Artikel'] + ' - ' + row['Beschreibung'] + '&lt;/option>');
   });
-  
+
   /*
    * Dynamische Inhalte initialisieren
    */
@@ -1090,6 +1130,17 @@ Promise.all(promises).then(function() {
       target.parent('div').parents('div').first().next('div').addClass('hidden');
     }
   });
+  
+  // Blendet ein Eingabefeld für AV-Verträge bei Bedarf ein
+  $('#datenzugriff_empfaenger_extern').on('change', 'input[name="datenzugriff_empfaenger_extern_auftragsverarbeitung[]"]', function(event) {
+    var target = $(event.target);
+    if(target[0].checked) {
+      target.closest('div').find('input[type=text]').first().removeClass('hidden');
+    }
+    else {
+      target.closest('div').find('input[type=text]').first().addClass('hidden').val('');
+    }
+  });
 
   // Entfernt die Optionen Klienten einzutragen, falls es sich um eine Webanwendung handelt
   $('input[name=systeme_klienten_webanwendung]').change(function() {
@@ -1103,7 +1154,7 @@ Promise.all(promises).then(function() {
       $('#systeme_klienten').find('.systeme_klienten_del').trigger('click');
     }
   });
-  
+
   // Blendet bei Bedarf die Möglichkeiten für externe Empfänger ein
   $('input[name=datenzugriff_empfaenger_extern]').change(function() {
     var target = $(this);
@@ -1117,6 +1168,17 @@ Promise.all(promises).then(function() {
     }
   });
 
+  // Blendet bei Bedarf Eingabefelder für zusätzliche Dokumente ein
+  $('input.additionalDocs').change(function() {
+    var target = $(this);
+    if(target[0].checked) {
+      target.closest('div').find('input[type=text]').first().removeClass('hidden');
+    }
+    else {
+      target.closest('div').find('input[type=text]').first().addClass('hidden').val('');
+    }
+  });
+  
   // Zeigt die aktuelle Beschreibung der abhängigen Verfahren an
   $('#abschluss_abhaengigkeit').on('change', 'input[name="abschluss_abhaengigkeit_id[]"]', function() {
     var idField = $(this);
@@ -1140,7 +1202,7 @@ Promise.all(promises).then(function() {
       descText.val('');
     }
   });
-  
+
   // Zeigt den aktuellen Aufstellungsort der Endgeräte an
   $('#systeme_server').on('change', 'input[name="systeme_server_ip[]"]', function() {
     var idField = $(this);
@@ -1168,7 +1230,7 @@ Promise.all(promises).then(function() {
   $('input[data-tool="typeahead"]').each(function(key, value) {
     initTypeahead(value);
   });
-  
+
   console.timeEnd('Dynamische Inhalte initialisieren');
 
   /*
@@ -1176,9 +1238,9 @@ Promise.all(promises).then(function() {
    */
   debugLog('Initialisiere statische Inhalte...');
   console.time('Statische Inhalte initialisieren');
-  
+
   setSaveLabel('failed');
-  
+
   // Standardmäßig alle Checkboxen nicht auswählen
   $('input[type=checkbox]').prop('checked', false);
 
@@ -1186,12 +1248,12 @@ Promise.all(promises).then(function() {
   $('[data-toggle="tooltip"]').tooltip({
     placement: 'auto'
   });
-  
+
   // Notwendige Eingabefelder hervorheben
   $('input:required, textarea:required').closest('.form-group').find('label:first').append(' &lt;sup>&lt;i style="color: #EB5E28;" class="fa fa-asterisk" aria-hidden="true">&lt;/i>&lt;/sup>');
 
   console.timeEnd('Statische Inhalte initialisieren');
-  
+
   /*
    * Initialisiere spezielle Handler
    */
@@ -1203,23 +1265,16 @@ Promise.all(promises).then(function() {
   // Manuelles Speichern über das Speicher-Status-Label
   $('#successLabel, #savingLabel, #failedLabel').click(function() {saveOnServer();}).css({'cursor': 'pointer'});
   
-  // Setzt den Status zurück auf "In Bearbeitung", falls Ansprechpartner geändert werden
-  $('[name="allgemein_fachlich_kennung"], [name="allgemein_technisch_kennung"]').change(() => {
-    $.post(backendPath, JSON.stringify({'action':'updateStatus', 'id': loadId, 'data': { 'status': '0' }, 'debug': debug})).done((data) => {
-      if(!data['success']) {
-        console.error('Fehler beim Zurücksetzen des Status! Fehler: ' + data['error']);
-        return;
-      }
-      if(data['changed']) {
-        modal.find('.modal-title').text('Status zurückgesetzt');
-        modal.find('.modal-body').html('&lt;p>Durch das Ändern von Ansprechpartnern wurde der Status des Verfahrens zurück auf "In Bearbeitung" gesetzt.&lt;/p>&lt;p>Das Verfahren muss erneut abgeschlossen werden, um es als "In Betrieb" zu kennzeichnen und die neuen Ansprechpartner zu informieren.&lt;/p>');
-        modal.modal();
-      }
-    }).fail((jqXHR, error, errorThrown) => {
-      console.error('Fehler beim Zurücksetzen des Status! HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
-    });
+  // Warnung vor dem Schließen der Webseite, falls ungespeicherte Änderungen vorhanden sind
+  $(window).on('beforeunload', (e) => {
+    if(!changedValues) return; // nichts zurück geben, um die Meldung zu unterdrücken!
+    
+    let msg = 'Es sind noch ungespeicherte Eingaben vorhanden! Diese gehen beim Verlassen verloren. Sind Sie sicher, dass sie die Seite verlassen möchten?'; // Wird von den meisten Browsern mittlerweile ignoriert
+    e.preventDefault();
+    e.returnValue = msg; // For Chrome
+    return msg;
   });
-  
+
   console.timeEnd('Spezielle Handler initialisieren');
 
   // Verfahren laden, falls ID in der URL übergeben
@@ -1238,12 +1293,13 @@ Promise.all(promises).then(function() {
 
   // Überprüpft, ob Angaben geändert wurden
   $('form').on('change', '[name!=""]', (e) => { changedValues = true; });
-  
+
   debugLog('Setup beendet!');
-  
+
   // Timer beenden
   console.timeEnd('Gesamte Vorbereitungszeit für Wizard');
-});</code></pre>
+});
+</code></pre>
         </article>
     </section>
 
@@ -1253,13 +1309,13 @@ Promise.all(promises).then(function() {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#addTableRow">addTableRow</a></li><li><a href="global.html#backendPath">backendPath</a></li><li><a href="global.html#changedValues">changedValues</a></li><li><a href="global.html#copyFromServer">copyFromServer</a></li><li><a href="global.html#copyId">copyId</a></li><li><a href="global.html#debug">debug</a></li><li><a href="global.html#debugLog">debugLog</a></li><li><a href="global.html#deleteFromServer">deleteFromServer</a></li><li><a href="global.html#endlessCounts">endlessCounts</a></li><li><a href="global.html#endlessTables">endlessTables</a></li><li><a href="global.html#endlessTemplates">endlessTemplates</a></li><li><a href="global.html#genHTMLforPDF">genHTMLforPDF</a></li><li><a href="global.html#getPDFFromServer">getPDFFromServer</a></li><li><a href="global.html#GetURLParameter">GetURLParameter</a></li><li><a href="global.html#htmlDecode">htmlDecode</a></li><li><a href="global.html#htmlEncode">htmlEncode</a></li><li><a href="global.html#initEndlessTables">initEndlessTables</a></li><li><a href="global.html#initTypeahead">initTypeahead</a></li><li><a href="global.html#lawsMapping">lawsMapping</a></li><li><a href="global.html#loadEmpty">loadEmpty</a></li><li><a href="global.html#loadFromJSON">loadFromJSON</a></li><li><a href="global.html#loadFromServer">loadFromServer</a></li><li><a href="global.html#loadId">loadId</a></li><li><a href="global.html#modal">modal</a></li><li><a href="global.html#myFinish">myFinish</a></li><li><a href="global.html#myInit">myInit</a></li><li><a href="global.html#myNext">myNext</a></li><li><a href="global.html#myPrevious">myPrevious</a></li><li><a href="global.html#myTabChange">myTabChange</a></li><li><a href="global.html#myTabClick">myTabClick</a></li><li><a href="global.html#page">page</a></li><li><a href="global.html#promises">promises</a></li><li><a href="global.html#removeTableRows">removeTableRows</a></li><li><a href="global.html#saveAsObject">saveAsObject</a></li><li><a href="global.html#saveOnServer">saveOnServer</a></li><li><a href="global.html#setOverlay">setOverlay</a></li><li><a href="global.html#setSaveLabel">setSaveLabel</a></li><li><a href="global.html#showError">showError</a></li><li><a href="global.html#showVerfahrensliste">showVerfahrensliste</a></li><li><a href="global.html#statusMapping">statusMapping</a></li><li><a href="global.html#typeaheadCache">typeaheadCache</a></li><li><a href="global.html#userIsDSB">userIsDSB</a></li><li><a href="global.html#version">version</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#addTableRow">addTableRow</a></li><li><a href="global.html#backendPath">backendPath</a></li><li><a href="global.html#changedValues">changedValues</a></li><li><a href="global.html#copyFromServer">copyFromServer</a></li><li><a href="global.html#copyId">copyId</a></li><li><a href="global.html#debug">debug</a></li><li><a href="global.html#debugLog">debugLog</a></li><li><a href="global.html#deleteFromServer">deleteFromServer</a></li><li><a href="global.html#endlessCounts">endlessCounts</a></li><li><a href="global.html#endlessTables">endlessTables</a></li><li><a href="global.html#endlessTemplates">endlessTemplates</a></li><li><a href="global.html#genHTMLforPDF">genHTMLforPDF</a></li><li><a href="global.html#getPDFFromServer">getPDFFromServer</a></li><li><a href="global.html#GetURLParameter">GetURLParameter</a></li><li><a href="global.html#htmlDecode">htmlDecode</a></li><li><a href="global.html#htmlEncode">htmlEncode</a></li><li><a href="global.html#initEndlessTables">initEndlessTables</a></li><li><a href="global.html#initTypeahead">initTypeahead</a></li><li><a href="global.html#lawsMapping">lawsMapping</a></li><li><a href="global.html#loadEmpty">loadEmpty</a></li><li><a href="global.html#loadFromJSON">loadFromJSON</a></li><li><a href="global.html#loadFromServer">loadFromServer</a></li><li><a href="global.html#loadId">loadId</a></li><li><a href="global.html#markedAsFinished">markedAsFinished</a></li><li><a href="global.html#modal">modal</a></li><li><a href="global.html#myFinish">myFinish</a></li><li><a href="global.html#myInit">myInit</a></li><li><a href="global.html#myNext">myNext</a></li><li><a href="global.html#myPrevious">myPrevious</a></li><li><a href="global.html#myTabChange">myTabChange</a></li><li><a href="global.html#myTabClick">myTabClick</a></li><li><a href="global.html#page">page</a></li><li><a href="global.html#promises">promises</a></li><li><a href="global.html#removeTableRows">removeTableRows</a></li><li><a href="global.html#saveAsObject">saveAsObject</a></li><li><a href="global.html#saveOnServer">saveOnServer</a></li><li><a href="global.html#setOverlay">setOverlay</a></li><li><a href="global.html#setSaveLabel">setSaveLabel</a></li><li><a href="global.html#showError">showError</a></li><li><a href="global.html#showVerfahrensliste">showVerfahrensliste</a></li><li><a href="global.html#statusMapping">statusMapping</a></li><li><a href="global.html#typeaheadCache">typeaheadCache</a></li><li><a href="global.html#userIsDSB">userIsDSB</a></li><li><a href="global.html#version">version</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Tue Oct 16 2018 13:20:19 GMT+0200 (Mitteleuropäische Sommerzeit)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Wed Mar 13 2019 15:51:24 GMT+0100 (Mitteleuropäische Normalzeit)
 </footer>
 
 <script> prettyPrint(); </script>

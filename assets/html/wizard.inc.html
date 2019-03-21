@@ -340,6 +340,7 @@
                 <textarea class="form-control" rows="3" name="datenzugriff_empfaenger_extern_empfaenger[]" placeholder="Bsp.: Muster GmbH, Musterstrasse 1, 11111 Musterhausen"></textarea>
                 <div class="form-group">
                   <label><input class="form-check-input" name="datenzugriff_empfaenger_extern_auftragsverarbeitung[]" type="checkbox" value="1"> Auftragsdatenverabeitung</label>
+                  <input type="text" class="form-control hidden" name="datenzugriff_empfaenger_extern_avvertrag[]" placeholder="URL zu Datei-Speicherort bzw. Hinweis auf Dokument-Ablageort">
                 </div>
               </td>
               <td>
@@ -745,37 +746,44 @@ Art. 35 DSGVO" class="fa fa-question-circle-o fa-lg"></i></h6>
         <ul class="list-unstyled">
           <li>
             <div class="form-check">
-              <label class="form-check-label"><input class="form-check-input" name="abschluss_dokumente_risikoanalyse" type="checkbox" value="1"> Datenschutz-Folgeabschätzung / Risikoanalyse</label>
+              <label class="form-check-label"><input class="form-check-input additionalDocs" name="abschluss_dokumente_risikoanalyse" type="checkbox" value="1"> Datenschutz-Folgeabschätzung / Risikoanalyse</label>
+              <input type="text" class="form-control docInputs hidden" name="abschluss_dokumente_risikoanalyse_url" placeholder="URL zu Datei-Speicherort bzw. Hinweis auf Dokument-Ablageort">
             </div>
           </li>
           <li>
             <div class="form-check">
-              <label class="form-check-label"><input class="form-check-input" name="abschluss_dokumente_datensicherheitbeschreibung" type="checkbox" value="1"> Allgemeine Datensicherheitsbeschreibung</label>
+              <label class="form-check-label"><input class="form-check-input additionalDocs" name="abschluss_dokumente_datensicherheitbeschreibung" type="checkbox" value="1"> Allgemeine Datensicherheitsbeschreibung</label>
+              <input type="text" class="form-control docInputs hidden" name="abschluss_dokumente_datensicherheitbeschreibung_url" placeholder="URL zu Datei-Speicherort bzw. Hinweis auf Dokument-Ablageort">
             </div>
           </li>
           <li>
             <div class="form-check">
-              <label class="form-check-label"><input class="form-check-input" name="abschluss_dokumente_datensicherheitskonzept" type="checkbox" value="1"> Umfassendes Datensicherheitskonzept</label>
+              <label class="form-check-label"><input class="form-check-input additionalDocs" name="abschluss_dokumente_datensicherheitskonzept" type="checkbox" value="1"> Umfassendes Datensicherheitskonzept</label>
+              <input type="text" class="form-control docInputs hidden" name="abschluss_dokumente_datensicherheitskonzept_url" placeholder="URL zu Datei-Speicherort bzw. Hinweis auf Dokument-Ablageort">
             </div>
           </li>
           <li>
             <div class="form-check">
-              <label class="form-check-label"><input class="form-check-input" name="abschluss_dokumente_wiederanlaufkonzept" type="checkbox" value="1"> Notfallkonzept / Wiederanlaufkonzept</label>
+              <label class="form-check-label"><input class="form-check-input additionalDocs" name="abschluss_dokumente_wiederanlaufkonzept" type="checkbox" value="1"> Notfallkonzept / Wiederanlaufkonzept</label>
+              <input type="text" class="form-control docInputs hidden" name="abschluss_dokumente_wiederanlaufkonzept_url" placeholder="URL zu Datei-Speicherort bzw. Hinweis auf Dokument-Ablageort">
             </div>
           </li>
           <li>
             <div class="form-check">
-              <label class="form-check-label"><input class="form-check-input" name="abschluss_dokumente_netzstruktur" type="checkbox" value="1"> Netzstrukturbeschreibung</label>
+              <label class="form-check-label"><input class="form-check-input additionalDocs" name="abschluss_dokumente_netzstruktur" type="checkbox" value="1"> Netzstrukturbeschreibung</label>
+              <input type="text" class="form-control docInputs hidden" name="abschluss_dokumente_netzstruktur_url" placeholder="URL zu Datei-Speicherort bzw. Hinweis auf Dokument-Ablageort">
             </div>
           </li>
           <li>
             <div class="form-check">
-              <label class="form-check-label"><input class="form-check-input" name="abschluss_dokumente_verhaltensregeln" type="checkbox" value="1"> Interne Verhaltensregeln</label>
+              <label class="form-check-label"><input class="form-check-input additionalDocs" name="abschluss_dokumente_verhaltensregeln" type="checkbox" value="1"> Interne Verhaltensregeln</label>
+              <input type="text" class="form-control docInputs hidden" name="abschluss_dokumente_verhaltensregeln_url" placeholder="URL zu Datei-Speicherort bzw. Hinweis auf Dokument-Ablageort">
             </div>
           </li>
           <li>
-            <div class="form-group">
-              <label>Sonstige Dokumente: </label><input type="text" class="form-control" name="abschluss_dokumente_sonstige" placeholder="Bsp.: Übersicht der technischen und organisatorischen Maßnahmen">
+            <div class="form-check">
+              <label class="form-check-label"><input class="form-check-input additionalDocs" name="abschluss_dokumente_sonstige_label" type="checkbox" value="1"> Sonstige Dokumente</label>
+              <input type="text" class="form-control docInputs hidden" name="abschluss_dokumente_sonstige" placeholder="URL zu Datei-Speicherort bzw. Hinweis auf Dokument-Ablageort">
             </div>
           </li>
         </ul>

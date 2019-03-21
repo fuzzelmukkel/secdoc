@@ -136,10 +136,10 @@
                                 <div class="accordion" style="margin-bottom: 0">
         <div class="accordion-group">
             <div class="accordion-heading">
-                                    <a class="accordion-toggle " data-toggle="collapse" data-target="#namespace-149203212"></a>
+                                    <a class="accordion-toggle " data-toggle="collapse" data-target="#namespace-2111669505"></a>
                                 <a href="../namespaces/default.html" style="margin-left: 30px; padding-left: 0">\</a>
             </div>
-            <div id="namespace-149203212" class="accordion-body collapse in">
+            <div id="namespace-2111669505" class="accordion-body collapse in">
                 <div class="accordion-inner">
 
                     
@@ -162,7 +162,7 @@
                                                                     </nav>
 
                     <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal"><i class="icon-code"></i></a>
-                    <h1><small></small>verwaltung.php</h1>
+                    <h1><small>ajax</small>verwaltung.php</h1>
                     <p><em>verwaltung.php - REST-API zur Speicherung und Bearbeitung von Verfahren und Bereitstellung von Ausfüllhinweisen</em></p>
                     <p>Die Schnittstelle stellt verschiedene Funktionen bereit, die über einfache HTTP-Anfragen genutzt werden können.
 Die Anfragen können als GET- oder POST-Requests gestellt werden und müssen auf jeden Fall den Paramter <code>action</code>
@@ -205,7 +205,7 @@ Beispiel: <code>verwaltung.php?action=get&amp;id=13</code></p>
                                     license
                                 </th>
                                 <td>
-                                                                            <p><a href="https://opensource.org/licenses/MIT">https://opensource.org/licenses/MIT</a> MIT</p>
+                                                                            <p>AGPL-3.0-or-later <a href="https://www.gnu.org/licenses/agpl.html">https://www.gnu.org/licenses/agpl.html</a></p>
                                                                     </td>
                             </tr>
                                             </table>
@@ -248,7 +248,7 @@ Beispiel: <code>verwaltung.php?action=get&amp;id=13</code></p>
             <h1><i class="icon-arrow-down"></i></h1>
                                                             <dl>
                                     <dt>File</dt>
-                    <dd><a href=""><div class="path-wrapper">ajax\verwaltung.php</div></a></dd>
+                    <dd><a href=""><div class="path-wrapper">ajax/verwaltung.php</div></a></dd>
                                                                             </dl>
             <h2>Tags</h2>
             <table class="table table-condensed">
@@ -325,7 +325,7 @@ Beispiel: <code>verwaltung.php?action=get&amp;id=13</code></p>
             <h1><i class="icon-arrow-down"></i></h1>
                                                             <dl>
                                     <dt>File</dt>
-                    <dd><a href=""><div class="path-wrapper">ajax\verwaltung.php</div></a></dd>
+                    <dd><a href=""><div class="path-wrapper">ajax/verwaltung.php</div></a></dd>
                                                                             </dl>
             <h2>Tags</h2>
             <table class="table table-condensed">
@@ -363,7 +363,7 @@ Beispiel: <code>verwaltung.php?action=get&amp;id=13</code></p>
             <article class="method">
                 <h3 class=" ">generatePDF()</h3>
                 <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
-                <pre class="signature" style="margin-right: 54px;">generatePDF(string  <span class="argument">$title</span>, string  <span class="argument">$html</span>, integer  <span class="argument">$verfahrensId</span>) : string</pre>
+                <pre class="signature" style="margin-right: 54px;">generatePDF(string  <span class="argument">$title</span>, string  <span class="argument">$html</span>, integer  <span class="argument">$verfahrensId</span>) : boolean</pre>
                 <p><em>Generiert eine PDF-Datei aus dem übergebenen HTML-Code.</em></p>
                 
 
@@ -388,8 +388,8 @@ Beispiel: <code>verwaltung.php?action=get&amp;id=13</code></p>
                 
                 
                                     <h4>Returns</h4>
-                    string
-                                            &mdash; <p>Gibt bei Erfolg die PDF als String zurück; einen leeren String im Fehlerfall</p>
+                    boolean
+                                            &mdash; <p>True bei Erfolg sonst false</p>
                                     				
                             </article>
         </div>
@@ -397,7 +397,7 @@ Beispiel: <code>verwaltung.php?action=get&amp;id=13</code></p>
             <h1><i class="icon-arrow-down"></i></h1>
                                                             <dl>
                                     <dt>File</dt>
-                    <dd><a href=""><div class="path-wrapper">ajax\verwaltung.php</div></a></dd>
+                    <dd><a href=""><div class="path-wrapper">ajax/verwaltung.php</div></a></dd>
                                                                             </dl>
             <h2>Tags</h2>
             <table class="table table-condensed">
@@ -479,7 +479,7 @@ Beispiel: <code>verwaltung.php?action=get&amp;id=13</code></p>
             <h1><i class="icon-arrow-down"></i></h1>
                                                             <dl>
                                     <dt>File</dt>
-                    <dd><a href=""><div class="path-wrapper">ajax\verwaltung.php</div></a></dd>
+                    <dd><a href=""><div class="path-wrapper">ajax/verwaltung.php</div></a></dd>
                                                                             </dl>
             <h2>Tags</h2>
             <table class="table table-condensed">
@@ -538,7 +538,7 @@ Beispiel: <code>verwaltung.php?action=get&amp;id=13</code></p>
             <h1><i class="icon-arrow-down"></i></h1>
                                                             <dl>
                                     <dt>File</dt>
-                    <dd><a href=""><div class="path-wrapper">ajax\verwaltung.php</div></a></dd>
+                    <dd><a href=""><div class="path-wrapper">ajax/verwaltung.php</div></a></dd>
                                                                             </dl>
             <h2>Tags</h2>
             <table class="table table-condensed">
@@ -575,7 +575,7 @@ Beispiel: <code>verwaltung.php?action=get&amp;id=13</code></p>
             <h3 id="source-view-label"></h3>
         </div>
         <div class="modal-body">
-            <pre data-src="../files/ajax\verwaltung.php.txt" class="language-php line-numbers"></pre>
+            <pre data-src="../files/ajax/verwaltung.php.txt" class="language-php line-numbers"></pre>
         </div>
     </div>
 
@@ -615,7 +615,7 @@ Beispiel: <code>verwaltung.php?action=get&amp;id=13</code></p>
                 <section class="span10 offset1">
                     <hr />
                     Documentation is powered by <a href="http://www.phpdoc.org/">phpDocumentor </a> and authored
-                    on October 16th, 2018 at 16:32.
+                    on March 13th, 2019 at 14:42.
                 </section>
             </section>
         </section>

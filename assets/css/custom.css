@@ -105,3 +105,15 @@ i[data-toggle="tooltip"] {
 .inline {
     display: inline;
 }
+
+/* Angepasster Stil für die Eingabefelder für Dokumente im Bereich "Abschluss" */
+.docInputs {
+    margin-left: 20px;
+    width: 90%;
+}
+
+/* Fix: Plus/Minus nicht mittig in DT-Tabellen mit ausklappbaren Kontrollelementen */
+table.dataTable.dtr-column > tbody > tr > td.control::before, 
+table.dataTable.dtr-column > tbody > tr > th.control::before {
+    font-family: inherit;
+}

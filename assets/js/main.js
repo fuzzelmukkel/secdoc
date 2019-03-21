@@ -171,7 +171,7 @@ function setSaveLabel(action, currDate = new Date()) {
     case 'saved':
       $('#saveTime').text(saveTime);
       $('#successLabel').removeClass('hidden');
-      $('input[name="meta_lastupdate"').val(saveTime);
+      $('input[name="meta_lastupdate"]').val(saveTime);
       break;
 
     case 'failed':
@@ -242,7 +242,7 @@ function getPDFFromServer(id) {
       pdfBuffer[i] = pdfData.charCodeAt(i);
     }
     let blob = new Blob([pdfBuffer], {type: "application/pdf"});
-    let lastUpdate = new Date(data['data']['lastupdate']);
+    let lastUpdate = new Date(data['data']['lastupdate'].replace(' ', 'T'));  // Safari benötigt das Format YYYY-MM-DDTHH:MM:SS (mit T)
 
     // PDF-Anzeige starten (Unterscheidung, ob Edge genutzt wird)
     if(window.navigator && window.navigator.msSaveOrOpenBlob) {
