@@ -24,37 +24,41 @@ console.time('Gesamte Vorbereitungszeit');
  * @type {Boolean}
  */
 var debug = (GetURLParameter('debug') === 'true' || GetURLParameter('debug') == 1) ? true : false;
+
 /**
  * Aktuelle Versions-Nummer
  * @global
  * @type {String}
  */
 var version = '';
+
 /**
  * Angabe der Ziel-Unterseite
  * @global
  * @type {String}
  */
 var page = ['dsbview'].includes(GetURLParameter('page')) ? GetURLParameter('page') : 'wizard';
+
 /**
  * Gibt an, ob der Nutzer ein Datenschutzbeauftragter ist
  * @global
  * @type {Boolean}
  */
 var userIsDSB = false;
+
 /**
  * Relativer Pfad zur verwaltung.php
  * @global
  * @type {String}
  */
 var backendPath = 'assets/ajax/verwaltung.php';
+
 /**
  * JQuery Object des Modal-Elements
  * @global
  * @type {jQuery-Object}
  */
 var modal = $('#modalWindow'); // Modal-Fenster für Meldungen/Fehler
-
 
 // Mappings
 /**

@@ -29,24 +29,28 @@ console.time('Gesamte Vorbereitungszeit für Wizard');
  * @type {Number}
  */
 var loadId = GetURLParameter('id') === false ? 0 : parseInt(GetURLParameter('id'));
+
 /**
  * Gibt an, ob ein Verfahren kopiert werden soll
  * @global
  * @type {Boolean}
  */
 var copyId = GetURLParameter('copy') === false ? false : parseInt(GetURLParameter('copy'));
+
 /**
  * Gibt an, ob Eingaben geändert wurden seit dem letzten Laden/Speichern
  * @global
  * @type {Boolean}
  */
 var changedValues = false;
+
 /**
  * Gibt an, ob das Verfahren als abgeschlossen markiert wurde
  * @global
  * @type {Boolean}
  */
 var markedAsFinished = false;
+
 /**
  * Sammlung von Promises für AJAX-Anfragen, die zu Beginn durchgeführt werden müssen
  * @global
@@ -54,14 +58,13 @@ var markedAsFinished = false;
  */
 var promises = [];
 
-
 // Mappings
 /**
- * Mapping für die Rechtsgrundlagen-Vorschläge
+ * Mapping für die Liste der TOMs
  * @global
  * @type {Array}
  */
-var lawsMapping = [];
+var tomsMapping = [];
 
 // Variablen für die Typeahead-Funktion
 /**
@@ -78,12 +81,14 @@ var typeaheadCache = {};
  * @type {Array}
  */
 var endlessTables = $.map($('table[data-tool="endlessTable"]'), function(table) { return $(table).attr('id'); });
+
 /**
  * Mapping von Templates für jede endlose Tabelle
  * @global
  * @type {Object}
  */
 var endlessTemplates = {};
+
 /**
  * Maping von Countern für jede endlose Tabelle
  * @global
@@ -102,16 +107,25 @@ var validator = $('.wizard-card form').validate();
 /*
  * Notwendige Variablen vom Server holen
  */
-promises[0] = $.getJSON(backendPath + '?action=getlaws' + (debug ? '&debug=true' : '')).done((data) => {
-  if(!data['success']) {
-    showError('Holen der Rechtsgrundlagen', data['error']);
-    return;
-  }
-  version = data['version'];
-  lawsMapping = data['data'];
-}).fail((jqXHR, error, errorThrown) => {
-  showError('Holen der Rechtsgrundlagen', 'HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
-});
+let tom_cache = JSON.parse(localStorage.getItem('tom_cache'));
+let currTime = new Date();
+
+if(tom_cache && parseInt(tom_cache.ttl) > currTime.getTime()) {
+  console.info('Nutze TOM Liste aus Cache');
+  tomsMapping = tom_cache.toms;
+}
+else {
+  promises[0] = $.getJSON(backendPath + '?action=gettoms' + (debug ? '&debug=true' : '')).done((data) => {
+    if(!data['success']) {
+      showError('Holen der TOMs', data['error']);
+      return;
+    }
+    tomsMapping = data['data'];
+    localStorage.setItem('tom_cache', JSON.stringify({ttl: currTime.getTime() + (1 * 60 * 60 * 1000), toms: data['data']}));
+  }).fail((jqXHR, error, errorThrown) => {
+    showError('Holen der TOMs', 'HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
+  });
+}
 
 /*
  * Funktionen für den BSWizard
@@ -125,7 +139,7 @@ function myInit() {
 }
 
 /**
- * Wird ausgeführt, falls ein Tabe geklickt wird (genutzt in {@link paper-bootstrap-wizard.js})
+ * Wird ausgeführt, falls ein Tab geklickt wird (genutzt in {@link paper-bootstrap-wizard.js})
  * @param {type} tab
  * @param {type} navigation
  * @param {type} index
@@ -205,7 +219,7 @@ function myFinish() {
   else {
     savePromise.then(() => {
       // Bestätigung zum Abschluss erfragen
-      var confirmFinish = confirm('Wollen Sie das Verfahren wirklich abschließen? Im Anschluss wird eine PDF-Version generiert und per E-Mail an alle eingetragenen Ansprechpartner und Ersteller verschickt.');
+      var confirmFinish = confirm('Wollen Sie die Verfahrensdokumentation abschließen? Im Anschluss wird eine PDF-Version generiert und per E-Mail an alle eingetragenen Ansprechpartner und Ersteller verschickt.');
       if(!confirmFinish) {
         setOverlay(false);
         return;
@@ -228,7 +242,7 @@ function myFinish() {
         if(!data['genpdf']) modalBody.append('<p class="alert alert-danger">Bei der Erstellung der PDF-Datei ist ein Fehler aufgetreten, bitte versuchen Sie es später erneut.</p>');
         if(!data['genmail']) modalBody.append('<p class="alert alert-danger">Beim Verschicken der E-Mail ist ein Fehler aufgetreten, bitte versuchen Sie es später erneut.</p>');
         if(!data['gentxt']) modalBody.append('<p class="alert alert-danger">Beim Erzeugen des Informations-Textes zum Einbinden in Webseiten ist ein Fehler aufgetreten, bitte versuchen Sie es später erneut.</p>');
-        modalBody.append('<p>Die Dokumentation kann jederzeit aktualisiert werden und über den "Abschluss"-Knopf eine neue E-Mail sowie PDF-Datei erzeugt werden.</p>');
+        modalBody.append('<p>Die Verfahrensdokumentation kann jederzeit aktualisiert werden und über den "Abschluss"-Knopf eine neue E-Mail sowie PDF-Datei erzeugt werden.</p>');
         modalBody.append('<p><button type="button" class="center-block btn btn-primary" data-dismiss="modal" aria-label="Close">Schließen</button></p>');
         modal.modal();
       }).fail((jqXHR, error, errorThrown) => {
@@ -251,8 +265,11 @@ function showVerfahrensliste(startup = false) {
   var show = true;
   modal.find('.modal-title').text('Liste bestehender Verfahren');
   var modalBody = modal.find('.modal-body');
-  modalBody.html('<p>Wählen Sie ein Verfahren aus der Liste, um es zu bearbeiten oder einzusehen, oder legen Sie ein neues Verfahren an. Sie können nur Verfahren bearbeiten, für die Ihre Nutzerkennung als fachlicher oder technischer Verantwortlicher oder als Ersteller hinterlegt ist.</p>');
-  modalBody.append('<h6>Meine Verfahren</h6><div class="col-sm-12 table-responsive"><table id="eigeneVerfahren" class="table table-striped table-hover btn-table"><thead><tr><th class="no-sort no-print"></th><th>Bezeichnung</th><th>Organisationseinheit</th><th>Status</th><th>Letzter Bearbeiter</th><th>Letzte Aktualisierung</th><th class="no-sort none"></th></tr></thead><tbody></tbody></table></div>');
+  modalBody.html('<p>Wählen Sie ein Verfahren aus der Liste, um es zu bearbeiten oder einzusehen, oder legen Sie ein neues Verfahren an.</p>');
+  modalBody.append('<ul class="nav nav-tabs" role="tablist"><li role="presentation" class="active"><a href="#listeditable" aria-controls="listeditable" role="tab" data-toggle="tab">Editierbare Verfahren</a></li><li role="presentation"><a href="#listreadable" aria-controls="listreadable" role="tab" data-toggle="tab">Einsehbare Verfahren</a></li></ul>');
+  modalBody.append('<div class="tab-content" style="min-height: auto;"><div role="tabpanel" class="tab-pane active" id="listeditable"><p style="padding-top:10px; padding-left:10px">Hier werden alle Verarbeitungstätigkeiten gelistet, die Sie bearbeiten können.</p></div><div role="tabpanel" class="tab-pane" id="listreadable"><p style="padding-top:10px; padding-left:10px">Hier werden alle Verarbeitungstätigkeiten gelistet, auf die Sie nur lesend zugreifen können.</p></div></div>');
+  modalBody.find('#listeditable').append('<div class="col-sm-12 table-responsive"><table id="editableprocesses" class="table table-striped table-hover btn-table"><thead><tr><th class="no-sort no-print"></th><th>Bezeichnung</th><th>Organisationseinheit</th><th>Status</th><th>Letzter Bearbeiter</th><th>Letzte Aktualisierung</th><th class="no-sort none"></th></tr></thead><tbody></tbody></table></div>');
+  modalBody.find('#listreadable').append('<div class="col-sm-12 table-responsive"><table id="readableprocesses" class="table table-striped table-hover btn-table"><thead><tr><th class="no-sort no-print"></th><th>Bezeichnung</th><th>Organisationseinheit</th><th>Status</th><th>Letzte Aktualisierung</th><th class="no-sort none"></th></tr></thead><tbody></tbody></table></div>');
 
   $.get(backendPath, { 'action': 'list', 'debug': debug }).done((data) => {
     if(!data['success']) {
@@ -273,7 +290,6 @@ function showVerfahrensliste(startup = false) {
 
       // Editierbare/Eigene Verfahren
       if(data['data'][c]['Editierbar'] === true) {
-        //newEntry = $('<tr><td data-sort="' + data['data'][c]['Bezeichnung'] + '">' + data['data'][c]['Bezeichnung'] + ' <i data-toggle="tooltip" class="fa fa-info-circle" title="' + data['data'][c]['Beschreibung'] + '"></i><br><a class="btn" href="?id=' + currId + (debug ? '&debug=true' : '') + '" target="_blank"><i class="fa fa-edit"></i> Bearbeiten</a></td><td data-sort="' + data['data'][c]['Fachabteilung'] + '">' + data['data'][c]['Fachabteilung']  + '<br><a class="btn" href="?copy=' + currId + '" target="_blank"><i class="fa fa-copy"></i> Kopieren</a></td><td>' + data['data'][c]['Status'] + '</td><td>' + data['data'][c]['LetzterBearbeiter'] + ' <i class="fa fa-info-circle userdetail" data-user="' + data['data'][c]['LetzterBearbeiter'] + '" title=""></i></td><td>' + data['data'][c]['Aktualisierung'] + '<br><button type="button" data-id="' + currId +'" class="btn del btn-danger" ' + (data['data'][c]['Löschbar'] === true ? '' : 'disabled')  + '><i class="fa fa-minus"></i> Löschen</button></td></tr>');
         newEntry.append('<td style="width: 16px;"></td>');
         newEntry.append('<td>' + data['data'][c]['Bezeichnung'] + ' <i data-toggle="tooltip" class="fa fa-info-circle" title="' + data['data'][c]['Beschreibung'] + '"></i></td>');
         newEntry.append('<td>' + data['data'][c]['Fachabteilung']  + '</td>');
@@ -281,7 +297,16 @@ function showVerfahrensliste(startup = false) {
         newEntry.append('<td>' + data['data'][c]['LetzterBearbeiter'] + ' <i data-toggle="tooltip" class="fa fa-info-circle" title="' + (data['data'][c]['BearbeiterDetails'] ? data['data'][c]['BearbeiterDetails'] : '<Keine Details vorhanden>') + '"></i></td>');
         newEntry.append('<td>' + data['data'][c]['Aktualisierung'] + '</td>');
         newEntry.append('<td><div class="btn-group inline"><a class="btn" href="?id=' + currId + (debug ? '&debug=true' : '') + '" target="_blank"><i class="fa fa-edit"></i> Bearbeiten</a><a class="btn" href="?copy=' + currId + '" target="_blank"><i class="fa fa-copy"></i> Kopieren</a><button type="button" data-id="' + currId + '" class="btn pdfdownload" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '>PDF anzeigen</button></div> <button type="button" data-id="' + currId +'" data-name="' + data['data'][c]['Bezeichnung'] +'" class="btn del btn-danger" ' + (data['data'][c]['Löschbar'] === true ? '' : 'disabled')  + '><i class="fa fa-minus"></i> Löschen</button></td>');
-        modalBody.find('#eigeneVerfahren tbody').append(newEntry);
+        modalBody.find('#editableprocesses tbody').append(newEntry);
+      }
+      else {
+        newEntry.append('<td style="width: 16px;"></td>');
+        newEntry.append('<td>' + data['data'][c]['Bezeichnung'] + ' <i data-toggle="tooltip" class="fa fa-info-circle" title="' + data['data'][c]['Beschreibung'] + '"></i></td>');
+        newEntry.append('<td>' + data['data'][c]['Fachabteilung']  + '</td>');
+        newEntry.append('<td>' + data['data'][c]['Status'] + '</td>');
+        newEntry.append('<td>' + data['data'][c]['Aktualisierung'] + '</td>');
+        newEntry.append('<td><div class="btn-group inline"><a class="btn" href="?id=' + currId + (debug ? '&debug=true' : '') + '" target="_blank"><i class="fa fa-edit"></i> Anzeigen</a><a class="btn" href="?copy=' + currId + '" target="_blank"><i class="fa fa-copy"></i> Kopieren</a><button type="button" data-id="' + currId + '" class="btn pdfdownload" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '>PDF anzeigen</button></div></td>');
+        modalBody.find('#readableprocesses tbody').append(newEntry);
       }
     }
 
@@ -385,12 +410,19 @@ function saveAsObject() {
       if (!(name in output)) output[name] = [];
       if (inp[0].type === 'checkbox') {
         output[name].push(inp.prop('checked') ? inp.val() : '0');
-      } else {
+      }
+      else if (inp[0].type === 'radio') {
+        if(inp.prop('checked')) output[name].push(inp.val());
+      }
+      else {
         output[name].push(inp.val());
       }
     } else {
       if (inp[0].type === 'checkbox') {
         output[name] = inp.prop('checked') ? inp.val() : '0';
+      }
+      else if (inp[0].type === 'radio') {
+        if(inp.prop('checked')) output[name] = inp.val();
       }
       else {
         output[name] = inp.val();
@@ -432,6 +464,12 @@ function loadFromJSON(values) {
         if(inputs[c].type === 'checkbox') {
           if(values[val][c] !== '0') $(inputs[c]).prop('checked', true).trigger('change');
         }
+        else if(inputs[c].type === 'radio') {
+          let fieldsPerValue = inputs.length / values[val].length;
+          for(let d = 0; d < fieldsPerValue; d++) {
+            if(inputs[c * fieldsPerValue + d].value === values[val][c]) $(inputs[c * fieldsPerValue + d]).prop('checked', true).trigger('change');
+          }
+        }
         else {
           if(!Array.isArray(values[val][c])) values[val][c] = htmlDecode(values[val][c]);
           $(inputs[c]).val(values[val][c]).trigger('change');
@@ -449,8 +487,13 @@ function loadFromJSON(values) {
           inp.val(values[val]);
         }
       }
+      else if(inp.length > 1 && inp[0].type === 'radio') {
+        for(let c = 0; c < inp.length; c++) {
+          if(inp[c].value === values[val]) $(inp[c]).prop('checked', true).trigger('change');
+        }
+      }
       else {
-        debugLog('Keine oder mehrere Eingabefelder mit Namen "' + val + '" gefunden! Überspringe...');
+        debugLog('Keine passenden oder mehrere Eingabefelder mit Namen "' + val + '" gefunden! Überspringe...');
       }
     }
   });
@@ -466,7 +509,7 @@ function saveOnServer() {
   setSaveLabel('saving');
   var idField = $('input[name=meta_id]');
   var currentState = saveAsObject();
-  
+
   // Zeigt eine Fehlermeldung an, falls notwendige Felder leer sind
   if(!validator.form()) {
     setSaveLabel('failed');
@@ -477,7 +520,7 @@ function saveOnServer() {
     showError('Speichern des Verfahrens', 'Es wurden nicht alle notwendigen Felder ausgefüllt:' + errorList[0].outerHTML);
     return false;
   }
-  
+
   // Falls ID == 0 wird ein neues Verfahren auf dem Server angelegt
   if(!loadId) {
     return $.post(backendPath, JSON.stringify({'action':'create', 'debug': debug, 'data': currentState})).done(function(data) {
@@ -507,7 +550,7 @@ function saveOnServer() {
         return false;
       }
     }
-    
+
     return $.post(backendPath, JSON.stringify({'action':'update', 'debug': debug, 'id': loadId, 'data': currentState})).done(function(data) {
       if(!data['success']) {
         showError('Speichern des Verfahrens', data['error']);
@@ -517,7 +560,7 @@ function saveOnServer() {
         setSaveLabel('saved', new Date(data['data']['Date'].replace(' ', 'T')));  // Safari benötigt das Format YYYY-MM-DDTHH:MM:SS (mit T)
         history.replaceState({}, document.title, window.location.href.split('?')[0] + '?id=' + loadId);
         changedValues = false;
-        
+
         // Hinweis anzeigen, falls Status zurückgesetzt wurde
         if(markedAsFinished) {
           modal.find('.modal-title').text('Status zurückgesetzt');
@@ -633,13 +676,20 @@ function genHTMLforPDF() {
   toSend.append('<h4 class="pull-right" style="color: darkgray;">Lfd. Nr.: ' + loadId + '</h4>');
 
   /* Daten aus Wizard einsammeln */
-  $('.tab-content .tab-pane').each(function(idx) {
+  $('#content').children('.tab-content').children('.tab-pane').each(function(idx) {
     toSend.append($(this).clone().addClass('active'));
   });
 
-  /* Maßnahmen Eingabefelder aus Bootstrap-Accordion holen */
+  /* Maßnahmen Eingabefelder aus Bootstrap-Accordion holen
   toSend.find('textarea[name="massnahmen_vertraulichkeit"], textarea[name="massnahmen_integritaet"], textarea[name="massnahmen_verfuegbarkeit"]').each(function() {
     $(this).closest('.printHide').before($(this));
+  });
+  */
+
+  /* TOM Liste formatieren */
+  toSend.find('#technicaltoms, #organizationaltoms').find('.panel-collapse').each(function() {
+    $(this).removeClass('collapse');
+    $(this).closest('.panel').before($(this));
   });
 
   /* Link hinzufügen */
@@ -664,8 +714,12 @@ function genHTMLforPDF() {
     $(this).val(htmlEncode($(this).val()));
   });
 
-  /* Eingabeelemente durch grau hinterlegten Text ersezten */
-  toSend.find('input[type!=checkbox][type!=hidden], textarea, select').replaceWith(function() { if($(this).parents('td').length>0) { return '<p>' + $(this).val() + '</p>'; } else { return '<p style="background-color: lightyellow">' + $(this).val() + '</p>'; }});
+  /* Eingabeelemente durch grau hinterlegten Text ersetzen */
+  toSend.find('input[type!=checkbox][type!=hidden][type!=radio], textarea, select').replaceWith(function() { if($(this).parents('td').length>0) { return '<p>' + $(this).val() + '</p>'; } else { return '<p style="background-color: lightyellow">' + $(this).val() + '</p>'; }});
+
+  /* Radio-Elemente formatieren */
+  toSend.find('input[type=radio]:not(:checked)').closest('label').remove();
+  toSend.find('input[type=radio]').remove();
 
   /* Weitere Design-Anpassunge */
   toSend.find('.printHide').addClass('hidden');
@@ -677,17 +731,24 @@ function genHTMLforPDF() {
   toSend.find('#systeme_klienten, #systeme_server').find('label').replaceWith(function() { return '<span style="font-style: italic; text-decoration: underline">' + $(this).text() + '</span>'; });
   toSend.find('input[type=checkbox]').each(function(idx) {
     var checkbox = $(this);
+
     checkbox.parent().parent().attr('style', 'margin: 5px;');
     if(checkbox.prop('checked')) checkbox.replaceWith('<span style="color: green;">&#10004;</span>');
     //else checkbox.replaceWith('<span style="color: red;">&#10006;</span>');
     else {
+      if(checkbox.attr('name').search(/massnahmen/g) > -1) {
+        checkbox.replaceWith('<span style="color: red;">&#10006;</span>');
+        return;
+      }
+
       if(checkbox.attr('name') === 'abschluss_datenschutz_folgeabschaetzung') {
         checkbox.parent().replaceWith('<label><span style="color: red;">&#10006;</span> Es ist keine Datenschutzfolgeabschätzung notwendig</label>');
         return;
       }
 
       checkbox.parent().parent().addClass('hidden');
-      if(['allgemein_verantwortlich_extern', 'datenzugriff_empfaenger_extern'].includes(checkbox.attr('name'))) {
+
+      if(['allgemein_verantwortlich_extern'].includes(checkbox.attr('name'))) {
         checkbox.closest('div').prev().addClass('hidden');
       }
     }
@@ -721,10 +782,10 @@ function initTypeahead(node) {
   // Überprüft ob eine explizite URL gegeben ist, sonst wird die hinterlegte verwaltung.php genutzt
   if(nodeData['url'] === undefined) {
     nodeData['url'] = backendPath + '?action=' + nodeData['action'] + (debug ? '&debug=true' : '') + '&search=';
-    nodeData['path'] = 'data';
+    if(nodeData['path'] === undefined) nodeData['path'] = 'data';
   }
   else {
-    nodeData['path'] = '';
+    if(nodeData['path'] === undefined) nodeData['path'] = '';
   }
 
   // Fügt einen onChange-Listener an, damit das versteckte Feld geleert wird bei Änderung
@@ -752,7 +813,7 @@ function initTypeahead(node) {
     var split = lowcaseQuery.split(' ');
     var found = undefined;
     for(let c=0; c < itemKeys.length; c++) {
-      if(item[itemKeys[c]] !== null && item[itemKeys[c]].toLowerCase().search(lowcaseQuery) > -1) {
+      if(item[itemKeys[c]] !== null && item[itemKeys[c]].toLowerCase().search(lowcaseQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) > -1) {
         found = true;
         break;
       }
@@ -766,7 +827,7 @@ function initTypeahead(node) {
       for(let c=0; c < split.length; c++) {
         var foundinKeys = false;
         for(let k=0; k < itemKeys.length; k++) {
-          if(item[itemKeys[k]].toLowerCase().search(split[c]) > -1) {
+          if(item[itemKeys[k]].toLowerCase().search(split[c].replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) > -1) {
             foundinKeys = true;
             break;
           }
@@ -790,8 +851,8 @@ function initTypeahead(node) {
   function onPopulateSourceCustom(node, data, group, path) {
     var search = this.query.trim().split(' ')[0].toLowerCase();
     data.sort((a,b) => {
-        var foundA = a['label'].toLowerCase().search(search);
-        var foundB = b['label'].toLowerCase().search(search);
+        var foundA = a['label'].toLowerCase().search(search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+        var foundB = b['label'].toLowerCase().search(search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
         if(foundA !== foundB) return foundA - foundB;
         else return a['label'].toLowerCase().localeCompare(b['label'].toLowerCase());
       });
@@ -855,7 +916,7 @@ function initTypeahead(node) {
         }*/
       } :
       { // Einmal alle Daten holen und dann cachen lassen
-        [nodeData['url']]: {
+        [nodeData['url'] + '_' + nodeData['path']]: {
           data: [{"label": "-- keine --"}],
           ajax: {
             type: 'GET',
@@ -871,6 +932,9 @@ function initTypeahead(node) {
         if(nodeData['hiddenfield']) {
           $(node).closest('.typeahead__container').parent().find('input[name="' + nodeData['hiddenfield'] + '"]').val(item.value).trigger('change');
         }
+      },
+      onClickAfter: function(node, a, item, even) {
+        $(node).trigger('change');
       },
       onCancel: function(node, a, item, event) {
         if(nodeData['hiddenfield']) {
@@ -914,6 +978,10 @@ function initEndlessTables() {
  * @returns {undefined}
  */
 function addTableRow(table) {
+  if(!(table in endlessTemplates)) {
+    console.error('Tabelle "' + table + '" nicht gefunden! Überspringe...');
+    return;
+  }
   // Neue Zeile aus dem Template hinzufügen
   endlessCounts[table]++;
   var clone = endlessTemplates[table].clone(true);
@@ -928,8 +996,8 @@ function addTableRow(table) {
     tickIcon: 'fa-check',
     noneSelectedText: 'Bitte auswählen',
     actionsBox: true,
-    deselectAllText: 'Alle abwählen',
-    selectAllText: 'Alle auswählen'
+    deselectAllText: 'Keine',
+    selectAllText: 'Alle'
   });
 
   // Typeahead initialisieren
@@ -1048,19 +1116,82 @@ function removeTableRows(table, onlyEmpty = false) {
   }
 }
 
+/**
+ * Legt die Auswahlliste für TOMs an
+ * @return {undefined}
+ */
+function generateTOMList() {
+  tomsMapping.forEach(function(row) {
+    let targetID = row['Type'] == 1 ? 'technical_accordion' : 'organizational_accordion';
+    let targetElem = $('#' + targetID);
+    let category = row['Category'].trim() + (row['Subcategory'] ? ' - ' + row['Subcategory'].trim() : '');
+    let targetCategory = 'tom_category_' + category.replace(/ /g, '_');
+
+    if($('#' + targetCategory).length !== 1) {
+      targetElem.append('<h6 class="info-text text-ul-dot printOnly hidden">' + category + '</h6>');
+      targetElem.append('<div class="panel panel-default printHide"><div class="panel-heading" role="tab" id="heading_' + targetCategory + '"><h4 class="panel-title"><a role="button" data-toggle="collapse" data-parent="#' + targetID + '" href="#' + targetCategory + '" aria-expanded="true" aria-controls="' + targetCategory + '">' + category + '</a></h4></div></div>')
+      $('#heading_' + targetCategory).after('<div id="' + targetCategory + '" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading_' + targetCategory + '"><div class="panel-body"></div></div>');
+      $('#' + targetCategory).find('.panel-body').append('<table class="table table-striped table-hover"><thead><tr><th class="col-sm-1">ID</th><th class="col-sm-5">Beschreibung</th><th class="col-sm-1">Risikolevel</th><th class="col-sm-1">Umgesetzt?</th><th class="col-sm-5">Erläuterung bzw. Begründung</th></tr></thead><tbody></tbody></table>');
+      $('#heading_' + targetCategory + ', #heading_' + targetCategory + ' a').click((evt) => {
+        if(evt.target.nodeName === "A") return;
+        $(evt.target).find('a').click();
+      });
+    }
+
+    let className = row['Risklevel'] == 1 ? 'success' : row['Risklevel'] == 2 ? 'warning' : 'danger';
+    let tomID = row['Identifier'].trim().replace(/ /g, '_');
+    let tomContent = row['Title'] ? row['Title'] + '<i data-toggle="tooltip" title="' + row['Description'] + '" class="fa fa-question-circle-o fa-lg"></i>' : row['Description'];
+    let tableBody = $('#' + targetCategory).find('tbody');
+
+    tableBody.append('<tr data-risk="' + row['Risklevel'] + '" class="' + className + '"><td>' + row['Identifier'] + '</td><td>' + tomContent + '</td><td>' + row['Risklevel'] + '</td><td><input type="checkbox" name="massnahmen_' + tomID + '" value="1"></td><td><textarea name="massnahmen_' + tomID + '_kommentar" class="form-control"></textarea></td></tr>');
+    tableBody.find('tr').last().click(function() { $(this).find('input[type=checkbox]').click(); });
+    tableBody.find('input[type=checkbox]').last().click(function(evt) {
+      evt.stopPropagation();
+      /*
+      if($(this).prop('checked')) {
+        $(this).closest('tr').find('textarea').prop('required', true);
+      }
+      else {
+        $(this).closest('tr').find('textarea').removeAttr('required');
+      }
+      */
+    });
+    tableBody.find('textarea').last().click(function(evt) { evt.stopPropagation(); });
+  });
+
+  // Tooltips aktivieren
+  $('#technical_accordion, #organizational_accordion').find('[data-toggle="tooltip"]').tooltip({
+    placement: 'auto'
+  });
+}
+
+/**
+ * Filtert die Liste der TOMs anhand des gewählten Risikolevels
+ * @param  {Number} risklevel Risikolevel des Verfahrens
+ * @return {undefined}
+ */
+function filterTOMList(risklevel) {
+  let tomRows = $('#technical_accordion, #organizational_accordion').find('tbody tr');
+  tomRows.each(function() {
+    let tomRisklevel = parseInt($(this).data('risk'));
+    if(tomRisklevel <= risklevel) $(this).removeClass('hidden');
+    if(tomRisklevel > risklevel) $(this).addClass('hidden');
+  });
+}
+
 debugLog('Beginne Setup...');
 
 // Abwarten, bis alle notwendigen Daten über AJAX-Requests geholt wurden
 Promise.all(promises).then(function() {
-  if(lawsMapping.length === 0) {
-    console.error('Kann ohne Rechtsgrundlagen nicht fortfahren! Beende...');
+  if(tomsMapping.length === 0) {
+    showError('Abrufen des TOM Katalogs');
+    console.error('Kann ohne TOMs nicht fortfahren! Beende...');
     return;
   }
 
-  // Rechtsgrundlagen zur Auswahl hinzufügen
-  lawsMapping.forEach(function(row) {
-    $('[name="daten_grundlagen_bezeichnung[]"]').append('<option value="' + row['ID'] + '">' + row['Artikel'] + ' - ' + row['Beschreibung'] + '</option>');
-  });
+  // TOM-Auswahl erzeugen und auf Standard setzen
+  generateTOMList();
+  filterTOMList(2);
 
   /*
    * Dynamische Inhalte initialisieren
@@ -1102,7 +1233,7 @@ Promise.all(promises).then(function() {
       target.parent('div').parents('div').first().next('div').addClass('hidden');
     }
   });
-  
+
   // Blendet ein Eingabefeld für AV-Verträge bei Bedarf ein
   $('#datenzugriff_empfaenger_extern').on('change', 'input[name="datenzugriff_empfaenger_extern_auftragsverarbeitung[]"]', function(event) {
     var target = $(event.target);
@@ -1150,7 +1281,7 @@ Promise.all(promises).then(function() {
       target.closest('div').find('input[type=text]').first().addClass('hidden').val('');
     }
   });
-  
+
   // Zeigt die aktuelle Beschreibung der abhängigen Verfahren an
   $('#abschluss_abhaengigkeit').on('change', 'input[name="abschluss_abhaengigkeit_id[]"]', function() {
     var idField = $(this);
@@ -1203,6 +1334,11 @@ Promise.all(promises).then(function() {
     initTypeahead(value);
   });
 
+  // TOM Liste aktualisieren, wenn Risikolevel geändert wird
+  $('[name=massnahmen_risiko]').change(function() {
+    filterTOMList(parseInt($(this).val()));
+  });
+
   console.timeEnd('Dynamische Inhalte initialisieren');
 
   /*
@@ -1231,17 +1367,27 @@ Promise.all(promises).then(function() {
    */
   debugLog('Initialisiere spezielle Handler...');
   console.time('Spezielle Handler initialisieren');
+
+  // Radio-Group zur Auswahl von Verarbeitungstätigkeit oder IT-Verfahren
+  $('.chooseVerfahrenstyp').on('change', function() {
+    if ($(this).val() == 1) {
+      $('#title').html('Dokumentation einer Verarbeitungstätigkeit<br><small>Mit diesem Assistenten erzeugen Sie in wenigen Schritten eine DSGVO-konforme Dokumentation für Ihre Verarbeitungstungstätigkeit (nach Art. 30 DSGVO).</small>');
+    } else if ($(this).val() == 2) {
+      $('#title').html('Dokumentation eines IT-Verfahrens<br><small>Mit diesem Assistenten erzeugen Sie in wenigen Schritten eine Dokumentation für Ihr IT-Verfahren.</small>');
+    }
+  });
+
   // Button für den Aufruf der Verfahrensliste initialisieren
-  $('#showVerfahrensliste').click(function() { $(this).prop('disabled', true); showVerfahrensliste();});
+  $('#showVerfahrensliste').click(function() { $(this).prop('disabled', true); showVerfahrensliste(); });
 
   // Manuelles Speichern über das Speicher-Status-Label
-  $('#successLabel, #savingLabel, #failedLabel').click(function() {saveOnServer();}).css({'cursor': 'pointer'});
-  
+  $('#successLabel, #savingLabel, #failedLabel').click(function() { saveOnServer(); }).css({'cursor': 'pointer'});
+
   // Warnung vor dem Schließen der Webseite, falls ungespeicherte Änderungen vorhanden sind
   $(window).on('beforeunload', (e) => {
     if(!changedValues) return; // nichts zurück geben, um die Meldung zu unterdrücken!
-    
-    let msg = 'Es sind noch ungespeicherte Eingaben vorhanden! Diese gehen beim Verlassen verloren. Sind Sie sicher, dass sie die Seite verlassen möchten?'; // Wird von den meisten Browsern mittlerweile ignoriert
+
+    let msg = 'Es sind noch ungespeicherte Änderungen vorhanden! Diese gehen beim Verlassen verloren. Sind Sie sicher, dass sie die Seite verlassen möchten?'; // Wird von den meisten Browsern mittlerweile ignoriert
     e.preventDefault();
     e.returnValue = msg; // For Chrome
     return msg;

@@ -11,17 +11,19 @@
 
   /**
    * SQLite Datenbank Schnittstelle für die Verfahrensverwaltung und zur Abfrage von Ausfüllhinweisen
-   * 
-   * 
+   *
+   *
    * Tabelle: Verfahren
    * <pre>
-   * +-----------+------------+------------+------------+-------------+------------+-----------+-----------+----------+----------------+------+------------+----+------------+
-   * |ID         |Erstelldatum|Bezeichnung |Beschreibung|Fachabteilung|IVV         |FachKontakt|TechKontakt|Ersteller |Bearbeitergruppe|Status|Sichtbarkeit|JSON|DSBKommentar|
-   * +-----------+------------+------------+------------+-------------+------------+-----------+-----------+----------+----------------+------+------------+----+------------+
-   * |INT        |DATE        |VARCHAR(100)|TEXT        |VARCHAR(100) |VARCHAR(100)|VARCHAR(8) |VARCHAR(8) |VARCHAR(8)|VARCHAR(8)      |INT   |INT         |BLOB|TEXT        |
-   * |PRIMARY KEY|            |            |            |             |            |           |           |          |                |      |            |    |            |
-   * +-----------+------------+------------+------------+-------------+------------+-----------+-----------+----------+----------------+------+------------+----+------------+
+   * +-----------+---+------------+------------+------------+-----------+-------------+------------+-----------+-----------+----------+----------------+------+------------+----+------------+
+   * |ID         |Typ|Erstelldatum|Bezeichnung |Beschreibung|Risikolevel|Fachabteilung|IVV         |FachKontakt|TechKontakt|Ersteller |Bearbeitergruppe|Status|Sichtbarkeit|JSON|DSBKommentar|
+   * +-----------+---+------------+------------+------------+-----------+-------------+------------+-----------+-----------+----------+----------------+------+------------+----+------------+
+   * |INT        |INT|DATE        |VARCHAR(100)|TEXT        |INT        |VARCHAR(100) |VARCHAR(100)|VARCHAR(8) |VARCHAR(8) |VARCHAR(8)|VARCHAR(8)      |INT   |INT         |BLOB|TEXT        |
+   * |PRIMARY KEY|   |            |            |            |           |             |            |           |           |          |                |      |            |    |            |
+   * +-----------+---+------------+------------+------------+-----------+-------------+------------+-----------+-----------+----------+----------------+------+------------+----+------------+
    * </pre>
+   * * Typ: 1 = Verarbeitungstätigkeit, 2 = IT-Verfahren
+   * * Risikolevel: 1 = Niedrig, 2 = Mittel, 3 = Hoch
    * * Status: 0 = In Bearbeitung, 2 = Fertiggestellt, 3 = Gelöscht
    * * Sichtbarkeit: 0 = Nur für Bearbeiter (Ersteller, FachKontakt, TechKontakt und Bearbeitergruppe), 3 = Jeder eingeloggte Nutzer
    *
@@ -34,16 +36,6 @@
    * |PRIMARY KEY                         |PRIMARY KEY|PRIMARY KEY|
    * |FOREIGN KEY REFERENCES verfahren(ID)|           |           |
    * +------------------------------------+-----------+-----------+
-   * </pre>
-   *
-   * Tabelle: Rechtsgrundlagen
-   * <pre>
-   * +-----------+-------+------------+
-   * |ID         |Artikel|Beschreibung|
-   * +-----------+-------+------------+
-   * |INT        |TEXT   |TEXT        |
-   * |PRIMARY KEY|       |            |
-   * +-----------+-------+------------+
    * </pre>
    *
    * Tabelle: Personen
@@ -75,7 +67,7 @@
    * | PRIMARY KEY |
    * +-------------+
    * </pre>
-   * 
+   *
    * Tabelle: CPE
    * <pre>
    * +-------------+------+------+
@@ -86,6 +78,39 @@
    * +-------------+------+------+
    * </pre>
    * * Typ: h = Hardware, a = Applikationen, o = Betriebssysteme
+   *
+   * Tabelle: TOMs
+   * <pre>
+   * +-------------+-------------+----------+-------------+-------+-------------+-----------+------+
+   * | Identifier  | Lang        | Category | Subcategory | Title | Description | Risklevel | Type |
+   * +-------------+-------------+----------+-------------+-------+-------------+-----------+------+
+   * | VARCHAR(10) | VARCHAR(2)  | TEXT     | TEXT        | TEXT  | TEXT        | INT       | INT  |
+   * | PRIMARY KEY | PRIMARY KEY |          |             |       |             |           |      |
+   * +-------------+-------------+----------+-------------+-------+-------------+-----------+------+
+   * </pre>
+   * * Risklevel: 1 = Low, 2 = Medium, 3 = High
+   * * Type: 0 = Technical, 1 = Organizational
+   *
+   * Tabelle: Permissions
+   * <pre>
+   * +-------------+-------------+---------+---------+
+   * | Process_ID  | ID          | IsGroup | CanEdit |
+   * +-------------+-------------+---------+---------+
+   * | INT         | TEXT        | INT     | INT     |
+   * | PRIMARY KEY | PRIMARY KEY |         |         |
+   * +-------------+-------------+---------+---------+
+   * </pre>
+   *
+   * Tabelle: Suggestions
+   * <pre>
+   * +-------------+-------------+-------------+----------------+
+   * | Field       | Lang        | Entry       | AdditionalInfo |
+   * +-------------+-------------+-------------+----------------+
+   * | TEXT        | TEXT        | TEXT        | TEXT           |
+   * | PRIMARY KEY | PRIMARY KEY | PRIMARY KEY |                |
+   * +-------------+-------------+-------------+----------------+
+   * </pre>
+   *
    */
   class DBCon {
 
@@ -98,20 +123,22 @@
     /** @var string Enthält einen Standardpfad zur DB-Datei, falls keiner übergeben wurde */
     protected $path = '/secdoc/';
 
-    /** @const Aktuelle DB-Version */
-    const DBVERSION = 5; # Version für eine DB-Struktur; zur Überprüfung beim Laden genutzt
+    /** @var int Aktuelle DB-Version */
+    const DBVERSION = 6; # Version für eine DB-Struktur; zur Überprüfung beim Laden genutzt
 
-    /** @const Maximale Anzahl an Historien-Einträgen */
+    /** @var int Maximale Anzahl an Historien-Einträgen */
     const MAXHISTORY = 15; # Nur diese Anzahl an Historien-Einträgen wird behalten
 
     # Aktuelle Tabellen-Definitionen
-    /** @const Tabellendefinitionen */
+    /** @var string[] Tabellendefinitionen */
     const TABLES = [
         "CREATE TABLE verfahren (
             ID INTEGER PRIMARY KEY,                                               -- Eindeutige ID für ein Verfahren (kann automatisch inkrementiert werden oder manuell gesetzt werden)
+            Typ INT NOT NULL DEFAULT 0,                                           -- Typ des Eintrags (1 = Verarbeitungstätigkeit, 2 = IT-Verfahren)
             Erstelldatum DATE DEFAULT '',                                         -- Einführungsdatum des Verfahrens
             Bezeichnung VARCHAR(100) NOT NULL DEFAULT  '',                        -- Bezeichnung des Verfahren
             Beschreibung TEXT NOT NULL DEFAULT  '',                               -- Ausführlichere Beschreibung des Verfahrens
+            Risikolevel INT NOT NULL DEFAULT 2,                                   -- Ergebnis der Risikoanalyse (1 = Niedrig, 2 = Mittel, 3 = Hoch)
             Fachabteilung VARCHAR(100) NOT NULL DEFAULT  '',                      -- Name der betreuenden Fachabteilung
             IVV VARCHAR(100) NOT NULL DEFAULT  '',                                -- Name der betreuenden IVV
             FachKontakt VARCHAR(8) NOT NULL DEFAULT  '',                          -- Nutzerkennung des fachlichen Ansprechpartners
@@ -152,23 +179,49 @@
             CPE TEXT PRIMARY KEY ON CONFLICT REPLACE, -- CPE-Nummer
             Name TEXT,                                -- Name des CPE Eintrags
             Typ TEXT                                  -- Typ des Eintrags (a für Applikation, o für Betriebssystem, h für Hardware)
-        );"
+        );",
+        "CREATE TABLE toms (
+            Identifier VARCHAR(10),            -- Unique identifier across one language, e.g. K.1
+            Lang VARCHAR(2) DEFAULT 'de',      -- Language of entry
+            Category TEXT NOT NULL,            -- Grouping for multiple TOMs
+            Subcategory TEXT DEFAULT '',       -- Secondary level grouping
+            Title TEXT DEFAULT '',             -- Short title for TOM
+            Description TEXT NOT NULL,         -- Longer description
+            Risklevel  INT NOT NULL DEFAULT 1, -- Risklevel where this is needed (1 = Low, 2 = Medium, 3 = High)
+            Type INT NOT NULL DEFAULT 0,       -- 0 = Technical measure, 1 = organizational measure
+            PRIMARY KEY (Identifier, Lang)
+        );",
+        "CREATE TABLE permissions (
+            Process_ID INT,                 -- Process identifier
+            ID TEXT NOT NULL,               -- User or group ID
+            IsGroup INT NOT NULL DEFAULT 0, -- Is given ID a group? (0 = user ID, 1 = group ID)
+            CanEdit INT NOT NULL DEFAULT 0, -- Can user/group edit? (0 = read only, 1 = full access)
+            PRIMARY KEY (Process_ID, ID),
+            FOREIGN KEY (Process_ID) REFERENCES verfahren(ID) ON UPDATE CASCADE ON DELETE CASCADE
+        );",
+          "CREATE TABLE suggestions (
+              Field TEXT NOT NULL,                       -- Input field using this suggestion
+              Lang VARCHAR(2) DEFAULT 'de',              -- Language
+              Entry TEXT NOT NULL,                       -- Suggestion
+              AdditionalInfo TEXT NOT NULL DEFAULT '{}', -- Additional space for informations (e.g. JSON-String)
+              PRIMARY KEY (Field, Lang, Entry)
+          );"
     ];
 
-    /** @const Rechtsgrundlagen für die Rechtsgrundlagen-Tabelle */
+    /** @var mixed[] Rechtsgrundlagen für die Rechtsgrundlagen-Tabelle */
     const LAWS = [
-        [0, 'Art. 6 (1) a)', 'Die betroffene Person hat ihre Einwilligung zu der Verarbeitung der sie betreffenden personenbezogenen Daten für einen oder mehrere bestimmte Zwecke gegeben.'],
-        [1, 'Art. 6 (1) b)', 'Die Verarbeitung ist für die Erfüllung eines Vertrags, dessen Vertragspartei die betroffene Person ist, oder zur Durchführung vorvertraglicher Maßnahmen erforderlich, die auf Anfrage der betroffenen Person erfolgen.'],
-        [2, 'Art. 6 (1) c)', 'Die Verarbeitung ist zur Erfüllung einer rechtlichen Verpflichtung erforderlich, der der Verantwortliche unterliegt.'],
-        [3, 'Art. 6 (1) d)', 'Die Verarbeitung ist erforderlich, um lebenswichtige Interessen der betroffenen Person oder einer anderen natürlichen Person zu schützen.'],
-        [4, 'Art. 6 (1) e)', 'Die Verarbeitung ist für die Wahrnehmung einer Aufgabe erforderlich, die im öffentlichen Interesse liegt oder in Ausübung öffentlicher Gewalt erfolgt, die dem Verantwortlichen übertragen wurde.'],
-        [5, 'Art. 6 (1) f)', 'Die Verarbeitung ist zur Wahrung der berechtigten Interessen des Verantwortlichen oder eines Dritten erforderlich, sofern nicht die Interessen oder Grundrechte und Grundfreiheiten der betroffenen Person, die den Schutz personenbezogener Daten erfordern, überwiegen, insbesondere dann, wenn es sich bei der betroffenen Person um ein Kind handelt.'],
+        [0, 'Art. 6 (1) a) - Einwilligung', 'Die betroffene Person hat ihre Einwilligung zu der Verarbeitung der sie betreffenden personenbezogenen Daten für einen oder mehrere bestimmte Zwecke gegeben.'],
+        [1, 'Art. 6 (1) b) - Vertragserfüllung', 'Die Verarbeitung ist für die Erfüllung eines Vertrags, dessen Vertragspartei die betroffene Person ist, oder zur Durchführung vorvertraglicher Maßnahmen erforderlich, die auf Anfrage der betroffenen Person erfolgen.'],
+        [2, 'Art. 6 (1) c) - Rechtliche Verpflichtung', 'Die Verarbeitung ist zur Erfüllung einer rechtlichen Verpflichtung erforderlich, der der Verantwortliche unterliegt.'],
+        [3, 'Art. 6 (1) d) - Lebenswichtige Interessen', 'Die Verarbeitung ist erforderlich, um lebenswichtige Interessen der betroffenen Person oder einer anderen natürlichen Person zu schützen.'],
+        [4, 'Art. 6 (1) e) - Öffentliches Interesse', 'Die Verarbeitung ist für die Wahrnehmung einer Aufgabe erforderlich, die im öffentlichen Interesse liegt oder in Ausübung öffentlicher Gewalt erfolgt, die dem Verantwortlichen übertragen wurde.'],
+        [5, 'Art. 6 (1) f) - Berechtigte Interessen', 'Die Verarbeitung ist zur Wahrung der berechtigten Interessen des Verantwortlichen oder eines Dritten erforderlich, sofern nicht die Interessen oder Grundrechte und Grundfreiheiten der betroffenen Person, die den Schutz personenbezogener Daten erfordern, überwiegen, insbesondere dann, wenn es sich bei der betroffenen Person um ein Kind handelt.'],
     ];
 
     /**
      * DBCon-Konstruktor; Stellt eine Verbindung zur Datenbank her und überprüft die Datenbank-Version.
      * Erstellt eine neue leere Datenbank, falls die Datenbank nicht existiert.
-     * 
+     *
      * @param string $directory (optional) Speicherpfad für die Datenbank-Datei
      * @return DBCon Neue DBCon Instanz
      * @throws PDOException
@@ -266,6 +319,45 @@
           $this->pdo->exec("PRAGMA user_version = 5;");
           $this->pdo->exec("COMMIT;");
         }
+        else if($db_version == 5) {
+          trigger_error("[SecDoc] DBCon.class.php -> Aktualisiere Datenbank von Version $db_version zu " . self::DBVERSION . "!");
+          error_log("[SecDoc] DBCon.class.php -> Aktualisiere Datenbank von Version $db_version zu " . self::DBVERSION . "!");
+          $this->pdo->beginTransaction();
+          $this->pdo->exec("ALTER TABLE verfahren ADD COLUMN Risikolevel INT NOT NULL DEFAULT 2;");
+          $this->pdo->exec("ALTER TABLE verfahren ADD COLUMN Typ INT NOT NULL DEFAULT 0;");
+          $this->pdo->exec(self::TABLES[7]);
+          $this->pdo->exec(self::TABLES[8]);
+          $this->pdo->exec(self::TABLES[9]);
+
+          $sth = $this->pdo->prepare('SELECT ID, Bearbeitergruppe, JSON FROM verfahren WHERE NOT Status = 3;');
+          $sth2 = $this->pdo->prepare('INSERT INTO permissions (Process_ID, ID, IsGroup, CanEdit) VALUES (?, ?, 1, 1);');
+          $sth3 = $this->pdo->prepare('UPDATE verfahren SET JSON = ? WHERE ID = ?;');
+          $sth->execute();
+          foreach($sth->fetchAll() as $entry) {
+            $parsedJSON = json_decode($entry['JSON'], true);
+
+            # Bearbeitergruppe in neue Tabelle eintragen
+            if(!empty($entry['Bearbeitergruppe'])) {
+              $sth2->execute([$entry['ID'], $entry['Bearbeitergruppe']]);
+              $parsedJSON['meta_gruppen_kennung'] = [$entry['Bearbeitergruppe']];
+              $parsedJSON['meta_gruppen_name'] = [$entry['Bearbeitergruppe']];
+              $parsedJSON['meta_gruppen_schreiben'] = ["1"];
+            }
+
+            # Rechtsgrundlagen ersetzen durch Kürzel
+            if(is_array($parsedJSON['daten_grundlagen_bezeichnung']) && count($parsedJSON['daten_grundlagen_bezeichnung']) > 0) {
+              for($c = 0; $c < count($parsedJSON['daten_grundlagen_bezeichnung']); $c++) {
+                $parsedJSON['daten_grundlagen_bezeichnung'][$c] = self::LAWS[$parsedJSON['daten_grundlagen_bezeichnung'][$c]][1];
+              }
+            }
+
+            $sth3->execute([json_encode($parsedJSON), $entry['ID']]);
+          }
+
+          $this->pdo->exec("DROP TABLE IF EXISTS rechtsgrundlagen;");
+          $this->pdo->exec("PRAGMA user_version = 6;");
+          $this->pdo->commit();
+        }
         else {
           throw new Exception("Datenbank kann nicht genutzt werden, da die Version nicht übereinstimmt und nicht aktualisiert werden kann! (Ist: $db_version - Soll: " . self::DBVERSION . ")");
         }
@@ -276,7 +368,7 @@
 
     /**
      * Prüft, ob eine Datenbank-Verbindung besteht.
-     * 
+     *
      * @return bool True bei bestehender Verbindung, sonst FALSE
      */
     public function isConnected(): bool {
@@ -285,40 +377,42 @@
 
     /**
      * Fügt ein neues Verfahren der DB hinzu.
-     * 
+     *
      * @param string $userId        Aktuell eingeloggter Nutzer/Bearbeiter
      * @param int    $verfahrensId  ID des neuen Verfahrens
+     * @param int    $typ           Typ des Eintrags (Verarbeitungstätigkeit oder IT-Verfahren)
      * @param string $bezeichnung   Bezeichnung des Verfahrens
      * @param string $datum         Einführungsdatum
      * @param string $beschreibung  Ausführliche Beschreibung
+     * @param int    $risikolevel   Ergebnis der Risikoanalyse
      * @param string $fachabteilung Zuständige Fachabteilung
      * @param string $ivv           Zuständige IVV
      * @param string $fachkontakt   Fachlicher Ansprechpartner
      * @param string $techkontakt   Technischer Ansprechpartner
-     * @param string $accessGroup   Nutzergruppe mit Bearbeitungsrechten
      * @param string $json          JSON-kodierte Informationen zum Verfahren
      * @return int Gibt die ID des neuen Verfahrens zurück
      * @throws PDOException
      * @throws Exception
      */
-    public function addVerfahren($userId, $verfahrensId, $bezeichnung, $datum, $beschreibung, $fachabteilung, $ivv, $fachkontakt, $techkontakt, $accessGroup, $json): int {
+    public function addVerfahren($userId, $verfahrensId, $typ, $bezeichnung, $datum, $beschreibung, $risikolevel, $fachabteilung, $ivv, $fachkontakt, $techkontakt, $json): int {
       if($this->isConnected()) {
         # Neues Verfahren hinzufügen
-        $sth = $this->pdo->prepare('INSERT INTO verfahren (ID, Bezeichnung, Erstelldatum, Beschreibung, Fachabteilung, IVV, FachKontakt, TechKontakt, Ersteller, Bearbeitergruppe, JSON) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);');
+        $sth = $this->pdo->prepare('INSERT INTO verfahren (ID, Typ, Bezeichnung, Erstelldatum, Beschreibung, Risikolevel, Fachabteilung, IVV, FachKontakt, TechKontakt, Ersteller, JSON) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);');
         $sth->execute(array(
             $verfahrensId,
+            $typ,
             $bezeichnung,
             $datum,
             $beschreibung,
+            $risikolevel,
             $fachabteilung,
             $ivv,
             $fachkontakt,
             $techkontakt,
             $userId,
-            $accessGroup,
             $json
         ));
-        
+
         ob_start();
         $sth->debugDumpParams();
         $sqlDump = ob_get_clean();
@@ -333,14 +427,14 @@
         # ID des neuen Verfahrens auslesen
         $sth = $this->pdo->prepare('SELECT last_insert_rowid();');
         $sth->execute();
-        
+
         ob_start();
         $sth->debugDumpParams();
         $sqlDump = ob_get_clean();
         print "DBCon.class.php -> addVerfahren() Execute: $sqlDump";
-        
+
         $verfahrensId = $sth->fetch()['last_insert_rowid()'];
-        
+
         if($verfahrensId === FALSE || !is_numeric($verfahrensId)) {
           throw new Exception("DBCon.class.php -> Fehler beim Hinzufügen eines Verfahrens! (Fehler: ID des neuen Verfahrens konnte nicht abgefragt werden (Wert: $verfahrensId))");
         }
@@ -356,7 +450,7 @@
 
     /**
      * Listet alle Verfahren auf, die der Nutzer mit Kennung $userId bearbeiten kann.
-     * 
+     *
      * @param string $userId     Nutzerkennung des ausführenden Nutzers
      * @param array  $userGroups Gruppen des ausführenden Nutzers
      * @param string $search     (optional) Filter zur Suche nach bestimmten Verfahren (nutzt Bezeichnung)
@@ -366,16 +460,19 @@
      */
     public function listVerfahrenOwn($userId, $userGroups, $search = '') {
       if($this->isConnected()) {
-        $sth = $this->pdo->prepare('SELECT ID, Erstelldatum, Bezeichnung, Beschreibung, Fachabteilung, Status, Ersteller, FachKontakt, TechKontakt, Bearbeitergruppe, Sichtbarkeit, IFNULL(Name, verfahren_historie.Kennung) AS LetzterBearbeiter, IFNULL(Anzeigename, "") AS BearbeiterDetails, MAX(Datum) AS Aktualisierung '
-                . 'FROM verfahren LEFT JOIN verfahren_historie ON verfahren.ID = verfahren_historie.Verfahrens_Id LEFT JOIN personen ON verfahren_historie.Kennung = personen.Kennung '
-                . 'WHERE NOT Status = 3 AND (Ersteller = ? OR TechKontakt = ? OR FachKontakt = ? OR Bearbeitergruppe IN (' . implode(', ', array_fill(0, count($userGroups), '?')) . '))' . (!empty($search) ? ' AND Bezeichnung LIKE ?' : '') . ' GROUP BY ID ORDER BY Bezeichnung COLLATE NOCASE;');
-        $sth->execute(!empty($search) ? array_merge(array_fill(0, 3, $userId), $userGroups, '%' . $search . '%') : array_merge(array_fill(0, 3, $userId), $userGroups));
-        
+        $sth = $this->pdo->prepare('SELECT ID, Typ, Erstelldatum, Bezeichnung, Beschreibung, Fachabteilung, Status, Ersteller, FachKontakt, TechKontakt, Bearbeitergruppe, Sichtbarkeit, IFNULL(Name, verfahren_historie.Kennung) AS LetzterBearbeiter, IFNULL(Anzeigename, "") AS BearbeiterDetails, MAX(Datum) AS Aktualisierung '
+         . 'FROM verfahren LEFT JOIN verfahren_historie ON verfahren.ID = verfahren_historie.Verfahrens_Id LEFT JOIN personen ON verfahren_historie.Kennung = personen.Kennung '
+         . 'WHERE NOT Status = 3 AND (Ersteller = ? OR TechKontakt = ? OR FachKontakt = ? '
+         . 'OR ID in (SELECT Process_ID FROM permissions WHERE CanEdit = 1 AND ((IsGroup = 0 AND ID = ?) OR (IsGroup = 1 AND ID in (' . implode(', ', array_fill(0, count($userGroups), '?')) . ')))))' . (!empty($search) ? ' AND Bezeichnung LIKE ?' : '') . ' GROUP BY ID ORDER BY Bezeichnung COLLATE NOCASE;');
+
+        $sth->execute(!empty($search) ? array_merge(array_fill(0, 4, $userId), $userGroups, ['%' . $search . '%']) : array_merge(array_fill(0, 4, $userId), $userGroups));
+
+
         ob_start();
         $sth->debugDumpParams();
         $sqlDump = ob_get_clean();
         print "DBCon.class.php -> listVerfahrenOwn() Execute: $sqlDump";
-        
+
         $result = array();
         foreach($sth->fetchAll() as $entry) {
           $entry['Editierbar'] = TRUE;
@@ -393,8 +490,8 @@
     }
 
     /**
-     * Listet alle Verfahren auf, die innerhalb der Fachabteilung oder der IVV des Nutzersfreigegeben sind oder innerhalb der gesamten WWU.
-     * 
+     * Listet alle Verfahren auf, die in Betrieb sind und für den Nutzer freigegeben sind
+     *
      * @param string $userId     Nutzerkennung des ausführenden Nutzers
      * @param array  $userGroups Gruppen des ausführenden Nutzers
      * @param string $search     (optional) Filter zur Suche nach bestimmten Verfahren (nutzt Bezeichnung)
@@ -405,28 +502,34 @@
     public function listVerfahrenShared($userId, $userGroups, $search = '') {
       if($this->isConnected()) {
         $result = array();
-        $sth = $this->pdo->prepare('SELECT ID, Bezeichnung, Beschreibung, Fachabteilung, Status, Sichtbarkeit FROM verfahren WHERE NOT (Ersteller = ? OR TechKontakt = ? OR FachKontakt = ? OR Bearbeitergruppe IN (' . implode(', ', array_fill(0, count($userGroups), '?')) . ')) AND Sichtbarkeit = 3 AND Status = 2' . (!empty($search) ? ' AND Bezeichnung LIKE ?' : '') . ';');
-        $sth->execute(!empty($search) ? array_merge(array_fill(0, 3, $userId), $userGroups, ['%' . $search . '%']) : array_merge(array_fill(0, 3, $userId), $userGroups));
-        
+
+        $sth = $this->pdo->prepare('SELECT ID, Typ, Erstelldatum, Bezeichnung, Beschreibung, Fachabteilung, Status, Sichtbarkeit, MAX(Datum) AS Aktualisierung '
+         . 'FROM verfahren LEFT JOIN verfahren_historie ON verfahren.ID = verfahren_historie.Verfahrens_Id '
+         . 'WHERE Status = 2 AND NOT Ersteller = ? AND NOT TechKontakt = ? AND NOT FachKontakt = ? '
+         . 'AND ID in (SELECT Process_ID FROM permissions WHERE CanEdit = 0 AND ((IsGroup = 0 AND ID = ?) OR (IsGroup = 1 AND ID in (' . implode(', ', array_fill(0, count($userGroups), '?')) . '))))' . (!empty($search) ? ' AND Bezeichnung LIKE ?' : '') . ' GROUP BY ID ORDER BY Bezeichnung COLLATE NOCASE;');
+
+        $sth->execute(!empty($search) ? array_merge(array_fill(0, 4, $userId), $userGroups, ['%' . $search . '%']) : array_merge(array_fill(0, 4, $userId), $userGroups));
+
         ob_start();
         $sth->debugDumpParams();
         $sqlDump = ob_get_clean();
         print "DBCon.class.php -> listVerfahrenShared() Execute: $sqlDump";
-        
+
         foreach($sth->fetchAll() as $entry) {
           $entry['Editierbar'] = FALSE;
           array_push($result, $entry);
         }
+
         return $result;
       }
       else {
         throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
       }
     }
-    
+
     /**
      * Listet alle Verfahren auf für die Datenschutzbeauftragten zur Einsicht.
-     * 
+     *
      * @param string $search (optional) Filter zur Suche nach bestimmten Verfahren (nutzt Bezeichnung)
      * @return array Gibt die Liste der Verfahren zurück
      * @throws PDOException
@@ -435,18 +538,18 @@
     public function listVerfahrenDSB($search = '') {
       if($this->isConnected()) {
         $result = array();
-        $sth = $this->pdo->prepare('SELECT ID, Bezeichnung, Beschreibung, Erstelldatum, Fachabteilung, IFNULL(person1.Anzeigename, verfahren.FachKontakt) AS FachKontakt, IFNULL(person2.Anzeigename, verfahren.TechKontakt) AS TechKontakt, Status, Sichtbarkeit, DSBKommentar, MAX(Datum) AS Aktualisierung '
+        $sth = $this->pdo->prepare('SELECT ID, Typ, Bezeichnung, Beschreibung, Erstelldatum, Fachabteilung, IFNULL(person1.Anzeigename, verfahren.FachKontakt) AS FachKontakt, IFNULL(person2.Anzeigename, verfahren.TechKontakt) AS TechKontakt, Status, Sichtbarkeit, DSBKommentar, MAX(Datum) AS Aktualisierung '
                 . 'FROM verfahren LEFT JOIN verfahren_historie ON verfahren.ID = verfahren_historie.Verfahrens_Id LEFT JOIN personen AS person1 ON verfahren.FachKontakt = person1.Kennung LEFT JOIN personen AS person2 ON verfahren.TechKontakt = person2.Kennung '
                 . 'WHERE NOT Status = 3' . (!empty($search) ? ' AND Bezeichnung LIKE ?' : '') . ' GROUP BY ID ORDER BY Bezeichnung COLLATE NOCASE;');
         $sth->execute(!empty($search) ? ['%' . $search . '%'] : []);
-        
+
         ob_start();
         $sth->debugDumpParams();
         $sqlDump = ob_get_clean();
         print "DBCon.class.php -> listVerfahrenDSB() Execute: $sqlDump";
-        
+
         $result = $sth->fetchAll();
-        
+
         return $result;
       }
       else {
@@ -456,7 +559,7 @@
 
     /**
      * Liest ein Verfahren mit der übergebenen ID aus.
-     * 
+     *
      * @param int    $verfahrensId ID des Verfahrens
      * @param string $userId       Nutzerkennung des ausführenden Nutzers
      * @param array  $userGroups   Gruppen des ausführenden Nutzers
@@ -468,27 +571,32 @@
     public function getVerfahren($verfahrensId, $userId, $userGroups, $userIsDSB = FALSE) {
       if($this->isConnected()) {
         if($userIsDSB) {
+          $permLevel = 2;
           $sth = $this->pdo->prepare('SELECT ID, Erstelldatum, Bezeichnung, Beschreibung, Fachabteilung, IVV, FachKontakt, TechKontakt, Ersteller, Bearbeitergruppe, Status, Sichtbarkeit, Kennung AS BearbeitetVon, MAX(Datum) AS Aktualisierung, JSON FROM verfahren LEFT JOIN verfahren_historie ON verfahren.ID = verfahren_historie.Verfahrens_Id  WHERE ID = ? AND NOT Status = 3 GROUP BY ID;');
           $sth->execute([$verfahrensId]);
         }
         else {
-          $sth = $this->pdo->prepare('SELECT ID, Erstelldatum, Bezeichnung, Beschreibung, Fachabteilung, IVV, FachKontakt, TechKontakt, Ersteller, Bearbeitergruppe, Status, Sichtbarkeit, Kennung AS BearbeitetVon, MAX(Datum) AS Aktualisierung, JSON FROM verfahren LEFT JOIN verfahren_historie ON verfahren.ID = verfahren_historie.Verfahrens_Id  WHERE ID = ? AND NOT Status = 3 AND (Ersteller = ? OR TechKontakt = ? OR FachKontakt = ? OR Bearbeitergruppe IN (' . implode(', ', array_fill(0, count($userGroups), '?')) . ') OR (Status=2 AND Sichtbarkeit = 3)) GROUP BY ID;');
-          $sth->execute(array_merge([$verfahrensId], array_fill(0, 3, $userId), $userGroups));
+          $permLevel = $this->getPermissionLevel($verfahrensId, $userId, $userGroups);
+          $sql = 'SELECT ID, Erstelldatum, Bezeichnung, Beschreibung, Fachabteilung, IVV, FachKontakt, TechKontakt, Ersteller, Bearbeitergruppe, Status, Sichtbarkeit, Kennung AS BearbeitetVon, MAX(Datum) AS Aktualisierung, JSON '
+          . 'FROM verfahren LEFT JOIN verfahren_historie ON verfahren.ID = verfahren_historie.Verfahrens_Id  '
+          . 'WHERE ID = ? AND NOT Status = 3 AND (Ersteller = ? OR TechKontakt = ? OR FachKontakt = ? '
+          . 'OR ID in (SELECT Process_ID FROM permissions WHERE (IsGroup = 0 AND ID = ?) OR (IsGroup = 1 AND ID in (' . implode(', ', array_fill(0, count($userGroups), '?')) . ')))) GROUP BY ID;';
+          $sth = $this->pdo->prepare($sql);
+          $sth->execute(array_merge([$verfahrensId], array_fill(0, 4, $userId), $userGroups));
         }
-        
+
         ob_start();
         $sth->debugDumpParams();
         $sqlDump = ob_get_clean();
         print "DBCon.class.php -> getVerfahren() Execute: $sqlDump";
-        
+
         $result = array();
         foreach($sth->fetchAll() as $entry) {
-          if($userIsDSB || $entry['Ersteller'] === $userId || $entry['TechKontakt'] === $userId || $entry['FachKontakt'] === $userId || in_array($entry['Bearbeitergruppe'], $userGroups)) {
+          if($permLevel === 2) {
             $entry['Editierbar'] = TRUE;
           }
           else {
             $entry['Editierbar'] = FALSE;
-            $entry['JSON'] = '{}';
           }
           array_push($result, $entry);
         }
@@ -501,88 +609,96 @@
 
     /**
      * Aktualisiert ein Verfahren mit der übergebenen ID.
-     * 
+     *
      * @param int    $verfahrensId  ID des Verfahrens
      * @param string $userId        Nutzerkennung des ausführenden Nutzers
      * @param array  $userGroups    Gruppen des ausführenden Nutzers
+     * @param int    $typ           Typ des Eintrags (Verarbeitungstätigkeit oder IT-Verfahren)
      * @param string $bezeichnung   Bezeichnung des Verfahrens
      * @param string $datum         Einführungsdatum
      * @param string $beschreibung  Ausführliche Beschreibung
+     * @param int    $risikolevel   Ergebnis der Risikoanalyse
      * @param string $fachabteilung Zuständige Fachabteilung
      * @param string $ivv           Zuständige IVV
      * @param string $fachkontakt   Fachlicher Ansprechpartner
      * @param string $techkontakt   Technischer Ansprechpartner
      * @param int    $sichtbarkeit  Sichtbarkeit des Verfahrens (0=Nur Ersteller/Fach. Ansprechpartner/Tech. Ansprechpartner, 3=Gesamte WWU)
-     * @param string $accessGroup   Bearbeitergruppe
      * @param string $json          JSON-kodierte Informationen zum Verfahren
      * @param bool   $userIsDSB     (optional) Gibt an, ob der ausführende Nutzer ein DSB ist (Zugriff auf alle Verfahren)
      * @return bool Wenn das Verfahren aktualisiert wurde TRUE; Falls kein Verfahren aktualisiert wurde FALSE
      * @throws PDOException
      * @throws Exception
      */
-    public function updateVerfahren($verfahrensId, $userId, $userGroups, $bezeichnung, $datum, $beschreibung, $fachabteilung, $ivv, $fachkontakt, $techkontakt, $sichtbarkeit, $accessGroup, $json, $userIsDSB = FALSE): bool {
+    public function updateVerfahren($verfahrensId, $userId, $userGroups, $typ, $bezeichnung, $datum, $beschreibung, $risikolevel, $fachabteilung, $ivv, $fachkontakt, $techkontakt, $sichtbarkeit, $json, $userIsDSB = FALSE): bool {
       if($this->isConnected()) {
         if($userIsDSB) {
           $sth = $this->pdo->prepare('UPDATE verfahren SET
+            Typ = ?,
             Bezeichnung = ?,
             Erstelldatum = ?,
             Beschreibung = ?,
+            Risikolevel = ?,
             Fachabteilung = ?,
             IVV = ?,
             FachKontakt = ?,
             TechKontakt = ?,
             Sichtbarkeit = ?,
-            Bearbeitergruppe = ?,
             JSON = ?
             WHERE ID = ?
           ;');
 
           $sth->execute(array(
+              $typ,
               $bezeichnung,
               $datum,
               $beschreibung,
+              $risikolevel,
               $fachabteilung,
               $ivv,
               $fachkontakt,
               $techkontakt,
               $sichtbarkeit,
-              $accessGroup,
               $json,
               $verfahrensId
           ));
         }
         else {
           $sth = $this->pdo->prepare('UPDATE verfahren SET
+            Typ = ?,
             Bezeichnung = ?,
+            Erstelldatum = ?,
             Beschreibung = ?,
+            Risikolevel = ?,
             Fachabteilung = ?,
             IVV = ?,
             FachKontakt = ?,
             TechKontakt = ?,
             Sichtbarkeit = ?,
-            Bearbeitergruppe = ?,
             JSON = ?
-            WHERE ID = ? AND (Ersteller = ? OR FachKontakt = ? OR TechKontakt = ? OR Bearbeitergruppe IN (' . implode(', ', array_fill(0, count($userGroups), '?')) . '))
+            WHERE ID = ? AND (Ersteller = ? OR FachKontakt = ? OR TechKontakt = ? OR ID in (SELECT Process_ID FROM permissions WHERE CanEdit = 1 AND ((IsGroup = 0 AND ID = ?) OR (IsGroup = 1 AND ID in (' . implode(', ', array_fill(0, count($userGroups), '?')) . ')))))
           ;');
 
           $sth->execute(array_merge(array(
+              $typ,
               $bezeichnung,
+              $datum,
               $beschreibung,
+              $risikolevel,
               $fachabteilung,
               $ivv,
               $fachkontakt,
               $techkontakt,
               $sichtbarkeit,
-              $accessGroup,
               $json,
               $verfahrensId,
+              $userId,
               $userId,
               $userId,
               $userId
           ), $userGroups));
         }
-        
-        
+
+
         ob_start();
         $sth->debugDumpParams();
         $sqlDump = ob_get_clean();
@@ -606,7 +722,7 @@
 
     /**
      * Fragt den aktuellen Status eines Verfahrens ab.
-     * 
+     *
      * @param int    $verfahrensId ID des Verfahrens
      * @param string $userId       Nutzerkennung des ausführenden Nutzers
      * @param array  $userGroups   Gruppen des ausführenden Nutzers
@@ -622,19 +738,19 @@
           $sth->execute([$verfahrensId]);
         }
         else {
-          $sth = $this->pdo->prepare('SELECT Status FROM verfahren WHERE ID = ? AND (Ersteller = ? OR FachKontakt = ? OR TechKontakt = ? OR Bearbeitergruppe IN (' . implode(', ', array_fill(0, count($userGroups), '?')) . ')) LIMIT 1;');
-          $sth->execute(array_merge(array($verfahrensId, $userId, $userId), $userGroups));
+          $sth = $this->pdo->prepare('SELECT Status FROM verfahren WHERE ID = ? AND (Ersteller = ? OR FachKontakt = ? OR TechKontakt = ? OR ID in (SELECT Process_ID FROM permissions WHERE ((IsGroup = 0 AND ID = ?) OR (IsGroup = 1 AND ID in (' . implode(', ', array_fill(0, count($userGroups), '?')) . '))))) LIMIT 1;');
+          $sth->execute(array_merge(array($verfahrensId, $userId, $userId, $userId, $userId), $userGroups));
         }
-        
+
         $result = $sth->fetch();
-        
+
         ob_start();
         $sth->debugDumpParams();
         $sqlDump = ob_get_clean();
         print "DBCon.class.php -> getStatus() Execute: $sqlDump";
-        
+
         if(empty($result)) return -1;
-        
+
         return intval($result['Status']);
       }
       else {
@@ -644,7 +760,7 @@
 
     /**
      * Aktualisiert den Status des Verfahrens.
-     * 
+     *
      * @param int    $verfahrensId ID des Verfahrens
      * @param string $userId       Nutzerkennung des ausführenden Nutzers
      * @param array  $userGroups   Gruppen des ausführenden Nutzers
@@ -662,20 +778,21 @@
           $success = $sth->execute([$status, $verfahrensId]);
         }
         else {
-          $sth = $this->pdo->prepare('UPDATE verfahren SET Status = ? WHERE id = ? AND (Ersteller = ? OR FachKontakt = ? OR TechKontakt = ? OR Bearbeitergruppe IN (' . implode(', ', array_fill(0, count($userGroups), '?')) . '));');
+          $sth = $this->pdo->prepare('UPDATE verfahren SET Status = ? WHERE id = ? AND (Ersteller = ? OR FachKontakt = ? OR TechKontakt = ? OR ID in (SELECT Process_ID FROM permissions WHERE CanEdit = 1 AND ((IsGroup = 0 AND ID = ?) OR (IsGroup = 1 AND ID in (' . implode(', ', array_fill(0, count($userGroups), '?')) . ')))));');
 
           $success = $sth->execute(array_merge(array(
               $status,
               $verfahrensId,
               $userId,
               $userId,
+              $userId,
               $userId
           ), $userGroups));
         }
-        
+
 
         $changedRows = $sth->rowCount();
-        
+
         ob_start();
         $sth->debugDumpParams();
         $sqlDump = ob_get_clean();
@@ -691,10 +808,10 @@
         throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
       }
     }
-    
+
     /**
      * Aktualisiert den DSB-Kommentar zu einem Verfahren.
-     * 
+     *
      * @param int    $verfahrensId ID des Verfahrens
      * @param string $kommentar    Neuer Kommentar
      * @return bool Wenn der Kommentar aktualisiert wurde TRUE, sonst FALSE
@@ -707,7 +824,7 @@
         $sth->execute([$kommentar, $verfahrensId]);
 
         $changedRows = $sth->rowCount();
-        
+
         ob_start();
         $sth->debugDumpParams();
         $sqlDump = ob_get_clean();
@@ -723,10 +840,10 @@
         throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
       }
     }
-    
+
     /**
      * Überprüft, ob ein Verfahren mit der übergebenen ID existiert.
-     * 
+     *
      * @param int $verfahrensId   ID eines Verfahrens
      * @return bool TRUE falls das Verfahren existiert, sonst FALSE
      * @throws PDOException
@@ -737,12 +854,12 @@
         $sth = $this->pdo->prepare('SELECT ID FROM verfahren WHERE ID = ? LIMIT 1;');
         $sth->execute(array($verfahrensId));
         $result = $sth->fetch();
-        
+
         ob_start();
         $sth->debugDumpParams();
         $sqlDump = ob_get_clean();
         print "DBCon.class.php -> checkVerfahren() Execute: $sqlDump";
-        
+
         if(!empty($result)) return TRUE;
         return FALSE;
       }
@@ -753,7 +870,7 @@
 
     /**
      * Löscht das Verfahren mit der übergebenen ID.
-     * 
+     *
      * @param int    $verfahrensId ID des zu löschenden Verfahrens
      * @param string $userId       Nutzerkennung des ausführenden Nutzers
      * @param array  $userGroups   Gruppen des ausführenden Nutzers
@@ -765,22 +882,23 @@
       if($this->isConnected()) {
         #$sth = $this->pdo->prepare('DELETE FROM verfahren WHERE id = ? AND (Ersteller = ? OR FachKontakt = ? OR TechKontakt = ?);');
         #$success = $sth->execute(array($verfahrensId, $userId, $userId, $userId));
-        
-        # Das Verfahren wird erstmal nur als gelöscht markiert
-        $sth = $this->pdo->prepare('UPDATE verfahren SET Status = 3, JSON = "{}" WHERE id = ? AND (Ersteller = ? OR FachKontakt = ? OR TechKontakt = ?);');
 
-        $sth->execute(array(
+        # Das Verfahren wird erstmal nur als gelöscht markiert
+        $sth = $this->pdo->prepare('UPDATE verfahren SET Status = 3 WHERE id = ? AND (Ersteller = ? OR FachKontakt = ? OR TechKontakt = ? OR ID in (SELECT Process_ID FROM permissions WHERE CanEdit = 1 AND ((IsGroup = 0 AND ID = ?) OR (IsGroup = 1 AND ID in (' . implode(', ', array_fill(0, count($userGroups), '?')) . ')))));');
+
+        $sth->execute(array_merge(array(
             $verfahrensId,
             $userId,
             $userId,
+            $userId,
             $userId
-        ));
-        
+        ), $userGroups));
+
         ob_start();
         $sth->debugDumpParams();
         $sqlDump = ob_get_clean();
         print "DBCon.class.php -> delVerfahren() Execute: $sqlDump";
-        
+
         $deletedRows = $sth->rowCount();
 
         if($deletedRows === 1) {
@@ -798,34 +916,8 @@
     }
 
     /**
-     * Liest die Rechtsgrundlagen aus der Datenbank aus.
-     * 
-     * @param int $id (optional) ID einer bestimmten Rechtsgrundlage
-     * @return array Gibt im Erfolgsfall ein Array mit den Rechtsgrundlagen zurück
-     * @throws PDOException
-     * @throws Exception
-     */
-    public function getRechtsgrundlagen($id = NULL) {
-      if($this->isConnected()) {
-        $sth = $this->pdo->prepare('SELECT * FROM rechtsgrundlagen' . (!empty($id) ? ' WHERE ID = ?' : '') . ';');
-        $sth->execute(!empty($id) ? [$id] : []);
-        
-        ob_start();
-        $sth->debugDumpParams();
-        $sqlDump = ob_get_clean();
-        print "DBCon.class.php -> getRechtsgrundlagen() Execute: $sqlDump";
-        
-        $result = $sth->fetchAll();
-        return $result;
-      }
-      else {
-        throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
-      }
-    }
-
-    /**
      * Liest die letzten Historie-Einträge zu einem bestimmten Verfahren aus.
-     * 
+     *
      * @param int $verfahrensId ID eines Verfahrens
      * @return array Liste der letzten Bearbeitungen eines Verfahrens
      * @throws PDOException
@@ -835,12 +927,12 @@
       if($this->isConnected()) {
         $sth = $this->pdo->prepare('SELECT Verfahrens_Id, Datum, personen.Kennung, personen.Name, personen.Anzeigename FROM verfahren_historie LEFT JOIN personen ON verfahren_historie.Kennung = personen.Kennung WHERE Verfahrens_Id = ? ORDER BY Datum DESC;');
         $sth->execute([$verfahrensId]);
-        
+
         ob_start();
         $sth->debugDumpParams();
         $sqlDump = ob_get_clean();
         print "DBCon.class.php -> getHistorie() Execute: $sqlDump";
-        
+
         $result = $sth->fetchAll();
         return $result;
       }
@@ -852,7 +944,7 @@
     /**
      * Durchsucht die Personendatenbank nach $term als Teil der Kennung oder des Namens.
      * Sollte der Suchbegriff Leerzeichen enthalten, wird der String aufgeteilt in einzelne Suchbegriffe.
-     * 
+     *
      * @param string $term         Suchbegriff
      * @param bool   $onlyEmployee (optional) Wenn TRUE, dann werden nur Mitarbeiter angezeigt
      * @param bool   $isID         (optional) Wenn TRUE, dann wird $term als exakte Nutzerkennung gesucht
@@ -884,7 +976,7 @@
           $sth = $this->pdo->prepare($sql . ' (Kennung LIKE ? OR Name LIKE ?);');
           $sth->execute([$terms[0], $terms[0]]);
         }
-        
+
         ob_start();
         $sth->debugDumpParams();
         $sqlDump = ob_get_clean();
@@ -910,7 +1002,7 @@
     /**
      * Durchsucht die Organisationsabteilungen nach $term als Teil des Namens.
      * Sollte der Suchbegriff Leerzeichen enthalten, wird der String aufgeteilt in einzelne Suchbegriffe.
-     * 
+     *
      * @param string $term (optional) Suchbegriff
      * @return array Array der Suchergebnisse
      * @throws PDOException
@@ -951,7 +1043,7 @@
     /**
      * Durchsucht die IVVen nach $term als Teil des Namens.
      * Sollte der Suchbegriff Leerzeichen enthalten, wird der String aufgeteilt in einzelne Suchbegriffe.
-     * 
+     *
      * @param string $term (optional) Suchbegriff
      * @return array Array der Suchergebnisse
      * @throws PDOException
@@ -988,11 +1080,11 @@
       print "DBCon.class.php -> searchIVV() Execute: $sqlDump";
       return $sth->fetchAll();
     }
-    
+
     /**
      * Durchsucht die CPE-Einträge nach $term als Teil des Namens.
      * Sollte der Suchbegriff Leerzeichen enthalten, wird der String aufgeteilt in einzelne Suchbegriffe.
-     * 
+     *
      * @param string $term (optional) Suchbegriff
      * @param string $type (optional) Typ der zu durchsuchenden CPE-Einträge ('a' für Applikationen, 'o' für Betriebssysteme und 'h' für Hardware)
      * @return array Array der Suchergebnisse
@@ -1003,7 +1095,7 @@
       if(!$this->isConnected()) {
         throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
       }
-      
+
       $sql = 'SELECT CPE, Name from cpe';
       $filterSql = '';
       $filterVars = [];
@@ -1016,13 +1108,13 @@
           array_push($filterVars, '%' . $value . '%');
         }
       }
-      
+
       if(!empty($type)) {
         if(!empty($filterSql)) $filterSql .= ' AND';
         $filterSql .= ' Typ = ?';
         array_push($filterVars, $type);
       }
-      
+
       if(!empty($filterSql)) $sql .= ' WHERE ' . $filterSql;
       $sql .= ';';
       $sth = $this->pdo->prepare($sql);
@@ -1033,10 +1125,10 @@
       print "DBCon.class.php -> searchCPE() Execute: $sqlDump";
       return $sth->fetchAll();
     }
-    
+
     /**
      * Gibt eine Statisitk über die aktuell gemeldeten Verfahren aus.
-     * 
+     *
      * @return array Assoziatives Array mit Werten für 'gesamt', 'inbearbeitung', 'abgeschlossen' und 'gelöscht'
      * @throws Exception
      * @throws PDOException
@@ -1045,21 +1137,21 @@
       if(!$this->isConnected()) {
         throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
       }
-      
+
       $sth = $this->pdo->prepare("
         SELECT
         (SELECT COUNT(ID) FROM verfahren) AS gesamt,
         (SELECT COUNT(ID)  FROM verfahren WHERE Status = 0) AS inbearbeitung,
         (SELECT COUNT(ID)  FROM verfahren WHERE Status = 2) AS abgeschlossen,
         (SELECT COUNT(Verfahrens_Id) FROM (SELECT Verfahrens_Id FROM verfahren_historie WHERE Datum > datetime('now', '-7 days', 'localtime') GROUP BY Verfahrens_Id)) AS zuletztbearbeitet;");
-      
+
       $sth->execute();
-      
+
       ob_start();
       $sth->debugDumpParams();
       $sqlDump = ob_get_clean();
       print "DBCon.class.php -> getStats() Execute: $sqlDump";
-      
+
       $tmp = $sth->fetch();
       $result = [
           'gesamt' => (int) $tmp['gesamt'],
@@ -1068,14 +1160,183 @@
           'gelöscht' => $tmp['gesamt'] - $tmp['inbearbeitung'] - $tmp['abgeschlossen'],
           'zuletztbearbeitet' => (int) $tmp['zuletztbearbeitet']
       ];
-      
+
+      return $result;
+    }
+
+    /**
+     * Gibt die Liste der hinterlegten TOMs aus.
+     *
+     * @return mixed[] Array mit den TOMs
+     * @throws PDOException
+     * @throws Exception
+     */
+    public function getTOMs() {
+      if(!$this->isConnected()) {
+        throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
+      }
+
+      $sth = $this->pdo->prepare("SELECT * FROM toms;");
+
+      $sth->execute();
+
+      ob_start();
+      $sth->debugDumpParams();
+      $sqlDump = ob_get_clean();
+      print "DBCon.class.php -> getTOMs() Execute: $sqlDump";
+
+      return $sth->fetchAll();
+    }
+
+    /**
+     * Aktualisiert die Berechtigungen für en Verfahren.
+     *
+     * @param  int      $verfahrensId ID des Verfahrens
+     * @param  string   $userId       Nutzerkennung
+     * @param  string[] $userGroups   Gruppen des ausführenden Nutzers
+     * @param  mixed[]  $permissions  Array mit Berechtigungen ([['id' => 'u0ivsb', 'isgroup' => true, 'canedit' => true],...])
+     * @return bool TRUE bei Erfolg
+     * @throws PDOException
+     * @throws Exception
+     */
+    public function updatePermissions($verfahrensId, $userId, $userGroups, $permissions) {
+      if(!$this->isConnected()) {
+        throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
+      }
+
+      if($this->getPermissionLevel($verfahrensId, $userId, $userGroups) < 2) {
+        return FALSE;
+      }
+
+      $this->pdo->beginTransaction();
+
+      $sql = 'DELETE FROM permissions WHERE Process_ID = ? AND (
+        Process_ID in (SELECT ID FROM verfahren WHERE ID = ? AND (Ersteller = ? OR FachKontakt = ? OR Techkontakt = ?))
+        OR Process_ID in (SELECT Process_ID FROM permissions WHERE Process_ID = ? AND CanEdit = 1 AND ((IsGroup = 0 AND ID = ?) OR (IsGroup = 1 AND ID in (' . implode(', ', array_fill(0, count($userGroups), '?')) . ')))));';
+      $sth = $this->pdo->prepare($sql);
+
+      $sth->execute(array_merge(array(
+          $verfahrensId,
+          $verfahrensId,
+          $userId,
+          $userId,
+          $userId,
+          $verfahrensId,
+          $userId,
+      ), $userGroups));
+
+      ob_start();
+      $sth->debugDumpParams();
+      $sqlDump = ob_get_clean();
+      print "DBCon.class.php -> updatePermissions() Execute: $sqlDump";
+
+      $sql = 'INSERT INTO permissions (Process_ID, ID, IsGroup, CanEdit) VALUES (?, ?, ?, ?);';
+      $sth = $this->pdo->prepare($sql);
+
+      foreach($permissions as $perm) {
+        $sth->execute(array($verfahrensId, $perm['id'], $perm['isgroup'] ? 1 : 0, $perm['canedit'] ? 1 : 0));
+
+        ob_start();
+        $sth->debugDumpParams();
+        $sqlDump = ob_get_clean();
+        print "DBCon.class.php -> updatePermissions() Execute: $sqlDump";
+      }
+
+      return $this->pdo->commit();
+    }
+
+    /**
+     * Gibt die Berechtigungsstufe für einen Nutzer und ein Verfahren zurück
+     * @param  int      $verfahrensId ID des Verfahrens
+     * @param  string   $userId       Nutzerkennung
+     * @param  string[] $userGroups   Gruppen des Nutzers
+     * @return int Berechtigungsstufe (0 = kein Zugriff, 1 = Lesezugriff, 2 = Schreibzugriff)
+     * @throws PDOException
+     * @throws Exception
+     */
+    public function getPermissionLevel($verfahrensId, $userId, $userGroups) {
+      if(!$this->isConnected()) {
+        throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
+      }
+
+      $permLevel = 0;
+
+      # Prüfe Leseberechtigung
+      $sql = 'SELECT Perm FROM (
+        SELECT 1 as Perm FROM verfahren WHERE ID = ? AND (Ersteller = ? OR FachKontakt = ? OR Techkontakt = ?)
+        UNION SELECT CanEdit AS Perm FROM permissions WHERE Process_ID = ? AND ((IsGroup = 0 AND ID = ?) OR (IsGroup = 1 AND ID in (' . implode(', ', array_fill(0, count($userGroups), '?')) . '))))
+        ORDER BY Perm DESC LIMIT 1;';
+
+      $sth = $this->pdo->prepare($sql);
+
+      $sth->execute(array_merge(array(
+          $verfahrensId,
+          $userId,
+          $userId,
+          $userId,
+          $verfahrensId,
+          $userId,
+      ), $userGroups));
+
+      ob_start();
+      $sth->debugDumpParams();
+      $sqlDump = ob_get_clean();
+      print "DBCon.class.php -> getPermissionLevel() Execute: $sqlDump";
+
+      $result = $sth->fetch();
+
+      if(!empty($result)) {
+        $permLevel = ((int) $result['Perm']) === 1 ? 2 : 1;
+      }
+
+      return $permLevel;
+    }
+
+    /**
+     * Holt die Vorschläge für Eingabefelder.
+     *
+     * @param  string $lang  (optional) Sprachschlüssel
+     * @param  string $field (optional) Vorschläge für ein Feld filtern
+     * @return mixed[] Assoziatives Array der Form ['daten_kategorien_beschreibung' => [ 'de' => [ ['entry' => 'Studenten', 'additionalinfo' => '{}'], ...]]]
+     * @throws PDOException
+     * @throws Exception
+     */
+    public function getSuggestions($lang = '', $field = '') {
+      if(!$this->isConnected()) {
+        throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
+      }
+
+      $filter = [];
+      if(!empty($lang)) array_push($filter, ' Lang = ?');
+      if(!empty($field)) array_push($filter, ' Field = ?');
+      $sql = 'SELECT * FROM suggestions' . ((count($filter) > 0) ? ' WHERE' . implode(' AND', $filter) : '') . ' ORDER BY Entry ASC;';
+
+      $sth = $this->pdo->prepare($sql);
+
+      $filterValues = [];
+      if(!empty($lang)) array_push($filterValues, $lang);
+      if(!empty($field)) array_push($filterValues, $field);
+      $sth->execute($filterValues);
+
+      ob_start();
+      $sth->debugDumpParams();
+      $sqlDump = ob_get_clean();
+      print "DBCon.class.php -> getSuggestions() Execute: $sqlDump";
+
+      $result = [];
+      foreach($sth->fetchAll() as $entry) {
+        if(!array_key_exists($entry['Field'], $result)) $result[$entry['Field']] = [];
+        if(!array_key_exists($entry['Lang'], $result[$entry['Field']])) $result[$entry['Field']][$entry['Lang']] = [];
+        array_push($result[$entry['Field']][$entry['Lang']], ['entry' => $entry['Entry'], 'additionalinfo' => $entry['AdditionalInfo']]);
+      }
+
       return $result;
     }
 
     /**
      * Schreibt einen Eintrag in die Bearbeitungs-Historie.
      * Sollte immer nur in Verbindung mit einer Aktion genutzt werden.
-     * 
+     *
      * @param int $verfahrensId   ID des Verfahrens
      * @param string $userId Nutzerkennung
      * @return void
@@ -1084,18 +1345,18 @@
     private function addHistorie($verfahrensId, $userId) {
       $sth = $this->pdo->prepare('INSERT INTO verfahren_historie (Verfahrens_Id, Kennung) VALUES (?, ?);');
       $sth->execute([$verfahrensId, $userId]);
-      
+
       ob_start();
       $sth->debugDumpParams();
       $sqlDump = ob_get_clean();
       print "DBCon.class.php -> addHistorie() Execute: $sqlDump";
-      
+
       $this->removeHistorie($verfahrensId);
     }
 
     /**
      * Entfernt die ältesten Einträge der Historie, sodass nur const MAXHISTORY Einträge übrig bleiben.
-     * 
+     *
      * @param int $verfahrensId ID des Verfahrens
      * @return void
      * @throws PDOException
@@ -1103,7 +1364,7 @@
     private function removeHistorie($verfahrensId) {
       $sth = $this->pdo->prepare('DELETE FROM verfahren_historie WHERE (Verfahrens_Id, Kennung, Datum) IN (SELECT * FROM verfahren_historie WHERE Verfahrens_Id = ? ORDER BY Datum DESC LIMIT -1 OFFSET ?);');
       $sth->execute([$verfahrensId, self::MAXHISTORY]);
-      
+
       ob_start();
       $sth->debugDumpParams();
       $sqlDump = ob_get_clean();

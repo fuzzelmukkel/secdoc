@@ -101,10 +101,11 @@
      * @return string Aufstellungsort oder ein Platzhalter, falls kein Ort bekannt
      */
     public static function getAufstellungsort($ip) {
-      if ($ip == '127.0.0.1') {
-        return "Mein Büro";
-      } elseif ($ip == '::1') {
-        return "ZIV, Raum 111, Einsteinstr. 60";
+      $netzDb = array('127.0.0.1' => "Mein Büro",
+                       '::1' => "ZIV, Raum 111, Einsteinstr. 60"
+                     );
+      if ($ort = $netzDb['$ip']) {
+        return $ort;
       } else {
         return "Kein Aufstellungsort in Netzdatenbank eingetragen.";
       }
@@ -127,8 +128,11 @@
      * @return array Liste der Nutzergruppen
      */
     public static function getUserGroups($userId) {
-      $userGroups = array('demogroup');
-      return $userGroups;
+      $userGroups = array('demouser' => array('demogroup', 'demogroup2', 'demogroup3'),
+                          'demouser2' => array('demogroup', 'demogroup2'),
+                          'demouser3' => array('demogroup')
+                          );
+      return $userGroups[$userId];
     }
 
     /**
@@ -140,7 +144,11 @@
      */
     public static function getGroupName($groupId) {
       #return get_name_from_group($groupId);
-      return 'Gruppe für SecDoc Demosystem';
+      $groupNames = array('demogroup' => 'Gruppe für SecDoc Demosystem',
+                          'demogroup2' => 'Zweite Gruppe für SecDoc Demosystem',
+                          'demogroup3' => 'Dritte Gruppe für SecDoc Demosystem'
+                          );
+      return $groupNames[$groupId];
     }
 
     /**
@@ -176,7 +184,7 @@
      */
     public static function readUserPassword($userId) {
       #return user_read_pass($userId);
-      return '';
+      return 'demopass';
     }
   }
 ?>

@@ -305,6 +305,23 @@ EOH;
     # Liest alle Verfahren aus, auf die $userId Zugriff hat
     case 'list': {
       $list = $dbcon->listVerfahrenOwn($userId, $userGroups);
+      $list = array_merge($list, $dbcon->listVerfahrenShared($userId, $userGroups));
+      $count = count($list);
+
+      # Prüft, welche PDFs bereits existieren
+      $currPDFs = scandir($pdf_dir);
+      for($c = 0; $c < $count; $c++) {
+        $list[$c]['PDF'] = array_search($list[$c]['ID'] . '.pdf', $currPDFs) ? TRUE : FALSE;
+      }
+
+      $output['count'] = $count;
+      $output['data'] = $list;
+      break;
+    }
+
+    # Listet alle Verfahren auf, die einsehbar, aber nicht bearbeitbar sind
+    case 'listshared': {
+      $list = $dbcon->listVerfahrenShared($userId, $userGroups);
       $count = count($list);
 
       # Prüft, welche PDFs bereits existieren
@@ -338,7 +355,7 @@ EOH;
       break;
     }
 
-    # Durchsucht die für den aktuellen Nutzer einsehbaren Verfahren
+    # Durchsucht die für den aktuellen Nutzer einsehbaren Verfahren (nur IT-Verfahren)
     case 'searchverfahren': {
       if($userIsDSB) {
         $list = $dbcon->listVerfahrenDSB($search);
@@ -350,7 +367,7 @@ EOH;
 
       $result = array();
       foreach($list as $entry) {
-        array_push($result, array('value' => $entry['ID'], 'label' => $entry['Bezeichnung'] . " [" . $entry['Fachabteilung'] . "]"));
+        if(intval($entry['Typ']) === 2) array_push($result, array('value' => $entry['ID'], 'label' => $entry['Bezeichnung'] . " [" . $entry['Fachabteilung'] . "]"));
       }
 
       $output['data'] = $result;
@@ -392,6 +409,7 @@ EOH;
 
       // Benötigte Parameter in $data überprüfen
       $reqVars = array(
+        'allgemein_typ',
         'allgemein_bezeichnung',
         'allgemein_beschreibung',
         'allgemein_abteilung',
@@ -408,7 +426,35 @@ EOH;
       # HTML Symbole ersetzen
       $data = Utils::encodeHTMLArray($data);
 
-      $id = $dbcon->addVerfahren($userId, $newId, $data['allgemein_bezeichnung'], $data['allgemein_datum'], $data['allgemein_beschreibung'], $data['allgemein_abteilung'], $data['allgemein_ivv'], $data['allgemein_fachlich_kennung'], $data['allgemein_technisch_kennung'], $data['meta_bearbeiter_gruppe'], json_encode($data));
+      # Verfahren erstellen
+      $id = $dbcon->addVerfahren($userId, $newId, intval($data['allgemein_typ']), $data['allgemein_bezeichnung'], $data['allgemein_datum'], $data['allgemein_beschreibung'], intval($data['massnahmen_risiko']), $data['allgemein_abteilung'], $data['allgemein_ivv'], $data['allgemein_fachlich_kennung'], $data['allgemein_technisch_kennung'], json_encode($data));
+
+      # Berechtigungen eintragen (falls schon gegeben)
+      $newPermissions = [];
+
+      if(isset($data['meta_nutzer_kennung'])) {
+        for($c = 0; $c < count($data['meta_nutzer_kennung']); $c++) {
+          array_push($newPermissions, [
+            'id' => empty($data['meta_nutzer_kennung'][$c]) ? $data['meta_nutzer_name'][$c] : $data['meta_nutzer_kennung'][$c],
+            'isgroup' => FALSE,
+            'canedit' => intval($data['meta_nutzer_schreiben'][$c]) === 1 ? TRUE : FALSE
+          ]);
+        }
+      }
+
+      if(isset($data['meta_gruppen_kennung'])) {
+        for($c = 0; $c < count($data['meta_gruppen_kennung']); $c++) {
+          array_push($newPermissions, [
+            'id' => empty($data['meta_gruppen_kennung'][$c]) ? $data['meta_gruppen_name'][$c] : $data['meta_gruppen_kennung'][$c],
+            'isgroup' => TRUE,
+            'canedit' => intval($data['meta_gruppen_schreiben'][$c]) === 1 ? TRUE : FALSE
+          ]);
+        }
+      }
+
+      $setPermission = $dbcon->updatePermissions($id, $userId, $userGroups, $newPermissions);
+
+      if(!$setPermission) error_log("[SecDoc] verwaltung.php -> Konnte neue Berechtigungen für Verfahren #$id nicht setzen!");
 
       $output['data'] = ['ID' => $id, 'Date' => date("Y-m-d H:i:s")];
       $output['success'] = TRUE;
@@ -426,6 +472,7 @@ EOH;
 
       // Benötigte Parameter in $data überprüfen
       $reqVars = array(
+        'allgemein_typ',
         'allgemein_bezeichnung',
         'allgemein_beschreibung',
         'allgemein_abteilung',
@@ -433,7 +480,7 @@ EOH;
         'allgemein_fachlich_kennung',
         'allgemein_technisch_kennung',
         'meta_lastupdate',
-        'meta_bearbeiter_gruppe'
+        'massnahmen_risiko'
       );
       foreach($reqVars as $reqVar) {
         if(!isset($data[$reqVar])) {
@@ -452,7 +499,36 @@ EOH;
       # HTML Symbole ersetzen
       $data = Utils::encodeHTMLArray($data);
 
-      $success = $dbcon->updateVerfahren($verfahrensId, $userId, $userGroups, $data['allgemein_bezeichnung'], $data['allgemein_datum'], $data['allgemein_beschreibung'], $data['allgemein_abteilung'], $data['allgemein_ivv'], $data['allgemein_fachlich_kennung'], $data['allgemein_technisch_kennung'], isset($data['meta_sichtbarkeit']) ? $data['meta_sichtbarkeit'] : 0, $data['meta_bearbeiter_gruppe'], json_encode($data), $userIsDSB);
+      # Verfahren aktualisieren
+      $success = $dbcon->updateVerfahren($verfahrensId, $userId, $userGroups, intval($data['allgemein_typ']), $data['allgemein_bezeichnung'], $data['allgemein_datum'], $data['allgemein_beschreibung'], intval($data['massnahmen_risiko']), $data['allgemein_abteilung'], $data['allgemein_ivv'], $data['allgemein_fachlich_kennung'], $data['allgemein_technisch_kennung'], isset($data['meta_sichtbarkeit']) ? $data['meta_sichtbarkeit'] : 0, json_encode($data), $userIsDSB);
+
+      # Berechtigungen aktualisieren
+      $newPermissions = [];
+
+      if(isset($data['meta_nutzer_kennung'])) {
+        for($c = 0; $c < count($data['meta_nutzer_kennung']); $c++) {
+          array_push($newPermissions, [
+            'id' => empty($data['meta_nutzer_kennung'][$c]) ? $data['meta_nutzer_name'][$c] : $data['meta_nutzer_kennung'][$c],
+            'isgroup' => FALSE,
+            'canedit' => intval($data['meta_nutzer_schreiben'][$c]) === 1 ? TRUE : FALSE
+          ]);
+        }
+      }
+
+      if(isset($data['meta_gruppen_kennung'])) {
+        for($c = 0; $c < count($data['meta_gruppen_kennung']); $c++) {
+          array_push($newPermissions, [
+            'id' => empty($data['meta_gruppen_kennung'][$c]) ? $data['meta_gruppen_name'][$c] : $data['meta_gruppen_kennung'][$c],
+            'isgroup' => TRUE,
+            'canedit' => intval($data['meta_gruppen_schreiben'][$c]) === 1 ? TRUE : FALSE
+          ]);
+        }
+      }
+
+      $setPermission = $dbcon->updatePermissions($verfahrensId, $userId, $userGroups, $newPermissions);
+
+      if(!$setPermission) error_log("[SecDoc] verwaltung.php -> Konnte neue Berechtigungen für Verfahren #$verfahrensId nicht setzen!");
+
 
       if($success && $dbcon->getStatus($verfahrensId, $userId, $userGroups, $userIsDSB) === 2) {
         /**
@@ -462,7 +538,7 @@ EOH;
          * gestellt wurde.
          */
         $output['gentxt'] = generateTXT($dbcon, $userId, $userGroups, $userIsDSB, $verfahrensId);
-        
+
         # Status zurücksetzen auf "In Bearbeitung", falls es zuvor als "In Betrieb" gekennzeichnet war
         $dbcon->updateStatus($verfahrensId, $userId, $userGroups, 0, $userIsDSB);
       }
@@ -609,16 +685,6 @@ EOH;
       break;
     }
 
-    # Gibt die Rechtsgrundlagen zurück
-    case 'getlaws': {
-      $result = $dbcon->getRechtsgrundlagen();
-
-      $output['count'] = count($result);
-      $output['data'] = $result;
-      $output['success'] = TRUE;
-      break;
-    }
-
     # Personensuche nach Name und Kennung
     case 'searchperson': {
       if(empty($search)) {
@@ -628,7 +694,7 @@ EOH;
       else {
         $result = $dbcon->searchPerson($search);
       }
-      
+
       $resultMod = [];
       foreach($result as $val) {
         array_push($resultMod, ['value' => $val['Kennung'], 'label' => $val['Name'], 'name' => $val['Name']]);
@@ -732,6 +798,7 @@ EOH;
       break;
     }
 
+    # Gibt einige Statistiken aus
     case 'getstats': {
       if(!$userIsDSB) {
         returnError('Sie haben keine Berechtigung diese Funktion aufzurufen!');
@@ -742,9 +809,21 @@ EOH;
       break;
     }
 
+    case 'gettoms': {
+      $output['data'] = $dbcon->getTOMs();
+      $output['count'] = count($output['data']);
+      break;
+    }
+
+    case 'getsuggestions': {
+      $output['data'] = $dbcon->getSuggestions();
+      $output['count'] = count($output['data']);
+      break;
+    }
+
     # Falls keine bekannte Aktion angegeben wurde
     default: {
-      $output['error'] = 'Es wurde kein oder kein unterstützter Modus (list, listdsb, get, create, update, delete, finish, updatecomment, history, laws, searchperson, serachabteilung, searchivv, getusergroups, searchapp, searchos, searchipdns, getaufstellungsort, getstats) angegeben!';
+      $output['error'] = 'Es wurde kein oder kein unterstützter Modus (list, listdsb, get, create, update, delete, finish, updatecomment, history, searchperson, serachabteilung, searchivv, getusergroups, searchapp, searchos, searchipdns, getaufstellungsort, getstats, gettoms, getsuggestions) angegeben!';
       break;
     }
   }

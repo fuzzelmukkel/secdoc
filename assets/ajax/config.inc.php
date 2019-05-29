@@ -3,14 +3,14 @@
    * config.inc.php - Zentrale Konfigurations-Einstellungen für SecDoc
    *
    * @author Thorsten Küfer <thorsten.kuefer@uni-muenster.de>
-   * @copyright (c) 2018 Westfälische Wilhelms-Universität Münster
+   * @copyright (c) 2019 Westfälische Wilhelms-Universität Münster
    * @license AGPL-3.0-or-later <https://www.gnu.org/licenses/agpl.html>
    *
    */
 
   # Globale Variablen
   $prog_name = "SecDoc Demosystem";
-  $prog_version = "1.1 (2019.02.27)";
+  $prog_version = "1.2 (2019.05.29)";
   $debug = isset($_REQUEST['debug']) ? filter_var($_REQUEST['debug'], FILTER_VALIDATE_BOOLEAN) : FALSE; # Für Live-System ausschalten, im Testsystem ist Debug-Modus standardmäßig an
   $debugGroups = ['demogroup']; # Nutzergruppen, die Zugriff auf die Debug-Ausgaben haben
   $GLOBALS['DEBUG'] = $debug;
@@ -53,13 +53,13 @@
   # Basispfad
   $base_dir = dirname($_SERVER['DOCUMENT_ROOT']);     # => "/www/data/ZIV.CERT"
   $base_dir = $base_dir ? $base_dir : "/www/data/ZIVtest";
-  $ckusrgrp = "/www/bin/ckusrgrp -n";
+  #$ckusrgrp = "/www/bin/ckusrgrp -n";
 
   $temp_dir     = "$base_dir/temp";        # Hier landen temporäre Dateien
-  $sess_dir     = "$base_dir/sessions";    # Hier landen die PHP sessions und Tickets von ticket.class.php
-  $secret_dir   = "$base_dir/secret";      # Hier liegen Passwörter und Zertifikate
-  $font_dir     = "$base_dir/fonts";       # Fonts für JpGraph (http://jpgraph.net/)
-  $db_dir       = "$base_dir/secdoc";      # Hier liegt die SecDoc SQlite Datenbank
+  #$sess_dir     = "$base_dir/sessions";    # Hier landen die PHP sessions und Tickets von ticket.class.php
+  #$secret_dir   = "$base_dir/secret";      # Hier liegen Passwörter und Zertifikate
+  #$font_dir     = "$base_dir/fonts";       # Fonts für JpGraph (http://jpgraph.net/)
+  $db_dir       = "..";      # Hier liegt die SecDoc SQlite Datenbank
   $includes_dir = "$temp_dir/htdocs/sys/secdoc";      # Hier liegen die HTML Include-Bausteine
   $pdf_dir      = "$temp_dir/secdoc/PDF";             # Hier liegen die PDF-Dateien (temporär für E-Mail-Versand)
   $vendor_dir   = '../vendor/autoload.php'; # Pfad zur Composer autoload.php für MPDF

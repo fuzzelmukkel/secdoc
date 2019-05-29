@@ -74,26 +74,36 @@
   <div class="tab-pane" id="allgemein">
     <div class="row">
       <div class="col-sm-12">
-        <h5 class="info-text text-ul">Allgemeine Angaben zum gemeldeten Verfahren</h5>
+        <h5 class="info-text text-ul">Allgemeine Angaben</h5>
       </div>
-      <div class="col-sm-10 col-sm-offset-1 printHide">
+      <div class="col-sm-12 text-center" style="margin-bottom: 10px;">
+        <div class="btn-group">
+          <label class="btn btn-default align-middle">
+            <input type="radio" name="allgemein_typ" class="chooseVerfahrenstyp" value="1" checked /> Es handelt sich um eine Verarbeitungstätigkeit.
+          </label>
+          <label class="btn btn-default align-middle">
+            <input type="radio" name="allgemein_typ" class="chooseVerfahrenstyp" value="2" /> Es handelt sich um ein IT-Verfahren.
+          </label>
+        </div>
+      </div>
+      <div class="col-sm-7 col-sm-offset-1 printHide">
         <div class="form-group">
-          <label>Bezeichnung der Verarbeitungstätigkeit <i data-toggle="tooltip" title="Kürzel" class="fa fa-question-circle-o fa-lg"></i></label>
+          <label>Bezeichnung <i data-toggle="tooltip" title="Eindeutiges Kürzel" class="fa fa-question-circle-o fa-lg"></i></label>
           <input type="text" class="form-control" name="allgemein_bezeichnung" placeholder="Bsp.: E-Mail Service" required>
           <input type="hidden" name="meta_id" value="0">
           <input type="hidden" name="meta_lastupdate" value="">
         </div>
       </div>
-      <div class="col-sm-5 col-sm-offset-1">
-        <div class="form-group">
-          <label>Zweck der Verarbeitung <i data-toggle="tooltip" title="Kurzbeschreibung des Zwecks" class="fa fa-question-circle-o fa-lg"></i></label><br>
-          <input type="text" class="form-control" name="allgemein_zweck" placeholder="Bsp.: Verwaltung von E-Mails">
-        </div>
-      </div>
-      <div class="col-sm-5">
+      <div class="col-sm-3">
         <div class="form-group">
           <label>Datum der Einführung</label><br>
           <input type="date" class="form-control" name="allgemein_datum">
+        </div>
+      </div>
+      <div class="col-sm-10 col-sm-offset-1">
+        <div class="form-group">
+          <label>Zweck der Verarbeitung <i data-toggle="tooltip" title="Kurzbeschreibung des Zwecks" class="fa fa-question-circle-o fa-lg"></i></label><br>
+          <input type="text" class="form-control" name="allgemein_zweck" placeholder="Bsp.: Verwaltung von E-Mails">
         </div>
       </div>
       <div class="col-sm-10 col-sm-offset-1">
@@ -108,7 +118,7 @@
       <div class="col-sm-10 col-sm-offset-1">
         <div class="form-group">
           <label>Verantwortliche Organisationseinheit</label><br>
-            <input data-tool="typeahead" data-action="searchabteilung" data-minlength="0" data-dynamic="true" type="text" class="form-control" name="allgemein_abteilung" placeholder="Bsp.: Zentrum für Informationsverarbeitung" required>
+            <input data-tool="typeahead" data-action="searchabteilung" data-minlength="0" type="text" class="form-control" name="allgemein_abteilung" placeholder="Bsp.: Zentrum für Informationsverarbeitung" required>
         </div>
         <div class="form-group">
           <label>Betreuende IVV</label><br>
@@ -116,7 +126,7 @@
         </div>
       </div>
       <div class="col-sm-5 col-sm-offset-1">
-        <h6 class="info-text">Fachlicher Ansprechpartner <i data-toggle="tooltip" title="Ansprechpartner für inhaltliche Fragen in der Organisationseinheit (z.B. Organisations- oder Projektleiter) - Zur korrekten Verarbeitung muss zwingend ein Mitarbeiter aus der Liste gewählt werden!" class="fa fa-question-circle-o fa-lg"></i></h6>
+        <h6 class="info-text">Fachlicher Ansprechpartner <i data-toggle="tooltip" title="Ansprechpartner für inhaltliche Fragen in der Organisationseinheit (z.B. Organisations- oder Projektleiter) - Es kann ein Mitarbeiter aus der Liste gewählt oder eine Funktionsbezeichnung (z.B. Leiter Abt. 3) eingetragen werden. Der automatische Zugriff bzw. die E-Mail-Benachrichtigungen funktionieren nur bei Auswahl eines Mitarbeiters aus der Liste!" class="fa fa-question-circle-o fa-lg"></i></h6>
         <div class="form-group">
           <label>Name</label><br>
           <input data-tool="typeahead" data-action="searchmitarbeiter" data-minlength="0" data-dynamic="true" data-cache="false" data-hiddenfield="allgemein_fachlich_kennung" type="text" class="form-control" name="allgemein_fachlich_name" placeholder="Geben Sie eine Kennung oder einen Namen (min. 4 Zeichen) ein...">
@@ -124,7 +134,7 @@
         </div>
       </div>
       <div class="col-sm-5">
-        <h6 class="info-text">Technischer Ansprechpartner <i data-toggle="tooltip" title="Ansprechpartner für technische Fragen (z.B. Mitarbeiter in der betreuenden IVV) - Zur korrekten Verarbeitung muss zwingend ein Mitarbeiter aus der Liste gewählt werden!" class="fa fa-question-circle-o fa-lg"></i></h6>
+        <h6 class="info-text">Technischer Ansprechpartner <i data-toggle="tooltip" title="Ansprechpartner für technische Fragen (z.B. Mitarbeiter in der betreuenden IVV) - Es kann ein Mitarbeiter aus der Liste gewählt oder eine Funktionsbezeichnung (z.B. Leiter Abt. 3) eingetragen werden. Der automatische Zugriff bzw. die E-Mail-Benachrichtigungen funktionieren nur bei Auswahl eines Mitarbeiters aus der Liste!" class="fa fa-question-circle-o fa-lg"></i></h6>
         <div class="form-group">
           <label>Name</label><br>
           <input data-tool="typeahead" data-action="searchmitarbeiter" data-minlength="0" data-dynamic="true" data-cache="false" data-hiddenfield="allgemein_technisch_kennung" type="text" class="form-control" name="allgemein_technisch_name" placeholder="Geben Sie eine Kennung oder einen Namen (min. 4 Zeichen) ein...">
@@ -194,7 +204,7 @@
           <tbody>
             <tr>
               <td><input type="text" class="form-control" name="daten_kategorien_nummer[]" value="1" readonly></td>
-              <td><input type="text" class="form-control" name="daten_kategorien_beschreibung[]" placeholder="Bsp.: Name, E-Mail, Kennung, Anschrift"></td>
+              <td><input data-tool="typeahead" data-action="getsuggestions" data-minlength="0" data-dynamic="false" data-cache="true" data-display="entry" data-path="data.daten_kategorien_beschreibung.de" type="text" class="form-control" name="daten_kategorien_beschreibung[]" placeholder="Bsp.: Name"></td>
               <td><input type="text" class="form-control" name="daten_kategorien_herkunft[]" placeholder="Bsp.: Beim Betroffenen erhoben, Studierendensekretariat, Personaldezernat"></td>
               <td class="text-center"><input class="form-check-input" name="daten_kategorien_besonders[]" type="checkbox" value="1"></td>
               <td class="text-center"><button type="button" class="daten_kategorien_del btn"><i class="fa fa-minus"></i> Löschen</button></td>
@@ -220,7 +230,7 @@
           <tbody>
             <tr>
               <td><select class="nutzt_daten_kategorien_nummer" data-tool="selectpicker" name="daten_personen_kategorie[]" multiple></select></td>
-              <td><input type="text" class="form-control" name="daten_personen_betroffene[]" placeholder="Bsp.: Mitarbeiter, Studierende, Alumni"></td>
+              <td><input data-tool="typeahead" data-action="getsuggestions" data-minlength="0" data-dynamic="false" data-cache="true" data-display="entry" data-path="data.daten_personen_betroffene.de" type="text" class="form-control" name="daten_personen_betroffene[]" placeholder="Bsp.: Mitarbeiter"></td>
               <td class="text-center"><button type="button" class="daten_personen_del btn"><i class="fa fa-minus"></i> Löschen</button></td>
             </tr>
           </tbody>
@@ -237,8 +247,8 @@
           <thead>
             <tr>
               <th class="col-sm-2">Kategorie</th>
-              <th class="col-sm-4">Bedingung (vgl. Art. 6 DSGVO)</th>
-              <th class="col-sm-5">Erläuterung <i data-toggle="tooltip" title="Zusätzliche Erläuterung zur gewählten Rechtsgrundlage, wie z.B. wo die Einwilligung abgefragt wurde oder ein Hinweis auf den zugrundeliegende Vertrag." class="fa fa-question-circle-o fa-lg"></i></th>
+              <th class="col-sm-4">Rechtsgrundlage (vgl. Art. 6 DSGVO)</th>
+              <th class="col-sm-5">Erläuterung bzw. weitere Rechtsgrundlagen <i data-toggle="tooltip" title="Zusätzliche Erläuterung zur gewählten Rechtsgrundlage, wie z.B. wo die Einwilligung abgefragt wurde oder ein Hinweis auf den zugrundeliegende Vertrag." class="fa fa-question-circle-o fa-lg"></i></th>
               <th class="col-sm-1"></th>
             </tr>
           </thead>
@@ -246,8 +256,7 @@
             <tr>
               <td><select class="nutzt_daten_kategorien_nummer" data-tool="selectpicker" name="daten_grundlagen_kategorie[]" multiple></select></td>
               <td>
-                <select data-tool="selectpicker" data-width="400px" name="daten_grundlagen_bezeichnung[]">
-                </select>
+                <input data-tool="typeahead" data-action="getsuggestions" data-minlength="0" data-dynamic="false" data-cache="true" data-display="entry" data-path="data.daten_grundlagen_bezeichnung.de" type="text" class="form-control" name="daten_grundlagen_bezeichnung[]" placeholder="Bsp.: DSGVO Art. 6 (1) a)">
               </td>
               <td><textarea class="form-control" rows="3" name="daten_grundlagen_erlaeuterung[]" placeholder="Bsp.: Der Nutzer hat bei der Anmeldung in die Nutzung seiner Daten eingewilligt."></textarea></td>
               <td class="text-center"><button type="button" class="daten_grundlagen_del btn"><i class="fa fa-minus"></i> Löschen</button></td>
@@ -319,9 +328,9 @@
       <!-- Tabellen für externe Empfänger personenbezogener Daten -->
       <div class="col-sm-12">
         <h6 class="info-text text-ul-dot">Externe Empfänger <i data-toggle="tooltip" title="Externe Empfänger sind alle Personen und Stellen, die nicht Teil der Rechtsperson Hochschule sind. Dazu gehören insbesondere auch Auftragsverarbeiter im Sinne von Art. 28 DSGVO." class="fa fa-question-circle-o fa-lg"></i></h6>
-      </div>
-      <div class="col-sm-12 form-check text-center">
-        <label class="form-check-label"><input class="form-check-input" name="datenzugriff_empfaenger_extern" type="checkbox" value="1"> Es existieren externe Empfänger</label>
+        <div class="form-check text-center">
+          <label class="form-check-label"><input class="form-check-input" name="datenzugriff_empfaenger_extern" type="checkbox" value="1"> Es existieren externe Empfänger</label>
+        </div>
       </div>
       <div class="col-sm-offset-1 col-sm-10 hidden">
         <table data-tool="endlessTable" id="datenzugriff_empfaenger_extern" class="table table-striped table-hover btn-table">
@@ -631,11 +640,46 @@
   <div class="tab-pane" id="massnahmen">
     <div class="row">
       <div class="col-sm-offset-1 col-sm-10">
-        <h5 class="info-text text-ul">Technische und organisatorische Maßnahmen <i data-toggle="tooltip" data-html="true" title="vgl.
-Art. 25 DSGVO Datenschutz durch Technikgestaltung und durch datenschutzfreundliche Voreinstellungen, Art. 32 DSGVO Sicherheit der Verarbeitung" class="fa fa-question-circle-o fa-lg"></i></h5>
-        <p class="printHide">Gibt es ein Datenschutz- und Datensicherheitskonzept oder ein anderes Dokument, das die technischen und organisatorischen Maßnahmen enthält, müssen die Angaben nicht hier erfolgen, sondern es kann stattdessen (oder zusätzlich) auf der nächsten Seite auf dieses Dokument verwiesen werden. In diesem Fall bitte das entsprechende Dokument mit genauer Bezeichnung und unter Angabe von Version und/oder Stand bezeichnen.</p>
+        <h5 class="info-text text-ul">Ergebnis der Risikoanalyse <i data-toggle="tooltip" data-html="true" title="Die Durchführung einer Risikoanalyse gehört nicht zum Umfang dieses Tools und muss extern erfolgen, vgl. ENISA Guidelines for SMEs on the security of personal data processing, ENISA Handbook on Security of Personal Data Processing oder BSI-Standard 200-3: Risikomanagement, ISO/IEC 27005:2018 Information security risk management" class="fa fa-question-circle-o fa-lg"></i></h5>
+      </div>
+      <div class="col-sm-12 text-center">
+        <div class="btn-group">
+          <label class="btn btn-success">
+            <input type="radio" name="massnahmen_risiko" value="1" /> Niedrig
+          </label>
+          <label class="btn btn-warning">
+            <input type="radio" name="massnahmen_risiko" value="2" checked /> Standard
+          </label>
+          <label class="btn btn-danger">
+            <input type="radio" name="massnahmen_risiko" value="3" /> Hoch
+          </label>
+        </div>
       </div>
       <div class="col-sm-offset-1 col-sm-10">
+        <h5 class="info-text text-ul">Technische und organisatorische Maßnahmen <i data-toggle="tooltip" data-html="true" title="vgl.
+Art. 25 DSGVO Datenschutz durch Technikgestaltung und durch datenschutzfreundliche Voreinstellungen, Art. 32 DSGVO Sicherheit der Verarbeitung" class="fa fa-question-circle-o fa-lg"></i></h5>
+        <p class="printHide">Gibt es ein Datenschutz- und Datensicherheitskonzept oder ein anderes Dokument, das die technischen und organisatorischen Maßnahmen enthält, müssen die Angaben nicht hier erfolgen, sondern es kann stattdessen (oder zusätzlich) auf der nächsten Seite auf dieses Dokument verwiesen werden. In diesem Fall bitte das entsprechende Dokument mit genauer Bezeichnung und unter Angabe von Version und/oder Stand benennen.</p>
+      </div>
+      <div class="col-sm-offset-1 col-sm-10">
+        <ul class="nav nav-tabs printHide" role="tablist">
+          <li role="presentation" class="active"><a href="#technicaltoms" aria-controls="technical" role="tab" data-toggle="tab">Technische Maßnahmen</a></li>
+          <li role="presentation"><a href="#organizationaltoms" aria-controls="organizational" role="tab" data-toggle="tab">Organisatorische Maßnahmen</a></li>
+        </ul>
+        <div class="tab-content" style="min-height: auto;">
+          <div role="tabpanel" class="tab-pane active" id="technicaltoms">
+            <div class="panel-group" id="technical_accordion" role="tablist" aria-multiselectable="true">
+            </div>
+          </div>
+          <div role="tabpanel" class="tab-pane" id="organizationaltoms">
+            <div class="panel-group" id="organizational_accordion" role="tablist" aria-multiselectable="true">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-offset-1 col-sm-10 printHide">
+        <p class="printHide"><strong>Ergänzende Maßnahmen / Hinweis:</strong> Die manuelle Eingabe der TOMs wird eingestellt und die folgenden Felder werden demnächst entfernt. Bitte übertragen Sie die Eingaben in die neue Vorlage.</p>
+      </div>
+      <div class="col-sm-offset-1 col-sm-10 printHide">
         <div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true">
           <h6 class="info-text text-ul-dot printOnly hidden">Gewährleistung der Vertraulichkeit</h6>
           <div class="panel panel-default printHide">
@@ -646,10 +690,10 @@ Art. 25 DSGVO Datenschutz durch Technikgestaltung und durch datenschutzfreundlic
                 </a>
               </h4>
             </div>
-            <div id="collapseOne" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="headingOne">
+            <div id="collapseOne" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingOne">
               <div class="panel-body">
                 <p>Beschreiben Sie, durch welche Maßnahmen verhindert wird, dass ein unautorisierter Zugang oder Zugriff auf personenbezogene Daten erfolgt. Dies gilt zum einen innerhalb der Organisation des Verantwortlichen selbst als auch beim Transport bzw. Weitergabe zu einem Auftragsverarbeiter oder bei der Übermittlung zu einem Dritten. Ferner ist hier zu beschreiben, wie eine Trennung von Mandanten erfolgt.</p>
-                <textarea class="form-control" name="massnahmen_vertraulichkeit" rows="5" style="resize:vertical"></textarea>
+                <textarea class="form-control" name="massnahmen_vertraulichkeit" rows="5" style="resize:vertical" disabled></textarea>
                 <br>
                 <p>Beispiele für Maßnahmen:</p>
                 <ul>
@@ -676,7 +720,7 @@ Art. 25 DSGVO Datenschutz durch Technikgestaltung und durch datenschutzfreundlic
             <div id="collapseTwo" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingTwo">
               <div class="panel-body">
                 <p>Beschreiben Sie, durch welche Maßnahmen sichergestellt wird, dass personenbezogene Daten nicht unbemerkt oder ungewollt geändert werden können.</p>
-                <textarea class="form-control" name="massnahmen_integritaet" rows="5" style="resize:vertical"></textarea>
+                <textarea class="form-control" name="massnahmen_integritaet" rows="5" style="resize:vertical" disabled></textarea>
                 <br>
                 <p>Beispiele für Maßnahmen:</p>
                 <ul>
@@ -704,7 +748,7 @@ Art. 25 DSGVO Datenschutz durch Technikgestaltung und durch datenschutzfreundlic
             <div id="collapseThree" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingThree">
               <div class="panel-body">
                 <p>Beschreiben Sie, durch welche Maßnahmen sichergestellt wird, dass die personenbezogenen Daten dauernd und uneingeschränkt verfügbar und insbesondere vorhanden sind, wenn diese gebraucht werden.</p>
-                <textarea class="form-control" name="massnahmen_verfuegbarkeit" rows="5" style="resize:vertical"></textarea>
+                <textarea class="form-control" name="massnahmen_verfuegbarkeit" rows="5" style="resize:vertical" disabled></textarea>
                 <br>
                 <p>Beispiele für Maßnahmen:</p>
                 <ul>
@@ -793,12 +837,12 @@ Art. 35 DSGVO" class="fa fa-question-circle-o fa-lg"></i></h6>
         <h6 class="info-text text-ul-dot">Abhängigkeiten</h6>
       </div>
       <div class="col-sm-offset-1 col-sm-10">
-        <p class="printOnly hidden">Das Verfahren hängt von den folgenden gemeldeten Verfahren ab und nutzt Daten und/oder Dienste dieser Verfahren:</p>
-        <p class="printHide">Ist Ihr Verfahren von anderen Verfahren abhängig, die bereits dokumentiert wurden und für Sie sichtbar sind, können Sie diese hier auswählen.</p>
-        <table data-tool="endlessTable" id="abschluss_abhaengigkeit" class="table table-striped table-hover btn-table">
+        <p class="printOnly hidden">Die Verarbeitungstätigkeit hängt von den folgenden dokumentierten IT-Verfahren ab und nutzt Daten und/oder Dienste dieser Verfahren:</p>
+        <p class="printHide">Ist Ihre Verarbeitungstätigkeit von anderen IT-Verfahren abhängig, die bereits dokumentiert wurden und für Sie sichtbar sind, können Sie diese hier auswählen.</p>
+        <table data-tool="endlessTable" id="abschluss_abhaengigkeit" class="table table-hover btn-table">
           <thead>
             <tr>
-              <th>Verfahren</th>
+              <th>IT-Verfahren</th>
               <th>Beschreibung</th>
               <th></th>
             </tr>
@@ -820,26 +864,68 @@ Art. 35 DSGVO" class="fa fa-question-circle-o fa-lg"></i></h6>
       </div>
 
       <div class="col-sm-offset-1 col-sm-10 printHide">
-        <h6 class="info-text text-ul-dot">Sichtbarkeit des Verfahrens</h6>
-        <p>Geben Sie an, in welchem Bereich Ihr Verfahren sichtbar sein soll. Dadurch sind die allgemeinen Informationen zum Verfahren (Kürzel, Beschreibung, Organisationseinheit) für andere Nutzer sichtbar und das Verfahren kann als Abhängigkeit (s.o.) ausgewählt werden. <em>Der/die Datenschutzbeauftragte kann alle Informationen aller Verfahren einsehen.</em></p>
-        <div class="text-center">
-          <select class="selectpicker" data-width="auto" name="meta_sichtbarkeit">
-            <option value="0" selected>Nur Bearbeiter/Fachlicher Ansprechpartner/Technischer Ansprechpartner</option>
-            <option value="1" disabled>Innerhalb der Organisationseinheit</option>
-            <option value="2" disabled>Innerhalb der IVV</option>
-            <option value="3">Gesamte WWU</option>
-          </select>
+        <h6 class="info-text text-ul-dot">Zugriffsberechtigungen</h6>
+        <p>Hier können Berechtigungen zum Lesen und/oder Bearbeiten festgelegt werden, um beispielsweise Kollegen die Mitarbeit zu ermöglichen. Eingetragene Nutzer oder Gruppen bekommen Lesezugriff. Optional kann auch Schreibzugriff gewährt werden. <em>Der/die Datenschutzbeauftragte kann unabhängig von den hier getätigten Einstellungen alle Informationen einsehen.</em></p>
+        <p style="padding:10px" class="bg-warning"><strong>Hinweis:</strong> Sollten Sie nicht als Ersteller oder fachlicher bzw. technischer Ansprechpartner eingetragen sein, können Änderungen an den Berechtigungen Ihren Zugriff einschränken.</p>
+        <ul class="nav nav-tabs" role="tablist">
+          <li role="presentation" class="active"><a href="#groupaccess" aria-controls="groupaccess" role="tab" data-toggle="tab">Gruppen</a></li>
+          <li role="presentation"><a href="#useraccess" aria-controls="useraccess" role="tab" data-toggle="tab">Nutzer</a></li>
+        </ul>
+        <div class="tab-content" style="min-height: auto;">
+          <div role="tabpanel" class="tab-pane active" id="groupaccess">
+            <p style="padding-top:10px; padding-left:10px">Zugriff für Personen in einer Nutzergruppe erlauben</p>
+            <table data-tool="endlessTable" id="meta_gruppen" class="table table-hover btn-table printHide">
+              <thead>
+                <tr>
+                  <th>Gruppenkennung <i data-toggle="tooltip" title="Es kann eine Gruppe aus der Liste der eigenen Gruppen gewählt oder manuell eine Gruppenkennung eingegeben werden." class="fa fa-question-circle-o fa-lg"></i></th>
+                  <th>Schreibzugriff</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <input type="text" data-tool="typeahead" data-action="getUserGroups" data-minlength="0" data-cache="false" data-hiddenfield="meta_gruppen_kennung[]" class="form-control" name="meta_gruppen_name[]" placeholder="Bsp.: u0mitarb, u0ivsb">
+                    <input type="hidden" name="meta_gruppen_kennung[]">
+                  </td>
+                  <td>
+                    <input type="checkbox" name="meta_gruppen_schreiben[]" value="1" />
+                  </td>
+                  <td class="text-center"><button type="button" class="meta_gruppen_del btn"><i class="fa fa-minus"></i> Löschen</button></td>
+                </tr>
+              </tbody>
+            </table>
+            <button type="button" id="meta_gruppen_add" class="btn btn-wd"><i class="fa fa-plus"></i> Hinzufügen</button>
+          </div>
+          <div role="tabpanel" class="tab-pane" id="useraccess">
+            <p style="padding-top:10px; padding-left:10px">Zugriff für einzelne Personen erlauben</p>
+            <table data-tool="endlessTable" id="meta_nutzer" class="table table-hover btn-table printHide">
+              <thead>
+                <tr>
+                  <th>Nutzerkennung <i data-toggle="tooltip" title="Es kann ein Mitarbeiter aus der Liste der Vorschläge gewählt oder manuell eine Nutzerkennung eingegeben werden." class="fa fa-question-circle-o fa-lg"></i></th>
+                  <th>Schreibzugriff</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <input data-tool="typeahead" data-action="searchmitarbeiter" data-minlength="4" data-dynamic="true" data-cache="false" data-hiddenfield="meta_nutzer_kennung[]" type="text" class="form-control" name="meta_nutzer_name[]" placeholder="Geben Sie eine Kennung oder einen Namen (min. 4 Zeichen) ein...">
+                    <input type="hidden" name="meta_nutzer_kennung[]">
+                  </td>
+                  <td>
+                    <input type="checkbox" name="meta_nutzer_schreiben[]" value="1" />
+                  </td>
+                  <td class="text-center"><button type="button" class="meta_nutzer_del btn"><i class="fa fa-minus"></i> Löschen</button></td>
+                </tr>
+              </tbody>
+            </table>
+            <button type="button" id="meta_nutzer_add" class="btn btn-wd"><i class="fa fa-plus"></i> Hinzufügen</button>
+          </div>
         </div>
+
       </div>
 
-      <div class="col-sm-offset-1 col-sm-10 printHide">
-        <h6 class="info-text text-ul-dot">Bearbeitung des Verfahrens</h6>
-        <p>Geben Sie eine Nutzergruppe an, deren Mitglieder die Berechtigung zur Einsicht und Bearbeitung dieses Verfahrens erhalten sollen. Es werden nur Gruppen angezeigt, denen Sie selbst angehören. Um die Berechtigung zu entziehen, den Inhalt des Eingabefelds löschen. <em>Änderungen werden erst mit dem Speichern des Verfahrens wirksam!</em></p>
-        <div class="text-center">
-          <input type="text" data-tool="typeahead" data-action="getUserGroups" data-minlength="0" data-cache="false" data-hiddenfield="meta_bearbeiter_gruppe" class="form-control" name="meta_bearbeiter_gruppe_label" placeholder="Bsp.: u0mitarb, u0ivsb">
-          <input type="hidden" name="meta_bearbeiter_gruppe">
-        </div>
-      </div>
     </div>
   </div>
   <!-- end tab-pane -->

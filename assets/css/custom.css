@@ -1,9 +1,9 @@
 /*
  * custom.css - WWU-Anpassungen sind hier zu finden
- * 
+ *
  * Autor: Thorsten Küfer <thorsten.kuefer@uni-muenster.de>
  * Copyright (c) 2018 Westfälische Wilhelms-Universität Münster
- * Licensed under AGPL-3.0-or-later (https://www.gnu.org/licenses/agpl.html)  
+ * Licensed under AGPL-3.0-or-later (https://www.gnu.org/licenses/agpl.html)
  */
 
 /* Border Radius aus Paper Bootstrap Wizard auch auf Buttons in button-group-sm anwenden. */
@@ -94,7 +94,7 @@ i[data-toggle="tooltip"] {
 
 .dropdown-menu .inner .text {
   white-space: normal;
-  margin: 5px 0px; 
+  margin: 5px 0px;
 }
 
 /* Fix: Selectpicker Dropdown wird vom Footer überdeckt */
@@ -113,7 +113,15 @@ i[data-toggle="tooltip"] {
 }
 
 /* Fix: Plus/Minus nicht mittig in DT-Tabellen mit ausklappbaren Kontrollelementen */
-table.dataTable.dtr-column > tbody > tr > td.control::before, 
+table.dataTable.dtr-column > tbody > tr > td.control::before,
 table.dataTable.dtr-column > tbody > tr > th.control::before {
     font-family: inherit;
+}
+
+.wizard-card .tab-content .tab-content {
+  padding: 0px;
+}
+
+.modal-lg {
+  width: 65%;
 }

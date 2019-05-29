@@ -1,6 +1,6 @@
 # SecDoc - WWU Verzeichnis von Verarbeitungstätigkeiten (VVT)
 
-Webinterface zur Dokumentation von (IT-)Verfahren an der WWU im Rahmen der EU-Datenschutzgrundverordnung (DSGVO).
+Webinterface zur Erfassung von Verarbeitungstätigkeiten und IT-Verfahren an der WWU im Rahmen der EU-Datenschutzgrundverordnung (DSGVO).
 
 * Produktivsystem: https://www.uni-muenster.de/ZIV.CERT/secdoc
 * Entwicklungssystem: https://www.uni-muenster.de/ZIVtest/secdoc
@@ -10,14 +10,15 @@ Webinterface zur Dokumentation von (IT-)Verfahren an der WWU im Rahmen der EU-Da
 
 - Basiert auf Vorlage für das Verzeichnis von Verarbeitungstätigkeiten (VTT) von ZENDAS (https://www.zendas.de)
 - Bietet integrierte Ausfüllhinweise
-- Bietet integrierte Datenvorschläge aus Nutzerdatenbank (WWUben), Netzdatenbank (LANbase), sowie CPE-Verzeichnis des NIST
-- Bietet automatische Speicherung und Verwaltung Ihrer Verfahren
-- Verwendet Bootstrap Wizard für HTML-Formular
+- Bietet Datenvorschläge aus vorhandenen Datenbanken (z.B. Nutzerdatenbank (WWUben), Netzdatenbank (LANbase), sowie CPE-Verzeichnis des NIST)
+- Automatische Speicherung und einfache Verwaltung von Verarbeitungstätigkeiten
 - Spätere Fortsetzung oder Bearbeitung möglich
-- Erstellt abschließend eine PDF-Version des Verfahrens
-- Speichert Daten in SQLite-Datenbank und als JSON zur externen Weiterverarbeitung
+- Erstellt abschließend eine PDF-Version der Verarbeitungstätigkeit
+- Verwendet Bootstrap Wizard für HTML-Formular
+- Speichert Daten in SQLite-Datenbank und als JSON zur späteren evtl. externen Weiterverarbeitung
 - Eingetragene Informationen können einfach ergänzend zur Datenschutzerklärung auf Webseiten eingebunden werden
-- Bietet eine Übersicht aller gemeldeten Verfahren für Datenschutzbeauftragte (Einsicht, Kommentare und Bearbeitung möglich)
+- Bietet eine Übersicht aller gemeldeten Verarbeitungstätigkeiten für Datenschutzbeauftragte (Einsicht, Kommentare und Bearbeitung möglich)
+- Erzeugt das Verzeichnis von Verarbeitungstätigkeiten
 
 ## Abhängigkeiten
 
@@ -38,7 +39,13 @@ Webinterface zur Dokumentation von (IT-)Verfahren an der WWU im Rahmen der EU-Da
 
 - [MPDF 7](https://github.com/mpdf/mpdf) (Für die PDF-Erstellung genutzt)
 
-## Verwendung
+## Verwendung - Docker
+
+Eine Demo-Version kann einfach mittels Docker gestartet werden über die Konfigurationsdatei [Dockerfile](Dockerfile). Hierfür kann mit `docker build -t secdoc . ` ein Image gebaut werden und mit `sudo docker run -d --name secdoc-app secdoc` der Container gestartet werden. Hierfür wird eine Demo-Datenbank geladen.
+
+**Hinweis:** Aktuell unterstützt diese Methode nicht die PDF-Funktion, dies wird aber mit dem nächsten Update behoben.
+
+## Verwendung - Normale Installation
 
 ### Voraussetzungen
 
@@ -53,7 +60,7 @@ Beim ersten Aufruf der Anwendung wird automatisch eine neue Datenbank mit den no
 
 Zur Nutzung der PDF-Ausgabe muss zusätzlich noch das MPDF Plugin installiert werden. Dies geschieht über [Composer](https://getcomposer.org/) mit der Konfigurationsdatei [composer.json](/assets/composer.json) (`php composer.phar install -d <Pfad zur composer.json>`). Das Backend erwartet den Autoloader `autoload.php` im Pfad [/assets/vendor](/assets/vendor). Sollte MPDF bereits vorhanden sein oder an einer anderen Stelle installiert werden, kann der Pfad über `$vendor_dir` in [config.inc.php](/assets/ajax/config.inc.php) angepasst werden.
 
-**Achtung:** Das System bietet keinen allgemeinen Zugriffsschutz (z.B. durch Registrierung und Login-Mechanismus), sondern hat nur die Möglichkeit, die Anzeige von Verfahren zu unterbinden, wenn eine Nutzerkennung oder Nutzergruppen bereitsgestellt wurden, die überprüft werden können. Dies geschieht in unserem System mittels SSO-Mechanismus (Single Sign On) und einem externen Funktionsaufruf zum Erlangen der Nutzergruppen, die im PHP-Skript überprüft werden. Der allgemeine Zugriffsschutz wird über `.htaccess`-Dateien mit Nutzergruppeneinschränkungen realisiert.
+**Achtung:** Das System bietet keinen allgemeinen Zugriffsschutz (z.B. durch Registrierung und Login-Mechanismus), sondern hat nur die Möglichkeit, die Anzeige von Verarbeitungstätigkeiten zu unterbinden, wenn eine Nutzerkennung oder Nutzergruppen bereitsgestellt wurden, die überprüft werden können. Dies geschieht in unserem System mittels SSO-Mechanismus (Single Sign On) und einem externen Funktionsaufruf zum Erlangen der Nutzergruppen, die im PHP-Skript überprüft werden. Der allgemeine Zugriffsschutz wird über `.htaccess`-Dateien mit Nutzergruppeneinschränkungen realisiert.
 
 ### Notwendige Anpassungen
 
@@ -64,7 +71,7 @@ Um das System in der eigenen Umgebung zu nutzen, sind einige Anpassungen bzw. Da
 1. **Aussehen und allgemeine Verfahrensangaben**
 
     Die Logos, Links und das Hintergrundbild auf der Hauptseite sollten an die eigene Hochschule angepasst werden (siehe [index.html](index.html)).
-    Darüber hinaus werden dort auch die allgemeinen Informationen für Verfahren, wie z.B. Anschrift der Hochschule, Angaben zum Datenschutzbeauftragten, etc., festgelegt. Diese müssen auch angepasst werden und sind hier zu finden [index.html#L168-188](index.html#L168-188).
+    Darüber hinaus werden dort auch die allgemeinen Informationen für Verarbeitungstätigkeiten, wie z.B. Anschrift der Hochschule, Angaben zum Datenschutzbeauftragten, etc., festgelegt. Diese müssen auch angepasst werden und sind hier zu finden [index.html#L168-188](index.html#L168-188).
 
     Die Logos in der PDF sollten ebenfalls angepasst werden. Dafür können zwei Logos (`logo1.png` und `logo2.png`) in [/assets/img](/assets/img) hinterlegt werden, die genutzt werden.
     Alternativ können die Pfade angepasst werden in der Funktion `generatePDF()` in [/assets/ajax/verwaltung.php](/assets/ajax/verwaltung.php). Zu Beginn dieser Funktion können auch die PDF-Metadaten angepasst werden.
@@ -79,14 +86,14 @@ Um das System in der eigenen Umgebung zu nutzen, sind einige Anpassungen bzw. Da
     Das Backend benötigt einige Funktionen, die spezifisch zu unserem System sind und müssen angepasst werden. Diese sind in der Datei [Utils.class.php](/assets/ajax/Utils.class.php) zu finden.
     Insbesondere zählen hierzu:
     - `searchipdns($term)` Durchsucht die Netzdatenbank nach Servern (für Eingabehilfe im Formular der Systeme)
-    - `imapSendMimeMail($to, $cc, $bcc, $subject, $body, $attachments)` Verschickt eine signierte E-Mail mit Anhängen (für den Abschluss des Verfahrens)
-    - `getUserGroups($userId)` Fragt die aktuellen Nutzergruppen zu einer Kennung ab (zur Überprüfung von Berechtigungen beim Zugriff auf Verfahren)
-    - `getCurrentUserId()` Fragt die Nutzerkennung des aktuell eingeloggten Nutzers ab (zur Überprüfung von Berechtigungen beim Zugriff auf Verfahren und Logging von Bearbeitungen)
+    - `imapSendMimeMail($to, $cc, $bcc, $subject, $body, $attachments)` Verschickt eine signierte E-Mail mit Anhängen (für den Abschluss der Verarbeitungstätigkeit)
+    - `getUserGroups($userId)` Fragt die aktuellen Nutzergruppen zu einer Kennung ab (zur Überprüfung von Berechtigungen beim Zugriff auf eine Verarbeitungstätigkeit)
+    - `getCurrentUserId()` Fragt die Nutzerkennung des aktuell eingeloggten Nutzers ab (zur Überprüfung von Berechtigungen beim Zugriff auf eine Verarbeitungstätigkeit und Logging von Bearbeitungen)
     - `getUserAnrede($userId)` Fragt die Anrede zu einer Nutzerkennung ab (für den E-Mail-Versand genutzt)
     - `getUserAlias($userId)` Fragt den primären Alias-Namen des Nutzers ab (für den E-Mail-Versand genutzt)
-    
+
 3. **Datenimport**
-    
+
     Für einige Eingafelder stellt das Tool Vorschläge für den Nutzer zur Verfügung. Diese werden, bis auf die aktuellen Nutzergruppen und Systeme, alle aus der SQLite Datenbank ausgelesen.
     Zu diesen Daten zählen Personen, Organisationseinheiten, IVVen und CPE-Einträge. Die benötigten Tabellen werden beim ersten Start der Anwendung angelegt und müssen nur befüllt werden.
     Die Tabellendefinitionen können in [DBCon.class.php](/assets/ajax/DBCon.class.php) gefunden werden. Diese können dafür genutzt werden, um die Tabelle z.B. mittels einer SQL-Importdatei über das CLI von SQLite zu befüllen und regelmäßig aktuell zu halten.
