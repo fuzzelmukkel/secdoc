@@ -388,6 +388,7 @@ function loadEmpty() {
   });
   $('input[type=text], textarea').not('[name$="_nummer[]"]').val('');
   $('input[type=checkbox]').prop('checked', false);
+  $('.wizard-navigation li a').first().click();
   setSaveLabel('failed');
   setOverlay(false);
   console.timeEnd('Leeres Verfahren laden');

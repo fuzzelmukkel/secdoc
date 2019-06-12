@@ -411,14 +411,10 @@ EOH;
       $reqVars = array(
         'allgemein_typ',
         'allgemein_bezeichnung',
-        'allgemein_beschreibung',
         'allgemein_abteilung',
-        'allgemein_ivv',
-        'allgemein_fachlich_kennung',
-        'allgemein_technisch_kennung'
       );
       foreach($reqVars as $reqVar) {
-        if(!isset($data[$reqVar])) {
+        if(!isset($data[$reqVar]) || empty($data[$reqVar])) {
           returnError('Ein oder mehrere notwendige Parameter fehlen - Aktuell: ' . $reqVar);
         }
       }
@@ -434,6 +430,8 @@ EOH;
 
       if(isset($data['meta_nutzer_kennung'])) {
         for($c = 0; $c < count($data['meta_nutzer_kennung']); $c++) {
+          if(empty($data['meta_nutzer_kennung'][$c]) && empty($data['meta_nutzer_name'][$c])) continue;
+
           array_push($newPermissions, [
             'id' => empty($data['meta_nutzer_kennung'][$c]) ? $data['meta_nutzer_name'][$c] : $data['meta_nutzer_kennung'][$c],
             'isgroup' => FALSE,
@@ -444,6 +442,8 @@ EOH;
 
       if(isset($data['meta_gruppen_kennung'])) {
         for($c = 0; $c < count($data['meta_gruppen_kennung']); $c++) {
+          if(empty($data['meta_gruppen_kennung'][$c]) && empty($data['meta_gruppen_name'][$c])) continue;
+
           array_push($newPermissions, [
             'id' => empty($data['meta_gruppen_kennung'][$c]) ? $data['meta_gruppen_name'][$c] : $data['meta_gruppen_kennung'][$c],
             'isgroup' => TRUE,
@@ -474,16 +474,11 @@ EOH;
       $reqVars = array(
         'allgemein_typ',
         'allgemein_bezeichnung',
-        'allgemein_beschreibung',
         'allgemein_abteilung',
-        'allgemein_ivv',
-        'allgemein_fachlich_kennung',
-        'allgemein_technisch_kennung',
-        'meta_lastupdate',
-        'massnahmen_risiko'
+        'meta_lastupdate'
       );
       foreach($reqVars as $reqVar) {
-        if(!isset($data[$reqVar])) {
+        if(!isset($data[$reqVar]) || empty($data[$reqVar])) {
           returnError('Ein oder mehrere notwendige Parameter fehlen - Aktuell: ' . $reqVar);
           break;
         }
@@ -507,6 +502,8 @@ EOH;
 
       if(isset($data['meta_nutzer_kennung'])) {
         for($c = 0; $c < count($data['meta_nutzer_kennung']); $c++) {
+          if(empty($data['meta_nutzer_kennung'][$c]) && empty($data['meta_nutzer_name'][$c])) continue;
+
           array_push($newPermissions, [
             'id' => empty($data['meta_nutzer_kennung'][$c]) ? $data['meta_nutzer_name'][$c] : $data['meta_nutzer_kennung'][$c],
             'isgroup' => FALSE,
@@ -517,6 +514,8 @@ EOH;
 
       if(isset($data['meta_gruppen_kennung'])) {
         for($c = 0; $c < count($data['meta_gruppen_kennung']); $c++) {
+          if(empty($data['meta_gruppen_kennung'][$c]) && empty($data['meta_gruppen_name'][$c])) continue;
+
           array_push($newPermissions, [
             'id' => empty($data['meta_gruppen_kennung'][$c]) ? $data['meta_gruppen_name'][$c] : $data['meta_gruppen_kennung'][$c],
             'isgroup' => TRUE,
