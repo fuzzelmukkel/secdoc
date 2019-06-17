@@ -186,5 +186,39 @@
       #return user_read_pass($userId);
       return 'demopass';
     }
+
+    /**
+     * Liest das Ldap aus und gibt nur einen Gesuchten Wert zurück
+     * @parm string uid des gesuchten kontaktes
+     * @parm welcher Eintrag gesucht wird
+     * @return string mit dem gesuchten Eintrag
+     */
+    public static function getLDAPentry ($uid, $eintrag) {
+      $result = self::getfromLDAP("uid=$uid", array($eintrag));
+      return $result[0][$eintrag][0];
+    }
+
+
+    /**
+    * Holt Daten von einem LDAP Server. Je nach Set Up muss noch Benutzername und Passwort ergänzt werden.
+    * @parm string $kriterium für die Suche nach Einträgen
+    * @parm array $gesucht für die Werte die aus den Einträgen ausgelesen werden sollen
+    * @return array gibt alle gefundenen Werte als Array zurück
+    */
+    public static function getfromLDAP ($kriterium, $gesucht) {
+	    $ldap_uri = " ";
+	    $ldap_base = " ";
+	    # Verbindung zu Ldap herstellen
+	    $ldapcon = ldap_connect($ldap_uri)
+		    or die("Es konnte keine Verbindung zum Ldap Server hergestellt werden");
+	    ldap_set_option($ldapcon, LDAP_OPT_PROTOCOL_VERSION, 3);
+	    ldap_start_tls($ldapcon);
+	    ldap_bind($ldapcon);
+	    # Einträge suchen
+	    $search = ldap_search($ldapcon, $ldap_base, $kriterium, $gesucht);
+	    $result = ldap_get_entries($ldapcon, $search);
+	    return $result;
+    }
+
   }
 ?>
