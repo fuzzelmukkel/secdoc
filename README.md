@@ -41,9 +41,9 @@ Webinterface zur Erfassung von Verarbeitungstätigkeiten und IT-Verfahren an der
 
 ## Verwendung - Docker
 
-Eine Demo-Version kann einfach mittels Docker gestartet werden über die Konfigurationsdatei [Dockerfile](Dockerfile). Hierfür kann mit `docker build -t secdoc . ` ein Image gebaut werden und mit `sudo docker run -d --name secdoc-app secdoc` der Container gestartet werden. Hierfür wird eine Demo-Datenbank geladen.
+Eine Demo-Version kann einfach mittels Docker gestartet werden über die Konfigurationsdatei [Dockerfile](Dockerfile). Hierfür kann mit `docker build -t secdoc . ` ein Image gebaut werden und mit `docker run -d --name secdoc-app secdoc` der Container gestartet werden. Hierfür wird eine Demo-Datenbank geladen.
 
-**Hinweis:** Aktuell unterstützt diese Methode nicht die PDF-Funktion, dies wird aber mit dem nächsten Update behoben.
+Bis auf den E-Mail Versand können alle Funktionen in der Docker-Version ausprobiert werden (ein allgemein nutzbares Skript für den E-Mail Versand wurde noch nicht eingebaut). Die eingegebenen Daten bleiben bestehen, bis der Container gelöscht wird. Die Datenbank-Datei ist im Container zu finden unter `/var/www/secdoc/demo.db`.
 
 ## Verwendung - Normale Installation
 

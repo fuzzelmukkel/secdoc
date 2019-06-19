@@ -138,7 +138,7 @@
         </div>
         <div class="logo-container-right">
           <div class="logo">
-            <img src="../img/logo2.png" alt="ZIV logo" title="Zentrum für Informationsverarbeitung" width="180">
+            <img src="../img/logo2.png" alt="SecDoc logo" title="SecDoc" width="180">
           </div>
         </div>
         <div style="padding-top: 50px;">

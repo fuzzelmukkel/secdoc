@@ -52,16 +52,16 @@
 
   # Basispfad
   $base_dir = dirname($_SERVER['DOCUMENT_ROOT']);     # => "/www/data/ZIV.CERT"
-  $base_dir = $base_dir ? $base_dir : "/www/data/ZIVtest";
+  $base_dir = $base_dir ? $base_dir : "/var/www";
   #$ckusrgrp = "/www/bin/ckusrgrp -n";
 
-  $temp_dir     = "$base_dir/temp";        # Hier landen temporäre Dateien
+  $temp_dir     = "$base_dir/secdoc/temp";  # Hier landen temporäre Dateien
   #$sess_dir     = "$base_dir/sessions";    # Hier landen die PHP sessions und Tickets von ticket.class.php
   #$secret_dir   = "$base_dir/secret";      # Hier liegen Passwörter und Zertifikate
   #$font_dir     = "$base_dir/fonts";       # Fonts für JpGraph (http://jpgraph.net/)
-  $db_dir       = "..";      # Hier liegt die SecDoc SQlite Datenbank
-  $includes_dir = "$temp_dir/htdocs/sys/secdoc";      # Hier liegen die HTML Include-Bausteine
-  $pdf_dir      = "$temp_dir/secdoc/PDF";             # Hier liegen die PDF-Dateien (temporär für E-Mail-Versand)
+  $db_dir       = "$base_dir/secdoc";       # Hier liegt die SecDoc SQlite Datenbank
+  $includes_dir = "$base_dir/secdoc/inc";   # Hier liegen die HTML Include-Bausteine
+  $pdf_dir      = "$base_dir/secdoc/PDF";   # Hier liegen die PDF-Dateien (temporär für E-Mail-Versand)
   $vendor_dir   = '../vendor/autoload.php'; # Pfad zur Composer autoload.php für MPDF
 
   # Passwörter und X.509-Zertifikat
