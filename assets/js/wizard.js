@@ -930,12 +930,12 @@ function initTypeahead(node) {
     callback: {
       onPopulateSource: ((nodeData['dynamic'] === true) ? onPopulateSourceCustom : null),
       onClick: function(node, a, item, event) {
+        $(node).trigger('change');
+      },
+      onClickAfter: function(node, a, item, even) {
         if(nodeData['hiddenfield']) {
           $(node).closest('.typeahead__container').parent().find('input[name="' + nodeData['hiddenfield'] + '"]').val(item.value).trigger('change');
         }
-      },
-      onClickAfter: function(node, a, item, even) {
-        $(node).trigger('change');
       },
       onCancel: function(node, a, item, event) {
         if(nodeData['hiddenfield']) {
