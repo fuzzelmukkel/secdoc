@@ -218,6 +218,16 @@
         [5, 'Art. 6 (1) f) - Berechtigte Interessen', 'Die Verarbeitung ist zur Wahrung der berechtigten Interessen des Verantwortlichen oder eines Dritten erforderlich, sofern nicht die Interessen oder Grundrechte und Grundfreiheiten der betroffenen Person, die den Schutz personenbezogener Daten erfordern, überwiegen, insbesondere dann, wenn es sich bei der betroffenen Person um ein Kind handelt.'],
     ];
 
+	const VORSCHLAEGE = [
+      ['daten_grundlagen_bezeichnung', 'de', 'Art. 6 (1) a) - Einwilligung', '{}'],
+      ['daten_grundlagen_bezeichnung', 'de', 'Art. 6 (1) b) - Vertragserfüllung', '{}'],
+      ['daten_grundlagen_bezeichnung', 'de', 'Art. 6 (1) c) - Rechtliche Verpflichtung', '{}'],
+      ['daten_grundlagen_bezeichnung', 'de', 'Art. 6 (1) d) - Lebenswichtige Interessen', '{}'],
+      ['daten_grundlagen_bezeichnung', 'de', 'Art. 6 (1) e) - Öffentliches Interesse', '{}'],
+      ['daten_grundlagen_bezeichnung', 'de', 'Art. 6 (1) f) - Berechtigte Interessen', '{}'],
+    ];
+
+
     /**
      * DBCon-Konstruktor; Stellt eine Verbindung zur Datenbank her und überprüft die Datenbank-Version.
      * Erstellt eine neue leere Datenbank, falls die Datenbank nicht existiert.
@@ -255,6 +265,12 @@
         $sth = $this->pdo->prepare('INSERT INTO rechtsgrundlagen (ID, Artikel, Beschreibung) VALUES (?, ?, ?);');
         foreach(self::LAWS as $satz) {
           $sth->execute($satz);
+        }
+
+		#Suggestion mit den Abs. des Art. 6 DGVO befüllen
+		$sth = $this->pdo->prepare('INSERT INTO suggestions (Field, Lang, Entry, AdditionalInfo) VALUES (?, ?, ?, ?);');
+        foreach(self::VORSCHLAEGE as $art) {
+          $sth->execute($art);
         }
 
         # DB-Version setzen
