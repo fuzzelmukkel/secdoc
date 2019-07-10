@@ -128,11 +128,14 @@
      * @return array Liste der Nutzergruppen
      */
     public static function getUserGroups($userId) {
-      $userGroups = array('demouser' => array('demogroup', 'demogroup2', 'demogroup3'),
-                          'demouser2' => array('demogroup', 'demogroup2'),
-                          'demouser3' => array('demogroup')
-                          );
-      return $userGroups[$userId];
+      //Gruppen über das LDAP holen
+      $ldap = Utils::getfromLDAP ("(uid=$userId)", array('memberOf'));
+      $ldap = $ldap[0]['memberof'];
+      unset($ldap['count']);
+      foreach($ldap as $key => $value) {
+        $ldap[$key] = substr($value, strpos($value, '=')+1, strpos($value, ',')-3);
+      }
+      return $ldap;
     }
 
     /**
@@ -171,8 +174,8 @@
      * @return string E-Mail-Adresse oder false
      */
     public static function getUserAlias($userId) {
-      #return get_alias_from_nid($userId);
-      return 'demo.user@demo.domain';
+      $result = self::getLDAPentry($userId, "mail");
+      return $result;
     }
 
     /**
@@ -206,7 +209,10 @@
     * @return array gibt alle gefundenen Werte als Array zurück
     */
     public static function getfromLDAP ($kriterium, $gesucht) {
-	    $ldap_uri = " ";
+      $ldaprdn = " ";
+      $ldappass = " ";
+
+      $ldap_uri = " ";
 	    $ldap_base = " ";
 	    # Verbindung zu Ldap herstellen
 	    $ldapcon = ldap_connect($ldap_uri)

@@ -708,13 +708,24 @@ EOH;
 
     # Mitarbeitersuche nach Name und Kennung
     case 'searchmitarbeiter': {
-      if(empty($search)) {
-        $search = $userId;
-      }
-      $result = $dbcon->searchPerson($search, TRUE);
       $resultMod = [];
-      foreach($result as $val) {
-        array_push($resultMod, ['value' => $val['Kennung'], 'label' => $val['Anzeigename'] , 'name' => $val['Name']]);
+      if(empty($search)) {
+        // Wir haben bei uns die ldap_base (Utils::getfromLDAP) nicht auf die Mitarbeiter begrenzt. Damit könne auch Studenten Ausgelesen werden.
+        // Wenn die ldap_base nur auf Mitarbeiter gesetzt ist wird memberof nicht gebraucht.
+	      $result = Utils::getfromLDAP ("(&(memberOf=cn=MA,ou=groups,dc=uni-mainz,dc=de)(uid=$userId))", array('uid', 'sn', 'givenname', 'mail', 'telephonenumber'));
+	      unset($result['count']);
+	      foreach($result as $key => $value) {
+		      array_push($resultMod, ['value' => $value['uid'][0], 'label' => $value['sn'][0] . ', ' . $value['givenname'][0] . ' (E-Mail: ' . $value['mail'][0] . ', Tel.: ' . $value['telephonenumber'][0] . ')', 'name' => $value['sn'][0] . ', ' . $value['givenname'][0]]);
+	      }
+      } else {
+	      $terms = explode(' ', trim($search));
+	      foreach($terms as $querry) {
+			    $result = Utils::getfromLDAP ("(&(memberOf=cn=MA,ou=groups,dc=uni-mainz,dc=de)(|(sn=*$querry*)(givenname=*$querry*)))", array('uid', 'sn', 'givenname', 'mail', 'telephonenumber'));
+		      unset($result['count']);
+		      foreach($result as $key => $value) {
+			      array_push($resultMod, ['value' => $value['uid'][0], 'label' => $value['sn'][0] . ', ' . $value['givenname'][0] . ' (E-Mail: ' . $value['mail'][0] . ', Tel.: ' . $value['telephonenumber'][0] . ')', 'name' => $value['sn'][0] . ', ' . $value['givenname'][0]]);
+		      }
+	      }
       }
       $output['data'] = $resultMod;
       $output['count'] = count($resultMod);
