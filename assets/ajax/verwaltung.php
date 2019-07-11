@@ -715,8 +715,9 @@ EOH;
 	      $result = Utils::getfromLDAP ("(&(memberOf=cn=MA,ou=groups,dc=uni-mainz,dc=de)(uid=$userId))", array('uid', 'sn', 'givenname', 'mail', 'telephonenumber'));
 	      unset($result['count']);
 	      foreach($result as $key => $value) {
-		      array_push($resultMod, ['value' => $value['uid'][0], 'label' => $value['sn'][0] . ', ' . $value['givenname'][0] . ' (E-Mail: ' . $value['mail'][0] . ', Tel.: ' . $value['telephonenumber'][0] . ')', 'name' => $value['sn'][0] . ', ' . $value['givenname'][0]]);
-	      }
+          array_push($resultMod, ['value' => $value['uid'][0], 'label' => $value['sn'][0] . ', ' . $value['givenname'][0] . ' (E-Mail: ' . $value['mail'][0] . ', Tel.: ' . $value['telephonenumber'][0] . ')', 'name' => $value['sn'][0] . ', ' . $value['givenname'][0]]);
+        }
+        $resultMod[0]['userIsDSB'] = $userIsDSB;
       } else {
 	      $terms = explode(' ', trim($search));
 	      foreach($terms as $querry) {
