@@ -59,7 +59,7 @@
 
 /* Tooltip Anpassungen */
 .tooltip-inner {
-    max-width: 400px;
+    max-width: 600px;
 }
 
 i[data-toggle="tooltip"] {

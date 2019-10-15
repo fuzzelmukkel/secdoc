@@ -251,11 +251,7 @@
           $this->pdo->exec($table);
         }
 
-        # Rechtsgrundlagen befüllen
-        $sth = $this->pdo->prepare('INSERT INTO rechtsgrundlagen (ID, Artikel, Beschreibung) VALUES (?, ?, ?);');
-        foreach(self::LAWS as $satz) {
-          $sth->execute($satz);
-        }
+        $this->pdo->exec("DROP TABLE IF EXISTS rechtsgrundlagen;");
 
         # DB-Version setzen
         $this->pdo->exec("PRAGMA user_version = " . self::DBVERSION . ";");
@@ -1176,7 +1172,7 @@
         throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
       }
 
-      $sth = $this->pdo->prepare("SELECT * FROM toms;");
+      $sth = $this->pdo->prepare("SELECT * FROM toms ORDER BY Identifier ASC;");
 
       $sth->execute();
 
@@ -1195,42 +1191,33 @@
      * @param  string   $userId       Nutzerkennung
      * @param  string[] $userGroups   Gruppen des ausführenden Nutzers
      * @param  mixed[]  $permissions  Array mit Berechtigungen ([['id' => 'u0ivsb', 'isgroup' => true, 'canedit' => true],...])
+     * @param bool   $userIsDSB    (optional) Gibt an, ob der ausführende Nutzer ein DSB ist (Zugriff auf alle Verfahren)
      * @return bool TRUE bei Erfolg
      * @throws PDOException
      * @throws Exception
      */
-    public function updatePermissions($verfahrensId, $userId, $userGroups, $permissions) {
+    public function updatePermissions($verfahrensId, $userId, $userGroups, $permissions, $userIsDSB) {
       if(!$this->isConnected()) {
         throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
       }
 
-      if($this->getPermissionLevel($verfahrensId, $userId, $userGroups) < 2) {
+      if(!$userIsDSB && $this->getPermissionLevel($verfahrensId, $userId, $userGroups) < 2) {
         return FALSE;
       }
 
       $this->pdo->beginTransaction();
 
-      $sql = 'DELETE FROM permissions WHERE Process_ID = ? AND (
-        Process_ID in (SELECT ID FROM verfahren WHERE ID = ? AND (Ersteller = ? OR FachKontakt = ? OR Techkontakt = ?))
-        OR Process_ID in (SELECT Process_ID FROM permissions WHERE Process_ID = ? AND CanEdit = 1 AND ((IsGroup = 0 AND ID = ?) OR (IsGroup = 1 AND ID in (' . implode(', ', array_fill(0, count($userGroups), '?')) . ')))));';
+      $sql = 'DELETE FROM permissions WHERE Process_ID = ?;';
       $sth = $this->pdo->prepare($sql);
 
-      $sth->execute(array_merge(array(
-          $verfahrensId,
-          $verfahrensId,
-          $userId,
-          $userId,
-          $userId,
-          $verfahrensId,
-          $userId,
-      ), $userGroups));
+      $sth->execute(array($verfahrensId));
 
       ob_start();
       $sth->debugDumpParams();
       $sqlDump = ob_get_clean();
       print "DBCon.class.php -> updatePermissions() Execute: $sqlDump";
 
-      $sql = 'INSERT INTO permissions (Process_ID, ID, IsGroup, CanEdit) VALUES (?, ?, ?, ?);';
+      $sql = 'INSERT OR IGNORE INTO permissions (Process_ID, ID, IsGroup, CanEdit) VALUES (?, ?, ?, ?);';
       $sth = $this->pdo->prepare($sql);
 
       foreach($permissions as $perm) {

@@ -85,25 +85,26 @@
             <input type="radio" name="allgemein_typ" class="chooseVerfahrenstyp" value="2" /> Es handelt sich um ein IT-Verfahren.
           </label>
         </div>
+        <i data-toggle="tooltip" title="Eine Verarbeitungstätigkeit beschreibt einen oder mehrere Geschäftsprozesse, die personenbezogene Daten verwalten und verarbeiten. <br /><br /> Ein IT-Verfahren stellt eine IT-Infrastruktur bereit, die für eine oder mehrere Verarbeitungstätigkeiten verwendet wird, aber selbst keine personenbezogenen Daten verarbeitet (die Verarbeitung personenbezogener Daten ist nicht der Hauptzweck). <br /><br /> Je nach Auswahl können bestimmte Schritte während der Bearbeitung übersprungen werden." class="fa fa-question-circle-o fa-lg"></i>
       </div>
       <div class="col-sm-7 col-sm-offset-1 printHide">
         <div class="form-group">
           <label>Bezeichnung <i data-toggle="tooltip" title="Eindeutiges Kürzel" class="fa fa-question-circle-o fa-lg"></i></label>
-          <input type="text" class="form-control" name="allgemein_bezeichnung" placeholder="Bsp.: E-Mail Service" required>
+          <input data-tool="typeahead" data-action="getsuggestions" data-minlength="0" data-dynamic="false" data-cache="true" data-display="entry" data-path="data.allgemein_bezeichnung.de" type="text" class="form-control" name="allgemein_bezeichnung" placeholder="Bsp.: E-Mail Service" required>
           <input type="hidden" name="meta_id" value="0">
           <input type="hidden" name="meta_lastupdate" value="">
         </div>
       </div>
       <div class="col-sm-3">
         <div class="form-group">
-          <label>Datum der Einführung</label><br>
+          <label>Datum der Einführung <i data-toggle="tooltip" title="Das Datum seit dem die Verarbeitungstätigkeit/das IT-Verfahren aktiv sind. <br /> Sollte das genaue Datum nicht bekannt sein, kann eine grobe Angabe, wie etwa '01.01.2017', eingetragen werden." class="fa fa-question-circle-o fa-lg"></i></label><br>
           <input type="date" class="form-control" name="allgemein_datum">
         </div>
       </div>
       <div class="col-sm-10 col-sm-offset-1">
         <div class="form-group">
           <label>Zweck der Verarbeitung <i data-toggle="tooltip" title="Kurzbeschreibung des Zwecks" class="fa fa-question-circle-o fa-lg"></i></label><br>
-          <input type="text" class="form-control" name="allgemein_zweck" placeholder="Bsp.: Verwaltung von E-Mails">
+          <input data-tool="typeahead" data-action="getsuggestions" data-minlength="0" data-dynamic="false" data-cache="true" data-display="entry" data-path="data.allgemein_zweck.de" type="text" class="form-control" name="allgemein_zweck" placeholder="Bsp.: Verwaltung von E-Mails">
         </div>
       </div>
       <div class="col-sm-10 col-sm-offset-1">
@@ -126,7 +127,7 @@
         </div>
       </div>
       <div class="col-sm-5 col-sm-offset-1">
-        <h6 class="info-text">Fachlicher Ansprechpartner <i data-toggle="tooltip" title="Ansprechpartner für inhaltliche Fragen in der Organisationseinheit (z.B. Organisations- oder Projektleiter) - Es kann ein Mitarbeiter aus der Liste gewählt oder eine Funktionsbezeichnung (z.B. Leiter Abt. 3) eingetragen werden. Der automatische Zugriff bzw. die E-Mail-Benachrichtigungen funktionieren nur bei Auswahl eines Mitarbeiters aus der Liste!" class="fa fa-question-circle-o fa-lg"></i></h6>
+        <h6 class="info-text">Fachlicher Ansprechpartner <i data-toggle="tooltip" title="Ansprechpartner für inhaltliche Fragen in der Organisationseinheit (z.B. Organisations- oder Projektleiter) <br /><br /> Es kann ein Mitarbeiter aus der Liste gewählt oder eine Funktionsbezeichnung (z.B. Leiter Abt. 3) eingetragen werden. Der automatische Zugriff bzw. die E-Mail-Benachrichtigungen funktionieren nur bei Auswahl eines Mitarbeiters aus der Liste!" class="fa fa-question-circle-o fa-lg"></i></h6>
         <div class="form-group">
           <label>Name</label><br>
           <input data-tool="typeahead" data-action="searchmitarbeiter" data-minlength="0" data-dynamic="true" data-cache="false" data-hiddenfield="allgemein_fachlich_kennung" type="text" class="form-control" name="allgemein_fachlich_name" placeholder="Geben Sie eine Kennung oder einen Namen (min. 4 Zeichen) ein...">
@@ -134,7 +135,7 @@
         </div>
       </div>
       <div class="col-sm-5">
-        <h6 class="info-text">Technischer Ansprechpartner <i data-toggle="tooltip" title="Ansprechpartner für technische Fragen (z.B. Mitarbeiter in der betreuenden IVV) - Es kann ein Mitarbeiter aus der Liste gewählt oder eine Funktionsbezeichnung (z.B. Leiter Abt. 3) eingetragen werden. Der automatische Zugriff bzw. die E-Mail-Benachrichtigungen funktionieren nur bei Auswahl eines Mitarbeiters aus der Liste!" class="fa fa-question-circle-o fa-lg"></i></h6>
+        <h6 class="info-text">Technischer Ansprechpartner <i data-toggle="tooltip" title="Ansprechpartner für technische Fragen (z.B. Mitarbeiter in der betreuenden IVV) <br /><br /> Es kann ein Mitarbeiter aus der Liste gewählt oder eine Funktionsbezeichnung (z.B. Leiter Abt. 3) eingetragen werden. Der automatische Zugriff bzw. die E-Mail-Benachrichtigungen funktionieren nur bei Auswahl eines Mitarbeiters aus der Liste!" class="fa fa-question-circle-o fa-lg"></i></h6>
         <div class="form-group">
           <label>Name</label><br>
           <input data-tool="typeahead" data-action="searchmitarbeiter" data-minlength="0" data-dynamic="true" data-cache="false" data-hiddenfield="allgemein_technisch_kennung" type="text" class="form-control" name="allgemein_technisch_name" placeholder="Geben Sie eine Kennung oder einen Namen (min. 4 Zeichen) ein...">
@@ -205,7 +206,7 @@
             <tr>
               <td><input type="text" class="form-control" name="daten_kategorien_nummer[]" value="1" readonly></td>
               <td><input data-tool="typeahead" data-action="getsuggestions" data-minlength="0" data-dynamic="false" data-cache="true" data-display="entry" data-path="data.daten_kategorien_beschreibung.de" type="text" class="form-control" name="daten_kategorien_beschreibung[]" placeholder="Bsp.: Name"></td>
-              <td><input type="text" class="form-control" name="daten_kategorien_herkunft[]" placeholder="Bsp.: Beim Betroffenen erhoben, Studierendensekretariat, Personaldezernat"></td>
+              <td><input data-tool="typeahead" data-action="getsuggestions" data-minlength="0" data-dynamic="false" data-cache="true" data-display="entry" data-path="data.daten_kategorien_herkunft.de" type="text" class="form-control" name="daten_kategorien_herkunft[]" placeholder="Bsp.: Beim Betroffenen erhoben, Studierendensekretariat, Personaldezernat"></td>
               <td class="text-center"><input class="form-check-input" name="daten_kategorien_besonders[]" type="checkbox" value="1"></td>
               <td class="text-center"><button type="button" class="daten_kategorien_del btn"><i class="fa fa-minus"></i> Löschen</button></td>
             </tr>
@@ -247,7 +248,15 @@
           <thead>
             <tr>
               <th class="col-sm-2">Kategorie</th>
-              <th class="col-sm-4">Rechtsgrundlage (vgl. Art. 6 DSGVO)</th>
+              <th class="col-sm-4">Rechtsgrundlage (vgl. Art. 6 DSGVO) <i data-toggle="tooltip" title="Rechtsgrundlagen für die Verarbeitung der gewählten Daten. Es können Vorschläge aus Art. 6 DSGVO gewählt oder auf andere Rechtstexte verwiesen werden. <br /> <br /> Art 6. DSGVO:
+                <ul style='text-align: left;'>
+                  <li>Art. 6 (1) a) - Die betroffene Person hat ihre Einwilligung zu der Verarbeitung der sie betreffenden personenbezogenen Daten für einen oder mehrere bestimmte Zwecke gegeben.</li>
+                  <li>Art. 6 (1) b) - Die Verarbeitung ist für die Erfüllung eines Vertrags, dessen Vertragspartei die betroffene Person ist, oder zur Durchführung vorvertraglicher Maßnahmen erforderlich, die auf Anfrage der betroffenen Person erfolgen.</li>
+                  <li>Art. 6 (1) c) - Die Verarbeitung ist zur Erfüllung einer rechtlichen Verpflichtung erforderlich, der der Verantwortliche unterliegt.</li>
+                  <li>Art. 6 (1) d) - Die Verarbeitung ist erforderlich, um lebenswichtige Interessen der betroffenen Person oder einer anderen natürlichen Person zu schützen.</li>
+                  <li>Art. 6 (1) e) - Die Verarbeitung ist für die Wahrnehmung einer Aufgabe erforderlich, die im öffentlichen Interesse liegt oder in Ausübung öffentlicher Gewalt erfolgt, die dem Verantwortlichen übertragen wurde.</li>
+                  <li>Art. 6 (1) f) - Die Verarbeitung ist zur Wahrung der berechtigten Interessen des Verantwortlichen oder eines Dritten erforderlich, sofern nicht die Interessen oder Grundrechte und Grundfreiheiten der betroffenen Person, die den Schutz personenbezogener Daten erfordern, überwiegen, insbesondere dann, wenn es sich bei der betroffenen Person um ein Kind handelt.</li>
+                </ul>" class="fa fa-question-circle-o fa-lg"></i></th>
               <th class="col-sm-5">Erläuterung bzw. weitere Rechtsgrundlagen <i data-toggle="tooltip" title="Zusätzliche Erläuterung zur gewählten Rechtsgrundlage, wie z.B. wo die Einwilligung abgefragt wurde oder ein Hinweis auf den zugrundeliegende Vertrag." class="fa fa-question-circle-o fa-lg"></i></th>
               <th class="col-sm-1"></th>
             </tr>
@@ -282,7 +291,7 @@
           <tbody>
             <tr>
               <td><select class="nutzt_daten_kategorien_nummer" data-tool="selectpicker" name="daten_loeschung_kategorie[]" multiple></select></td>
-              <td><input type="text" class="form-control" name="daten_loeschung_frist[]" placeholder="Bsp.: Unverzüglich nach Exmatrikulation (automatisch)"></td>
+              <td><input data-tool="typeahead" data-action="getsuggestions" data-minlength="0" data-dynamic="false" data-cache="true" data-display="entry" data-path="data.daten_loeschung_frist.de" type="text" class="form-control" name="daten_loeschung_frist[]" placeholder="Bsp.: Unverzüglich nach Exmatrikulation (automatisch)"></td>
               <td class="text-center"><button type="button" class="daten_loeschung_del btn"><i class="fa fa-minus"></i> Löschen</button></td>
             </tr>
           </tbody>
@@ -316,7 +325,7 @@
           <tbody>
             <tr>
               <td><select class="nutzt_daten_kategorien_nummer" data-tool="selectpicker" name="datenzugriff_empfaenger_intern_kategorie[]" multiple></select></td>
-              <td><input type="text" class="form-control" name="datenzugriff_empfaenger_intern_stelle[]" placeholder="Bsp.: Zentrum für Informationsverarbeitung"></td>
+              <td><input data-tool="typeahead" data-action="getsuggestions" data-minlength="0" data-dynamic="false" data-cache="true" data-display="entry" data-path="data.datenzugriff_empfaenger_intern_stelle.de" type="text" class="form-control" name="datenzugriff_empfaenger_intern_stelle[]" placeholder="Bsp.: Zentrum für Informationsverarbeitung"></td>
               <td><textarea class="form-control" rows="3" name="datenzugriff_empfaenger_intern_zweck[]" placeholder="Bsp.: Zur Einrichtung der zentralen Systeme (E-Mail, persönlicher Speicher etc.)"></textarea></td>
               <td class="text-center"><button type="button" class="datenzugriff_empfaenger_intern_del btn"><i class="fa fa-minus"></i> Löschen</button></td>
             </tr>
@@ -398,8 +407,8 @@
           <tbody>
             <tr>
               <td><select class="nutzt_daten_kategorien_nummer" data-tool="selectpicker" name="datenzugriff_zugriff_kategorie[]" multiple></select></td>
-              <td><input type="text" class="form-control" name="datenzugriff_zugriff_personen[]" placeholder="Bsp.: Administratoren, Sekretariate, Studenten"></td>
-              <td><input type="text" class="form-control" name="datenzugriff_zugriff_umfang[]" placeholder="Bsp.: Finden und Beheben von Fehlern"></td>
+              <td><input data-tool="typeahead" data-action="getsuggestions" data-minlength="0" data-dynamic="false" data-cache="true" data-display="entry" data-path="data.datenzugriff_zugriff_personen.de" type="text" class="form-control" name="datenzugriff_zugriff_personen[]" placeholder="Bsp.: Administratoren, Sekretariate, Studenten"></td>
+              <td><input data-tool="typeahead" data-action="getsuggestions" data-minlength="0" data-dynamic="false" data-cache="true" data-display="entry" data-path="data.datenzugriff_zugriff_umfang.de" type="text" class="form-control" name="datenzugriff_zugriff_umfang[]" placeholder="Bsp.: Finden und Beheben von Fehlern"></td>
               <td class="text-center"><button type="button" class="datenzugriff_zugriff_del btn"><i class="fa fa-minus"></i> Löschen</button></td>
             </tr>
           </tbody>
@@ -432,7 +441,7 @@
             <tr>
               <td><input type="text" class="form-control" name="systeme_software_nummer[]" value="1" disabled></td>
               <td>
-                <input type="text" class="form-control" name="systeme_software_art[]" placeholder="Bsp.: Datenbank">
+                <input data-tool="typeahead" data-action="getsuggestions" data-minlength="0" data-dynamic="false" data-cache="true" data-display="entry" data-path="data.systeme_software_art.de" type="text" class="form-control" name="systeme_software_art[]" placeholder="Bsp.: Datenbank">
               </td>
               <td>
                 <input type="text" data-tool="typeahead" data-action="searchApp" data-dynamic="true" data-hiddenfield="systeme_software_bezeichnungcpe[]" class="form-control" name="systeme_software_bezeichnung[]" placeholder="Bsp.: PostgreSQL 10.3">
@@ -477,7 +486,7 @@
                 <input type="number" class="form-control" name="systeme_klienten_anzahl[]" min="1" value="1">
               </td>
               <td>
-                <input type="text" class="form-control" name="systeme_klienten_typ[]" placeholder="Bsp.: Laptop">
+                <input data-tool="typeahead" data-action="getsuggestions" data-minlength="0" data-dynamic="false" data-cache="true" data-display="entry" data-path="data.systeme_klienten_typ.de" type="text" class="form-control" name="systeme_klienten_typ[]" placeholder="Bsp.: Laptop">
                 <div class="form-group">
                   <label>Genutzte Software:</label><br>
                   <select class="nutzt_systeme_software_nummer" data-tool="selectpicker" name="systeme_klienten_software[]" multiple></select>
@@ -538,7 +547,7 @@
                 </div>
               </td>
               <td>
-                <input type="text" class="form-control" name="systeme_server_funktion[]" placeholder="Bsp.: Datenbankserver">
+                <input data-tool="typeahead" data-action="getsuggestions" data-minlength="0" data-dynamic="false" data-cache="true" data-display="entry" data-path="data.systeme_server_funktion.de" type="text" class="form-control" name="systeme_server_funktion[]" placeholder="Bsp.: Datenbankserver">
                 <div class="form-group">
                   <label>Genutzte Daten:</label><br>
                   <select class="nutzt_daten_kategorien_nummer" data-tool="selectpicker" name="systeme_server_daten[]" multiple></select>
@@ -572,7 +581,7 @@
                 <input type="text" class="form-control" name="systeme_datensicherung_nummer[]" value="1" disabled>
               </td>
               <td>
-                <input type="text" class="form-control" name="systeme_datensicherung_medium[]" placeholder="Bsp.: Festplatten">
+                <input data-tool="typeahead" data-action="getsuggestions" data-minlength="0" data-dynamic="false" data-cache="true" data-display="entry" data-path="data.systeme_datensicherung_medium.de" type="text" class="form-control" name="systeme_datensicherung_medium[]" placeholder="Bsp.: Festplatten">
                 <div class="form-group">
                   <label>Gespeicherte Daten:</label><br>
                   <select class="nutzt_daten_kategorien_nummer" data-tool="selectpicker" name="systeme_datensicherung_daten[]" multiple></select>
@@ -622,10 +631,10 @@
                 <select class="nutzt_systeme_software_nummer" data-tool="selectpicker" name="systeme_protokolle_software[]" multiple></select>
               </td>
               <td>
-                <input type="text" class="form-control" name="systeme_protokolle_protokoll[]" placeholder="Bsp.: HTTPS, 443">
+                <input data-tool="typeahead" data-action="getsuggestions" data-minlength="0" data-dynamic="false" data-cache="true" data-display="entry" data-path="data.systeme_protokolle_protokoll.de" type="text" class="form-control" name="systeme_protokolle_protokoll[]" placeholder="Bsp.: HTTPS, 443">
               </td>
               <td>
-                <input type="text" class="form-control" name="systeme_protokolle_verschluesselung[]" placeholder="Bsp.: SSL/TLS">
+                <input data-tool="typeahead" data-action="getsuggestions" data-minlength="0" data-dynamic="false" data-cache="true" data-display="entry" data-path="data.systeme_protokolle_verschluesselung.de" type="text" class="form-control" name="systeme_protokolle_verschluesselung[]" placeholder="Bsp.: SSL/TLS">
               </td>
               <td class="text-center"><button type="button" class="systeme_protokolle_del btn"><i class="fa fa-minus"></i> Löschen</button></td>
             </tr>
@@ -935,6 +944,7 @@ Art. 35 DSGVO" class="fa fa-question-circle-o fa-lg"></i></h6>
 <!-- Wizard footer -->
 <div class="wizard-footer">
   <div class="pull-right">
+    <button type="button" class="btn btn-fill btn-info btn-wd" title="Generiert eine Vorschau-PDF des aktuellen Stands" style="margin-right:10px;" id="dlDraftPDF"><i class="fa fa-file-pdf-o"></i> Vorschau-PDF erstellen</button>
     <button type='button' class='btn btn-next btn-fill btn-info btn-wd' name='next' title="Nächste Seite aufrufen. Daten werden automatisch gespeichert">Weiter <i class="fa fa-arrow-circle-right"></i></button>
     <button type='button' class='btn btn-finish btn-fill btn-warning btn-wd' name='finish' title="Bearbeitung abschließen. Eingetragene Ansprechpartner werden per E-Mail informiert."><i class="fa fa-check-circle"></i> Abschluss</button>
   </div>
@@ -966,4 +976,4 @@ Art. 35 DSGVO" class="fa fa-question-circle-o fa-lg"></i></h6>
 <script src="assets/js/datatables.min.js" type="text/javascript"></script>
 
 <!--  Custom WWU JS Files  -->
-<script src="assets/js/wizard.js" type="text/javascript"></script>
+<script src="assets/js/wizard.js?20190917" type="text/javascript"></script>

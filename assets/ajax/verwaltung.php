@@ -95,9 +95,10 @@
    * @param string $title        Titel des Verfahrens
    * @param string $html         HTML-Code, der als PDF gerendert werden soll
    * @param int    $verfahrensId ID des zu exportierenden Verfahrensverzeichnisses
+   * @param bool   $isDraft      (optional) Erstellt eine Vorschau-PDF bei TRUE
    * @return boolean True bei Erfolg sonst false
    */
-  function generatePDF(string $title, string $html, int $verfahrensId): bool {
+  function generatePDF(string $title, string $html, int $verfahrensId, bool $isDraft = FALSE): bool {
 
     require_once '../vendor/autoload.php';
 
@@ -107,7 +108,7 @@
 
     # MPDF initialisieren
     $mpdf = new \Mpdf\Mpdf(['debug' => false, 'CSSselectMedia' => 'screen', 'mode' => 'utf-8', 'format' => 'A4']);
-    $mpdf->SetTitle('Verfahrensdokumentation - ' . $title);
+    $mpdf->SetTitle('Verfahrensdokumentation - ' . $title . ($isDraft ? ' (ENTWURF)' : ''));
     $mpdf->SetAuthor($author);
     $mpdf->SetCreator($prog_name . ' v' . $prog_version);
 
@@ -116,6 +117,11 @@
     #$mpdf->showWatermarkText = false;
     if(stripos($prog_name, 'test') !== FALSE || stripos($prog_name, 'demo') !== FALSE) {
       $mpdf->SetWatermarkText('TEST');
+      $mpdf->showWatermarkText = TRUE;
+    }
+
+    if($isDraft) {
+      $mpdf->SetWatermarkText('ENTWURF');
       $mpdf->showWatermarkText = TRUE;
     }
 
@@ -166,7 +172,119 @@ EOH;
       return FALSE;
     }
 
-    $filename = $pdf_dir . DIRECTORY_SEPARATOR . $verfahrensId . '.pdf';
+    $filename = $pdf_dir . DIRECTORY_SEPARATOR . $verfahrensId . ($isDraft ? '_DRAFT' : '') . '.pdf';
+    $fh = fopen($filename, 'w+');
+    if ($fh) {
+      $written_bytes = fwrite($fh, $pdf_content);
+      if ($written_bytes == 0) {
+        // Es konnte nicht alles geschrieben werden / Kein Speicherplatz mehr?
+        trigger_error('[SecDoc] verwaltung.php -> Konnte nicht in PDF-Datei schreiben');
+        error_log('[SecDoc] verwaltung.php -> Konnte nicht in PDF-Datei schreiben');
+        fclose($fh);
+        return FALSE;
+      }
+      fclose($fh);
+    } else {
+      /**
+       * Fehler beim Öffnen der Datei. Ungültiger Dateiname / Pfad
+       * oder eine fehlende Berechtigung könnten die Ursache sein.
+       */
+      trigger_error('[SecDoc] verwaltung.php -> Kann PDF-Datei nicht anlegen');
+      error_log('[SecDoc] verwaltung.php -> Kann PDF-Datei nicht anlegen');
+      return FALSE;
+    }
+    return TRUE;
+  }
+
+  /**
+   * Generiert eine kombinierte PDF mit allen PDFs von abgeschlossenen Verfahren.
+   *
+   * @param  array $processes Array von Verfahren (wie von DBCon->listVerfahrenDSB() zurückgegeben)
+   * @return bool             TRUE bei Erfolg (PDF wurde in $pdf_dir abgespeichert), FALSE sonst
+   */
+  function generateCombinedPDF(array $processes): bool {
+    set_time_limit(0);
+
+    require_once '../vendor/autoload.php';
+
+    global $dbcon, $userId, $pdf_dir, $prog_name, $prog_version;
+    $res = $dbcon->searchPerson($userId);
+    $author = $res[0]['Name'];
+
+    # MPDF initialisieren
+    $mpdf = new \Mpdf\Mpdf(['debug' => false, 'CSSselectMedia' => 'screen', 'mode' => 'utf-8', 'format' => 'A4']);
+    $mpdf->SetTitle('Verzeichnis der Verarbeitungstätigkeiten');
+    $mpdf->SetAuthor($author);
+    $mpdf->SetCreator($prog_name . ' v' . $prog_version);
+
+    # Stylesheets machen Probleme mit bestehenden PDFs...
+    #$style = file_get_contents('../css/bootstrap.min.css');
+    #$mpdf->WriteHTML($style,1);
+    #$style = file_get_contents('../css/custom.css');
+    #$mpdf->WriteHTML($style,1);
+
+    # Titelseite ohne Fußzeile initialisieren
+    $mpdf->AddPage('','','','','on');
+
+    # Titelseite einfügen
+    $titlePage = file_get_contents('../html/pdf_titlepage.inc.html');
+    $titlePage .= '<pagebreak resetpagenum="1" pagenumstyle="1" suppress="off" />';
+    $mpdf->WriteHTML($titlePage);
+
+    # TOC einfügen (ein Eintrag pro Verfahren)
+    $mpdf->TOCpagebreakByArray([
+      'tocfont' => 'sans-serif',
+      'tocfontsize' => '',
+      'tocindent' => '',
+      'TOCusePaging' => TRUE,
+      'TOCuseLinking' => TRUE,
+      'toc_preHTML' => "<h2>Inhaltsverzeichnis</h2>",
+      'toc_ohvalue' => 'off',
+      'toc_ofvalue' => 'off',
+    ]);
+
+    $procCount = count($processes);
+
+    # Nach ID sortieren? Oder eher nach Name, Erstelldatum oder Aktualisierungsdatum?
+    usort($processes, function($a, $b) { return (intval($a['ID']) - intval($b['ID'])); });
+
+    for($p = 0; $p < $procCount; $p++) {
+      $filePath = $pdf_dir . DIRECTORY_SEPARATOR . $processes[$p]['ID'] . '.pdf';
+
+      if(file_exists($filePath)) {
+        $mpdf->setFooter(htmlspecialchars("#{$processes[$p]['ID']}|{$processes[$p]['Bezeichnung']}") . '|{PAGENO}');
+        $mpdf->TOC_Entry(htmlspecialchars("#{$processes[$p]['ID']} - {$processes[$p]['Bezeichnung']}"));
+
+        $pageCount = $mpdf->SetSourceFile($filePath);
+
+        for($c = 1; $c <= $pageCount; $c++) {
+          $mpdf->UseTemplate($mpdf->ImportPage($c));
+          if($p !== ($procCount - 1)) $mpdf->WriteHTML('<pagebreak />');
+          if($p === ($procCount - 1) && $c !== $pageCount) $mpdf->WriteHTML('<pagebreak />');
+        }
+      }
+      # Fehlende PDF, obwohl als "abgeschlossen" gekennzeichnet
+      elseif(intval($processes[$p]['Status']) === 2) {
+        $mpdf->setFooter(htmlspecialchars("#{$processes[$p]['ID']}|{$processes[$p]['Bezeichnung']}") . '|{PAGENO}');
+        $mpdf->TOC_Entry(htmlspecialchars("#{$processes[$p]['ID']} - {$processes[$p]['Bezeichnung']}"));
+
+        $mpdf->WriteHTML("<h2>PDF für Verarbeitungstätigkeit #{$processes[$p]['ID']} - '" . htmlspecialchars("{$processes[$p]['Bezeichnung']}") . "' fehlt</h2><p>Die Verarbeitungstätigkeit #{$processes[$p]['ID']} ist als abgeschlossen markiert, aber es ist keine PDF vorhanden!</p><p>Bitte schließen Sie die Verarbeitungstätigkeit neu ab, um eine korrekte PDF-Version zu erzeugen.</p><pagebreak />");
+      }
+    }
+
+    $pdf_content = $mpdf->Output(
+      '',
+      \Mpdf\Output\Destination::STRING_RETURN
+    );
+
+    # Überprüfen, ob PDF Inhalt hat
+    if(empty($pdf_content)) {
+      trigger_error('[SecDoc] verwaltung.php -> Generierte PDF ist leer');
+      error_log('[SecDoc] verwaltung.php -> Generierte PDF ist leer');
+      return FALSE;
+    }
+
+    $filename = $pdf_dir . DIRECTORY_SEPARATOR . 'combined.pdf';
     $fh = fopen($filename, 'w+');
     if ($fh) {
       $written_bytes = fwrite($fh, $pdf_content);
@@ -452,7 +570,7 @@ EOH;
         }
       }
 
-      $setPermission = $dbcon->updatePermissions($id, $userId, $userGroups, $newPermissions);
+      $setPermission = $dbcon->updatePermissions($id, $userId, $userGroups, $newPermissions, $userIsDSB);
 
       if(!$setPermission) error_log("[SecDoc] verwaltung.php -> Konnte neue Berechtigungen für Verfahren #$id nicht setzen!");
 
@@ -524,7 +642,7 @@ EOH;
         }
       }
 
-      $setPermission = $dbcon->updatePermissions($verfahrensId, $userId, $userGroups, $newPermissions);
+      $setPermission = $dbcon->updatePermissions($verfahrensId, $userId, $userGroups, $newPermissions, $userIsDSB);
 
       if(!$setPermission) error_log("[SecDoc] verwaltung.php -> Konnte neue Berechtigungen für Verfahren #$verfahrensId nicht setzen!");
 
@@ -558,7 +676,7 @@ EOH;
       }
 
       if(empty($data)) {
-        returnError('Keine JSON-kodierter Inhalt zum Abschluss wurde übergeben (title, pdfCode)!');
+        returnError('Kein JSON-kodierter Inhalt zum Abschluss wurde übergeben (title, pdfCode)!');
       }
 
       // Überprüfen, ob das Verfahren nicht durch eine andere Person seit dem letzten Laden bearbeitet wurde
@@ -576,7 +694,7 @@ EOH;
 
       if($success) {
         $output['gentxt'] = generateTXT($dbcon, $userId, $userGroups, $userIsDSB, $verfahrensId);
-        $output['genpdf'] = generatePDF($data['title'], $data['pdfCode'], $verfahrensId);
+        $output['genpdf'] = generatePDF(htmlspecialchars($data['title'], ENT_QUOTES, 'UTF-8', FALSE), $data['pdfCode'], $verfahrensId);
         $output['genmail'] = FALSE;
         if ($output['genpdf']) {
           $output['genmail'] = generateEmail($dbcon, $userId, $userGroups, $userIsDSB, $verfahrensId);
@@ -602,6 +720,10 @@ EOH;
 
         if(!unlink($pdf_dir . DIRECTORY_SEPARATOR . $verfahrensId . '.pdf')) {
           error_log('[SecDoc] verwaltung.php -> Konnte PDF zur ID "' . $verfahrensId . '" nicht löschen!');
+        }
+
+        if(!unlink($pdf_dir . DIRECTORY_SEPARATOR . $verfahrensId . '_DRAFT.pdf')) {
+          error_log('[SecDoc] verwaltung.php -> Konnte Vorschau-PDF zur ID "' . $verfahrensId . '" nicht löschen!');
         }
       }
 
@@ -644,7 +766,12 @@ EOH;
         returnError('Das Verfahren existiert nicht oder Sie haben keine Berechtigung darauf zuzugreifen!');
       }
 
-      $filename = $pdf_dir . DIRECTORY_SEPARATOR . $verfahrensId . '.pdf';
+      $draft = FALSE;
+      if(!empty($data) && !empty($data['draft'])) {
+        $draft = $data['draft'];
+      }
+
+      $filename = $pdf_dir . DIRECTORY_SEPARATOR . $verfahrensId . ($draft ? '_DRAFT' : '') . '.pdf';
       $fh = fopen($filename, 'r');
 
       if($fh) {
@@ -659,6 +786,7 @@ EOH;
       else {
         trigger_error('[SecDoc] verwaltung.php -> Kann PDF-Datei nicht öffnen');
         error_log('[SecDoc] verwaltung.php -> Kann PDF-Datei nicht öffnen');
+        if($draft) returnError('Die gewünschte PDF existiert nicht! Es muss zuerst eine neue Vorschau-PDF generiert werden.');
         returnError('Die gewünschte PDF existiert nicht! Das Verfahren muss einmal abgeschlossen werden, damit eine PDF-Version generiert wird.');
       }
 
@@ -820,9 +948,55 @@ EOH;
       break;
     }
 
+    case 'gendraftpdf': {
+      if(empty($verfahrensId)) {
+        returnError('Keine ID für ein Verfahren wurde übergeben!');
+      }
+
+      if(empty($data)) {
+        returnError('Kein JSON-kodierter Inhalt zur PDF-Generierung wurde übergeben (title, pdfCode)!');
+      }
+
+      if($dbcon->getPermissionLevel($verfahrensId, $userId, $userGroups) === 0 && !$userIsDSB) {
+        returnError('Sie haben keine Berechtigung, um auf das Verfahren zuzugreifen!');
+      }
+
+      $output['success'] = generatePDF(htmlspecialchars($data['title'], ENT_QUOTES, 'UTF-8', FALSE), $data['pdfCode'], $verfahrensId, TRUE);
+      break;
+    }
+
+    case 'gencombinedpdf': {
+      if(!$userIsDSB) {
+        returnError('Sie haben keine Berechtigung diese Funktion aufzurufen!');
+      }
+
+      if(!generateCombinedPDF($dbcon->listVerfahrenDSB())) {
+        returnError('Interner Fehler beim Erstellen der kombinierten PDF!');
+      }
+
+      $filename = $pdf_dir . DIRECTORY_SEPARATOR . 'combined.pdf';
+      $fh = fopen($filename, 'r');
+
+      if($fh) {
+        $filesize = filesize($filename);
+        $pdfContent = file_get_contents($filename);
+        $output['count'] = $filesize;
+        $output['data']['pdf'] = base64_encode($pdfContent);
+        $output['success'] = TRUE;
+      }
+      else {
+        trigger_error('[SecDoc] verwaltung.php -> Kann PDF-Datei nicht öffnen');
+        error_log('[SecDoc] verwaltung.php -> Kann PDF-Datei nicht öffnen');
+        returnError('Die PDF zum Verzeichnis von Verarbeitungstätigkeiten existiert nicht.');
+      }
+
+      if(!unlink($filename)) error_log("[SecDoc] verwaltung.php -> Konnte kombinierte PDF '$filename' nicht löschen!");
+      break;
+    }
+
     # Falls keine bekannte Aktion angegeben wurde
     default: {
-      $output['error'] = 'Es wurde kein oder kein unterstützter Modus (list, listdsb, get, create, update, delete, finish, updatecomment, history, searchperson, serachabteilung, searchivv, getusergroups, searchapp, searchos, searchipdns, getaufstellungsort, getstats, gettoms, getsuggestions) angegeben!';
+      $output['error'] = 'Es wurde kein oder kein unterstützter Modus (list, listdsb, get, create, update, delete, finish, updatecomment, history, searchperson, serachabteilung, searchivv, getusergroups, searchapp, searchos, searchipdns, getaufstellungsort, getstats, gettoms, getsuggestions, gencombinedpdf) angegeben!';
       break;
     }
   }

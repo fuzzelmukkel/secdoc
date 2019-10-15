@@ -10,7 +10,7 @@
 
   # Globale Variablen
   $prog_name = "SecDoc Demosystem";
-  $prog_version = "1.2 (2019.06.12)";
+  $prog_version = "1.2 (2019.10.15)";
   $debug = isset($_REQUEST['debug']) ? filter_var($_REQUEST['debug'], FILTER_VALIDATE_BOOLEAN) : FALSE; # Für Live-System ausschalten, im Testsystem ist Debug-Modus standardmäßig an
   $debugGroups = ['demogroup']; # Nutzergruppen, die Zugriff auf die Debug-Ausgaben haben
   $GLOBALS['DEBUG'] = $debug;

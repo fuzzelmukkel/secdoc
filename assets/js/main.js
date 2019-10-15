@@ -3,7 +3,7 @@
  *
  * @file Kapselt die zentralen Funktionen und steuert das Laden der Unterseiten
  *
- * @requires assets/js/jquery-3.3.1.min.js
+ * @requires assets/js/jquery-3.4.1.min.js
  *
  * @author Thorsten Küfer <thorsten.kuefer@uni-muenster.de>
  * @author Dustin Gawron <dustin.gawron@uni-muenster.de>
@@ -220,19 +220,20 @@ function showError(action, message = false) {
 
 /**
  * Fragt die PDF für das Verfahren mit der übergebenen ID an und öffnet einen "Öffnen/Speichern"-Dialog
- * @param {Number} id ID für die gewünschte PDF
+ * @param {Number}  id    ID für die gewünschte PDF
+ * @param {Boolean} draft (optional) Wenn true wird die letzte Draft-Version der PDF zurückgegeben
  * @return {undefined}
  */
-function getPDFFromServer(id) {
+function getPDFFromServer(id, draft = false) {
   setOverlay();
 
-  $.post(backendPath, JSON.stringify({'action':'getpdf', 'id': id, 'debug': debug})).done((data) => {
+  $.post(backendPath, JSON.stringify({'action':'getpdf', 'id': id, 'data': {'draft': draft}, 'debug': debug})).done((data) => {
     if(!data['success']) {
       showError('Laden der PDF', data['error']);
       return;
     }
 
-    if(data['data']['status'] === 0) {
+    if(!draft && data['data']['status'] === 0) {
       modal.find('.modal-title').text('Hinweis');
       modal.find('.modal-body').html('<div class="alert alert-warning"><p>Da sich das Verfahren wieder im Zustand "In Bearbeitung" befindet, stimmen die Angaben in der PDF unter Umständen nicht mehr mit der aktualisierten Version überein! Die PDF wird nur bei einem erneuten Abschluss des Verfahrens aktualisiert.</p></div>');
       modal.find('.modal-body').append('<p><button type="button" class="center-block btn btn-primary" data-dismiss="modal" aria-label="Close">Schließen</button></p>');
@@ -250,12 +251,12 @@ function getPDFFromServer(id) {
 
     // PDF-Anzeige starten (Unterscheidung, ob Edge genutzt wird)
     if(window.navigator && window.navigator.msSaveOrOpenBlob) {
-      window.navigator.msSaveOrOpenBlob(blob, 'Verfahrensdokumentation_' + id + '_' + lastUpdate.getFullYear() + ('0' + (lastUpdate.getMonth() + 1)).slice(-2) + ('0' + lastUpdate.getDate()).slice(-2) + ('0' + lastUpdate.getHours()).slice(-2) + ('0' + lastUpdate.getMinutes()).slice(-2)  + '.pdf');
+      window.navigator.msSaveOrOpenBlob(blob, 'Verfahrensdokumentation_' + id + '_' + lastUpdate.getFullYear() + ('0' + (lastUpdate.getMonth() + 1)).slice(-2) + ('0' + lastUpdate.getDate()).slice(-2) + ('0' + lastUpdate.getHours()).slice(-2) + ('0' + lastUpdate.getMinutes()).slice(-2)  + (draft ? '_DRAFT' : '' ) + '.pdf');
     }
     else {
       let url = window.URL.createObjectURL(blob);
       let download = $('<a></a>');
-      download.attr('href', url).attr('download', 'Verfahrensdokumentation_' + id + '_' + lastUpdate.getFullYear() + ('0' + (lastUpdate.getMonth() + 1)).slice(-2) + ('0' + lastUpdate.getDate()).slice(-2) + ('0' + lastUpdate.getHours()).slice(-2) + ('0' + lastUpdate.getMinutes()).slice(-2)  + '.pdf').addClass('hidden');;
+      download.attr('href', url).attr('download', 'Verfahrensdokumentation_' + id + '_' + lastUpdate.getFullYear() + ('0' + (lastUpdate.getMonth() + 1)).slice(-2) + ('0' + lastUpdate.getDate()).slice(-2) + ('0' + lastUpdate.getHours()).slice(-2) + ('0' + lastUpdate.getMinutes()).slice(-2)  + (draft ? '_DRAFT' : '' ) + '.pdf').addClass('hidden');;
       $('body').append(download);
       download[0].click();
       window.URL.revokeObjectURL(url);
