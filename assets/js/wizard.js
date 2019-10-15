@@ -994,7 +994,7 @@ function initTypeahead(node) {
     callback: {
       onPopulateSource: ((nodeData['dynamic'] === true) ? onPopulateSourceCustom : null),
       onClick: function(node, a, item, even) {
-        //$(node).trigger('change');
+        //$(node).trigger('change'); // Kann Probleme machen in Typeahead
       },
       onClickAfter: function(node, a, item, event) {
         $(node).trigger('change');
