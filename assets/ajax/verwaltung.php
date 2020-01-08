@@ -359,7 +359,7 @@ EOH;
    * Hauptprogramm
    */
   # Variablen setzen
-  $dbcon = new DBCon($db_dir);
+  $dbcon = new DBCon($db_dir, $db_name);
   $output['version'] = $prog_name . ' ' . $prog_version;
   $reqMethod = is_string($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : '';
   $action = '';

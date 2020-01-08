@@ -13,6 +13,7 @@ RUN curl -o /tmp/composer-setup.php https://getcomposer.org/installer \
 # Copy SecDoc files and prepare folders
 COPY / /var/www/html/
 WORKDIR /var/www/
+RUN rm html/install.php
 RUN mkdir secdoc
 RUN mv html/assets/demo.db secdoc/demo.db
 RUN mkdir secdoc/PDF && mkdir secdoc/temp & mkdir secdoc/inc

@@ -249,7 +249,7 @@
      * @throws PDOException
      * @throws Exception
      */
-    function __construct($directory = NULL) {
+    function __construct($directory = NULL, $dbname = NULL) {
       $opt = [
           PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
           PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
@@ -258,6 +258,8 @@
       ];
 
       if($directory) $this->path = $directory;
+
+      if($dbname) $this->filename = $dbname;
 
       if(!file_exists($this->path . DIRECTORY_SEPARATOR . $this->filename)) {
         trigger_error("[SecDoc] DBCon.class.php -> Datenbank-Datei existiert nicht! Leere Datenbank wird erstellt!");

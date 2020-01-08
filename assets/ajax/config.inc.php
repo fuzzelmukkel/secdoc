@@ -64,6 +64,8 @@
   $pdf_dir      = "$base_dir/secdoc/PDF";   # Hier liegen die PDF-Dateien (temporär für E-Mail-Versand)
   $vendor_dir   = '../vendor/autoload.php'; # Pfad zur Composer autoload.php für MPDF
 
+  $db_name      = 'demo.db';
+
   # Passwörter und X.509-Zertifikat
   #$key_filename  = "$secret_dir/cert.access.dat";  # Enthält alle von CERT_online benötigten Passwörter
   #$info_filename = "$secret_dir/cert.access.txt";  # Enthält Informationen zum jeweiligen Zugang
