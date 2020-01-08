@@ -38,6 +38,19 @@
    * +------------------------------------+-----------+-----------+
    * </pre>
    *
+   * Tabelle: Dependency
+   * <pre>
+   * +--------------------------------------+--------------------------------------+
+   * | Dependent                            | Dependency                           |
+   * +--------------------------------------+--------------------------------------+
+   * | INT                                  | INT                                  |
+   * | PRIMARY KEY                          | PRIMARY KEY                          |
+   * | FOREIGN KEY REFERENCES verfahren(ID) | FOREIGN KEY REFERENCES verfahren(ID) |
+   * +--------------------------------------+--------------------------------------+
+   * </pre>
+   * * Dependent: Das abhängige Verfahren
+   * *Dependency: Die Abhängigkeit
+   *
    * Tabelle: Personen
    * <pre>
    * +-------------+------+-------------+-------------+
@@ -81,15 +94,16 @@
    *
    * Tabelle: TOMs
    * <pre>
-   * +-------------+-------------+----------+-------------+-------+-------------+-----------+------+
-   * | Identifier  | Lang        | Category | Subcategory | Title | Description | Risklevel | Type |
-   * +-------------+-------------+----------+-------------+-------+-------------+-----------+------+
-   * | VARCHAR(10) | VARCHAR(2)  | TEXT     | TEXT        | TEXT  | TEXT        | INT       | INT  |
-   * | PRIMARY KEY | PRIMARY KEY |          |             |       |             |           |      |
-   * +-------------+-------------+----------+-------------+-------+-------------+-----------+------+
+   * +-------------+-------------+----------+-------------+-------+-------------+-----------+------+------+
+   * | Identifier  | Lang        | Category | Subcategory | Title | Description | Risklevel | Type | Mode |
+   * +-------------+-------------+----------+-------------+-------+-------------+-----------+------+------+
+   * | VARCHAR(10) | VARCHAR(2)  | TEXT     | TEXT        | TEXT  | TEXT        | INT       | INT  | INT  |
+   * | PRIMARY KEY | PRIMARY KEY |          |             |       |             |           |      |      |
+   * +-------------+-------------+----------+-------------+-------+-------------+-----------+------+------+
    * </pre>
    * * Risklevel: 1 = Low, 2 = Medium, 3 = High
-   * * Type: 0 = Technical, 1 = Organizational
+   * * Type: 1 = Technical, 2 = Organizational
+   * * Mode: 0 = processing activity (and fallback for IT process), 1 = IT process
    *
    * Tabelle: Permissions
    * <pre>
@@ -124,7 +138,7 @@
     protected $path = '/secdoc/';
 
     /** @var int Aktuelle DB-Version */
-    const DBVERSION = 6; # Version für eine DB-Struktur; zur Überprüfung beim Laden genutzt
+    const DBVERSION = 7; # Version für eine DB-Struktur; zur Überprüfung beim Laden genutzt
 
     /** @var int Maximale Anzahl an Historien-Einträgen */
     const MAXHISTORY = 15; # Nur diese Anzahl an Historien-Einträgen wird behalten
@@ -134,7 +148,7 @@
     const TABLES = [
         "CREATE TABLE verfahren (
             ID INTEGER PRIMARY KEY,                                               -- Eindeutige ID für ein Verfahren (kann automatisch inkrementiert werden oder manuell gesetzt werden)
-            Typ INT NOT NULL DEFAULT 0,                                           -- Typ des Eintrags (1 = Verarbeitungstätigkeit, 2 = IT-Verfahren)
+            Typ INT NOT NULL DEFAULT 1,                                           -- Typ des Eintrags (1 = Verarbeitungstätigkeit, 2 = IT-Verfahren)
             Erstelldatum DATE DEFAULT '',                                         -- Einführungsdatum des Verfahrens
             Bezeichnung VARCHAR(100) NOT NULL DEFAULT  '',                        -- Bezeichnung des Verfahren
             Beschreibung TEXT NOT NULL DEFAULT  '',                               -- Ausführlichere Beschreibung des Verfahrens
@@ -188,7 +202,8 @@
             Title TEXT DEFAULT '',             -- Short title for TOM
             Description TEXT NOT NULL,         -- Longer description
             Risklevel  INT NOT NULL DEFAULT 1, -- Risklevel where this is needed (1 = Low, 2 = Medium, 3 = High)
-            Type INT NOT NULL DEFAULT 0,       -- 0 = Technical measure, 1 = organizational measure
+            Type INT NOT NULL DEFAULT 0,       -- 1 = Technical measure, 2 = organizational measure
+            Mode INT NOT NULL DEFAULT 0,       -- 0 = processing activity (and fallback for IT process), 1 = IT process
             PRIMARY KEY (Identifier, Lang)
         );",
         "CREATE TABLE permissions (
@@ -199,13 +214,20 @@
             PRIMARY KEY (Process_ID, ID),
             FOREIGN KEY (Process_ID) REFERENCES verfahren(ID) ON UPDATE CASCADE ON DELETE CASCADE
         );",
-          "CREATE TABLE suggestions (
-              Field TEXT NOT NULL,                       -- Input field using this suggestion
-              Lang VARCHAR(2) DEFAULT 'de',              -- Language
-              Entry TEXT NOT NULL,                       -- Suggestion
-              AdditionalInfo TEXT NOT NULL DEFAULT '{}', -- Additional space for informations (e.g. JSON-String)
-              PRIMARY KEY (Field, Lang, Entry)
-          );"
+        "CREATE TABLE suggestions (
+            Field TEXT NOT NULL,                       -- Input field using this suggestion
+            Lang VARCHAR(2) DEFAULT 'de',              -- Language
+            Entry TEXT NOT NULL,                       -- Suggestion
+            AdditionalInfo TEXT NOT NULL DEFAULT '{}', -- Additional space for informations (e.g. JSON-String)
+            PRIMARY KEY (Field, Lang, Entry)
+        );",
+        "CREATE TABLE dependency (
+            Dependent INT,                             -- Process identifier of dependent process
+            Dependency INT,                            -- Process identifier of process the dependent depends on
+            PRIMARY KEY (Dependent, Dependency),
+            FOREIGN KEY (Dependent) REFERENCES verfahren(ID) ON UPDATE CASCADE ON DELETE CASCADE,
+            FOREIGN KEY (Dependency) REFERENCES verfahren(ID) ON UPDATE CASCADE ON DELETE CASCADE
+        );"
     ];
 
     /** @var mixed[] Rechtsgrundlagen für die Rechtsgrundlagen-Tabelle */
@@ -320,7 +342,7 @@
           error_log("[SecDoc] DBCon.class.php -> Aktualisiere Datenbank von Version $db_version zu " . self::DBVERSION . "!");
           $this->pdo->beginTransaction();
           $this->pdo->exec("ALTER TABLE verfahren ADD COLUMN Risikolevel INT NOT NULL DEFAULT 2;");
-          $this->pdo->exec("ALTER TABLE verfahren ADD COLUMN Typ INT NOT NULL DEFAULT 0;");
+          $this->pdo->exec("ALTER TABLE verfahren ADD COLUMN Typ INT NOT NULL DEFAULT 1;");
           $this->pdo->exec(self::TABLES[7]);
           $this->pdo->exec(self::TABLES[8]);
           $this->pdo->exec(self::TABLES[9]);
@@ -352,6 +374,17 @@
 
           $this->pdo->exec("DROP TABLE IF EXISTS rechtsgrundlagen;");
           $this->pdo->exec("PRAGMA user_version = 6;");
+          $this->pdo->commit();
+        }
+        else if($db_version == 6) {
+          trigger_error("[SecDoc] DBCon.class.php -> Aktualisiere Datenbank von Version $db_version zu " . self::DBVERSION . "!");
+          error_log("[SecDoc] DBCon.class.php -> Aktualisiere Datenbank von Version $db_version zu " . self::DBVERSION . "!");
+
+          $this->pdo->beginTransaction();
+          $this->pdo->exec(self::TABLES[10]);
+          $this->pdo->exec("ALTER TABLE toms ADD COLUMN Mode INT NOT NULL DEFAULT 0;");
+          $this->pdo->exec("UPDATE verfahren SET Typ = 1 WHERE Typ = 0;");
+          $this->pdo->exec("PRAGMA user_version = 7;");
           $this->pdo->commit();
         }
         else {
@@ -472,10 +505,7 @@
         $result = array();
         foreach($sth->fetchAll() as $entry) {
           $entry['Editierbar'] = TRUE;
-          $entry['Löschbar'] = FALSE;
-          if($userId === $entry['Ersteller'] || $userId === $entry['FachKontakt'] || $userId === $entry['TechKontakt']) {
-            $entry['Löschbar'] = TRUE;
-          }
+          $entry['Löschbar'] = TRUE;
           array_push($result, $entry);
         }
         return $result;
@@ -501,7 +531,7 @@
 
         $sth = $this->pdo->prepare('SELECT ID, Typ, Erstelldatum, Bezeichnung, Beschreibung, Fachabteilung, Status, Sichtbarkeit, MAX(Datum) AS Aktualisierung '
          . 'FROM verfahren LEFT JOIN verfahren_historie ON verfahren.ID = verfahren_historie.Verfahrens_Id '
-         . 'WHERE Status = 2 AND NOT Ersteller = ? AND NOT TechKontakt = ? AND NOT FachKontakt = ? '
+         . 'WHERE NOT Status = 3 AND NOT Ersteller = ? AND NOT TechKontakt = ? AND NOT FachKontakt = ? '
          . 'AND ID in (SELECT Process_ID FROM permissions WHERE CanEdit = 0 AND ((IsGroup = 0 AND ID = ?) OR (IsGroup = 1 AND ID in (' . implode(', ', array_fill(0, count($userGroups), '?')) . '))))' . (!empty($search) ? ' AND Bezeichnung LIKE ?' : '') . ' GROUP BY ID ORDER BY Bezeichnung COLLATE NOCASE;');
 
         $sth->execute(!empty($search) ? array_merge(array_fill(0, 4, $userId), $userGroups, ['%' . $search . '%']) : array_merge(array_fill(0, 4, $userId), $userGroups));
@@ -568,12 +598,12 @@
       if($this->isConnected()) {
         if($userIsDSB) {
           $permLevel = 2;
-          $sth = $this->pdo->prepare('SELECT ID, Erstelldatum, Bezeichnung, Beschreibung, Fachabteilung, IVV, FachKontakt, TechKontakt, Ersteller, Bearbeitergruppe, Status, Sichtbarkeit, Kennung AS BearbeitetVon, MAX(Datum) AS Aktualisierung, JSON FROM verfahren LEFT JOIN verfahren_historie ON verfahren.ID = verfahren_historie.Verfahrens_Id  WHERE ID = ? AND NOT Status = 3 GROUP BY ID;');
+          $sth = $this->pdo->prepare('SELECT ID, Typ, Erstelldatum, Bezeichnung, Beschreibung, Fachabteilung, IVV, FachKontakt, TechKontakt, Ersteller, Bearbeitergruppe, Status, Sichtbarkeit, Kennung AS BearbeitetVon, MAX(Datum) AS Aktualisierung, JSON FROM verfahren LEFT JOIN verfahren_historie ON verfahren.ID = verfahren_historie.Verfahrens_Id  WHERE ID = ? AND NOT Status = 3 GROUP BY ID;');
           $sth->execute([$verfahrensId]);
         }
         else {
           $permLevel = $this->getPermissionLevel($verfahrensId, $userId, $userGroups);
-          $sql = 'SELECT ID, Erstelldatum, Bezeichnung, Beschreibung, Fachabteilung, IVV, FachKontakt, TechKontakt, Ersteller, Bearbeitergruppe, Status, Sichtbarkeit, Kennung AS BearbeitetVon, MAX(Datum) AS Aktualisierung, JSON '
+          $sql = 'SELECT ID, Typ, Erstelldatum, Bezeichnung, Beschreibung, Fachabteilung, IVV, FachKontakt, TechKontakt, Ersteller, Bearbeitergruppe, Status, Sichtbarkeit, Kennung AS BearbeitetVon, MAX(Datum) AS Aktualisierung, JSON '
           . 'FROM verfahren LEFT JOIN verfahren_historie ON verfahren.ID = verfahren_historie.Verfahrens_Id  '
           . 'WHERE ID = ? AND NOT Status = 3 AND (Ersteller = ? OR TechKontakt = ? OR FachKontakt = ? '
           . 'OR ID in (SELECT Process_ID FROM permissions WHERE (IsGroup = 0 AND ID = ?) OR (IsGroup = 1 AND ID in (' . implode(', ', array_fill(0, count($userGroups), '?')) . ')))) GROUP BY ID;';
@@ -870,25 +900,25 @@
      * @param int    $verfahrensId ID des zu löschenden Verfahrens
      * @param string $userId       Nutzerkennung des ausführenden Nutzers
      * @param array  $userGroups   Gruppen des ausführenden Nutzers
+     * @param  bool  $userIsDSB    (optional) Gibt an, ob der ausführende Nutzer ein DSB ist (Zugriff auf alle Verfahren)
      * @return bool Gibt im Erfolgsfall TRUE zurück; FALSE falls das Verfahren nicht gefunden wurde oder keine Berechtigung vorhanden ist
      * @throws PDOException
      * @throws Exception
      */
-    public function delVerfahren($verfahrensId, $userId, $userGroups): bool {
+    public function delVerfahren($verfahrensId, $userId, $userGroups, $userIsDSB = FALSE): bool {
       if($this->isConnected()) {
-        #$sth = $this->pdo->prepare('DELETE FROM verfahren WHERE id = ? AND (Ersteller = ? OR FachKontakt = ? OR TechKontakt = ?);');
-        #$success = $sth->execute(array($verfahrensId, $userId, $userId, $userId));
+
+        if(!$userIsDSB && $this->getPermissionLevel($verfahrensId, $userId, $userGroups) < 2) {
+          return FALSE;
+        }
+
+        # Abhängigkeiten entfernen
+        if(!$this->updateDependency($verfahrensId, [], $userId, $userGroups, $userIsDSB)) return FALSE;
 
         # Das Verfahren wird erstmal nur als gelöscht markiert
-        $sth = $this->pdo->prepare('UPDATE verfahren SET Status = 3 WHERE id = ? AND (Ersteller = ? OR FachKontakt = ? OR TechKontakt = ? OR ID in (SELECT Process_ID FROM permissions WHERE CanEdit = 1 AND ((IsGroup = 0 AND ID = ?) OR (IsGroup = 1 AND ID in (' . implode(', ', array_fill(0, count($userGroups), '?')) . ')))));');
+        $sth = $this->pdo->prepare('UPDATE verfahren SET Status = 3 WHERE id = ?;');
 
-        $sth->execute(array_merge(array(
-            $verfahrensId,
-            $userId,
-            $userId,
-            $userId,
-            $userId
-        ), $userGroups));
+        $sth->execute(array($verfahrensId));
 
         ob_start();
         $sth->debugDumpParams();
@@ -1230,6 +1260,94 @@
       }
 
       return $this->pdo->commit();
+    }
+
+    /**
+     * Aktualisiert die Abhängigkeiten für ein Verfahren.
+     *
+     * @param  int      $verfahrensId ID des Verfahrens
+     * @param  int[]    $dependencies Array an IDs von Verfahren, von denenen das Verfahren abhängt
+     * @param  string   $userId       Nutzerkennung
+     * @param  string[] $userGroups   Gruppen des ausführenden Nutzers
+     * @param  bool     $userIsDSB    (optional) Gibt an, ob der ausführende Nutzer ein DSB ist (Zugriff auf alle Verfahren)
+     * @return bool TRUE bei Erfolg
+     * @throws PDOException
+     * @throws Exception
+     */
+    public function updateDependency($verfahrensId, $dependencies, $userId, $userGroups, $userIsDSB = FALSE) {
+      if(!$this->isConnected()) {
+        throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
+      }
+
+      if(!$userIsDSB && $this->getPermissionLevel($verfahrensId, $userId, $userGroups) < 2) {
+        return FALSE;
+      }
+
+      $this->pdo->beginTransaction();
+
+      $sql = 'DELETE FROM dependency WHERE Dependent = ?;';
+      $sth = $this->pdo->prepare($sql);
+
+      $sth->execute(array($verfahrensId));
+
+      ob_start();
+      $sth->debugDumpParams();
+      $sqlDump = ob_get_clean();
+      print "DBCon.class.php -> updateDependency() Execute: $sqlDump";
+
+      $sql = 'INSERT OR IGNORE INTO dependency (Dependent, Dependency) VALUES (?, ?);';
+      $sth = $this->pdo->prepare($sql);
+
+      foreach($dependencies as $dependency) {
+        $sth->execute(array($verfahrensId, $dependency));
+
+        ob_start();
+        $sth->debugDumpParams();
+        $sqlDump = ob_get_clean();
+        print "DBCon.class.php -> updateDependency() Execute: $sqlDump";
+      }
+
+      return $this->pdo->commit();
+    }
+
+    /**
+     * Fragt ab, welche Verfahren von $verfahrensId abhängen.
+     *
+     * @param  int      $verfahrensId ID des Verfahrens
+     * @param  string   $userId       Nutzerkennung
+     * @param  string[] $userGroups   Gruppen des ausführenden Nutzers
+     * @param  bool     $userIsDSB    (optional) Gibt an, ob der ausführende Nutzer ein DSB ist (Zugriff auf alle Verfahren)
+     * @return int[] Gibt eine Liste mit den IDs von abhängigen Verfahren an
+     * @throws PDOException
+     * @throws Exception
+     */
+    public function getDependencies($verfahrensId, $userId, $userGroups, $userIsDSB = FALSE) {
+      if(!$this->isConnected()) {
+        throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
+      }
+
+      if(!$userIsDSB && $this->getPermissionLevel($verfahrensId, $userId, $userGroups) < 2) {
+        return FALSE;
+      }
+
+      $dependencies = [];
+
+      $sql = 'SELECT Dependent, Bezeichnung, Typ FROM dependency LEFT JOIN verfahren ON dependency.Dependent = verfahren.ID WHERE Dependency = ? ORDER BY Bezeichnung ASC;';
+
+      $sth = $this->pdo->prepare($sql);
+
+      $sth->execute(array($verfahrensId));
+
+      ob_start();
+      $sth->debugDumpParams();
+      $sqlDump = ob_get_clean();
+      print "DBCon.class.php -> getDependencies() Execute: $sqlDump";
+
+      foreach($sth->fetchAll() as $entry) {
+        array_push($dependencies, ['id' => intval($entry['Dependent']), 'name' => $entry['Bezeichnung'], 'type' => intval($entry['Typ'])]);
+      }
+
+      return $dependencies;
     }
 
     /**

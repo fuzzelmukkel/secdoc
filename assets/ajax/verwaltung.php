@@ -574,6 +574,17 @@ EOH;
 
       if(!$setPermission) error_log("[SecDoc] verwaltung.php -> Konnte neue Berechtigungen für Verfahren #$id nicht setzen!");
 
+      # Abhängigkeiten eintragen
+      $newDependencies = [];
+      if(isset($data['abschluss_abhaengigkeit_id']) && is_array($data['abschluss_abhaengigkeit_id'])) {
+        foreach($data['abschluss_abhaengigkeit_id'] as $dependency) {
+          $dependency = intval($dependency);
+          if($dependency !== 0) array_push($newDependencies, $dependency);
+        }
+      }
+
+      if(!$dbcon->updateDependency($id, $newDependencies, $userId, $userGroups, $userIsDSB)) error_log("[SecDoc] verwaltung.php -> Konnte neue Abhängigkeiten für Verfahren #$id nicht eintragen!");
+
       $output['data'] = ['ID' => $id, 'Date' => date("Y-m-d H:i:s")];
       $output['success'] = TRUE;
       break;
@@ -620,10 +631,10 @@ EOH;
 
       if(isset($data['meta_nutzer_kennung'])) {
         for($c = 0; $c < count($data['meta_nutzer_kennung']); $c++) {
-          if(empty($data['meta_nutzer_kennung'][$c]) && empty($data['meta_nutzer_name'][$c])) continue;
+          if(empty($data['meta_nutzer_kennung'][$c])) continue;
 
           array_push($newPermissions, [
-            'id' => empty($data['meta_nutzer_kennung'][$c]) ? $data['meta_nutzer_name'][$c] : $data['meta_nutzer_kennung'][$c],
+            'id' => $data['meta_nutzer_kennung'][$c],
             'isgroup' => FALSE,
             'canedit' => intval($data['meta_nutzer_schreiben'][$c]) === 1 ? TRUE : FALSE
           ]);
@@ -632,10 +643,10 @@ EOH;
 
       if(isset($data['meta_gruppen_kennung'])) {
         for($c = 0; $c < count($data['meta_gruppen_kennung']); $c++) {
-          if(empty($data['meta_gruppen_kennung'][$c]) && empty($data['meta_gruppen_name'][$c])) continue;
+          if(empty($data['meta_gruppen_kennung'][$c])) continue;
 
           array_push($newPermissions, [
-            'id' => empty($data['meta_gruppen_kennung'][$c]) ? $data['meta_gruppen_name'][$c] : $data['meta_gruppen_kennung'][$c],
+            'id' => $data['meta_gruppen_kennung'][$c],
             'isgroup' => TRUE,
             'canedit' => intval($data['meta_gruppen_schreiben'][$c]) === 1 ? TRUE : FALSE
           ]);
@@ -646,6 +657,16 @@ EOH;
 
       if(!$setPermission) error_log("[SecDoc] verwaltung.php -> Konnte neue Berechtigungen für Verfahren #$verfahrensId nicht setzen!");
 
+      # Abhängigkeiten eintragen
+      $newDependencies = [];
+      if(isset($data['abschluss_abhaengigkeit_id']) && is_array($data['abschluss_abhaengigkeit_id'])) {
+        foreach($data['abschluss_abhaengigkeit_id'] as $dependency) {
+          $dependency = intval($dependency);
+          if($dependency !== 0) array_push($newDependencies, $dependency);
+        }
+      }
+
+      if(!$dbcon->updateDependency($verfahrensId, $newDependencies, $userId, $userGroups, $userIsDSB)) error_log("[SecDoc] verwaltung.php -> Konnte neue Abhängigkeiten für Verfahren #$verfahrensId nicht eintragen!");
 
       if($success && $dbcon->getStatus($verfahrensId, $userId, $userGroups, $userIsDSB) === 2) {
         /**
@@ -711,7 +732,13 @@ EOH;
         returnError('Keine ID für ein Verfahren wurde übergeben!');
       }
 
-      $success = $dbcon->delVerfahren($verfahrensId, $userId, $userGroups);
+      $dependencies = $dbcon->getDependencies($verfahrensId, $userId, $userGroups, $userIsDSB);
+
+      if(is_array($dependencies) && count($dependencies) > 0) {
+        returnError('Kein Verfahren wurde gelöscht, da das Verfahren noch als Abhängigkeit für andere Verfahren eingetragen ist!');
+      }
+
+      $success = $dbcon->delVerfahren($verfahrensId, $userId, $userGroups, $userIsDSB);
 
       if($success) {
         if(!unlink($includes_dir . DIRECTORY_SEPARATOR . $verfahrensId . '.txt')) {
@@ -750,6 +777,25 @@ EOH;
 
       $output['count'] = count($history);
       $output['data'] = $history;
+      $output['success'] = TRUE;
+      break;
+    }
+
+    # Gibt die Abhängigkeiten für ein Verfahren zurück
+    case 'dependencies': {
+      if(empty($verfahrensId)) {
+        returnError('Keine ID für ein Verfahren wurde übergeben!');
+      }
+
+      $dependencies = $dbcon->getDependencies($verfahrensId, $userId, $userGroups, $userIsDSB);
+
+      if($dependencies === FALSE) {
+        $output['error'] = 'Keine Berechtigung zum Abruf der Abhängigkeiten für das gewählte Verfahren!';
+        break;
+      }
+
+      $output['count'] = count($dependencies);
+      $output['data'] = $dependencies;
       $output['success'] = TRUE;
       break;
     }
@@ -899,13 +945,20 @@ EOH;
 
     # Liest die Nutzergruppen des eingeloggten Nutzers aus
     case 'getusergroups': {
-      $result = $userGroups;
-      $resultMod = [];
-      foreach($result as $val) {
-        array_push($resultMod, ['value' => $val, 'label' => $val . ': ' . Utils::getGroupName($val)]);
+      if(empty($search)) {
+        $result = $userGroups;
+        $resultMod = [];
+        foreach($result as $val) {
+          array_push($resultMod, ['value' => $val, 'label' => $val . ': ' . Utils::getGroupName($val)]);
+        }
+        $output['data'] = $resultMod;
+        $output['count'] = count($resultMod);
       }
-      $output['data'] = $resultMod;
-      $output['count'] = count($resultMod);
+      else {
+        $result = Utils::searchGroups($search);
+        $output['data'] = $result;
+        $output['count'] = count($result);
+      }
       break;
     }
 
@@ -996,7 +1049,7 @@ EOH;
 
     # Falls keine bekannte Aktion angegeben wurde
     default: {
-      $output['error'] = 'Es wurde kein oder kein unterstützter Modus (list, listdsb, get, create, update, delete, finish, updatecomment, history, searchperson, serachabteilung, searchivv, getusergroups, searchapp, searchos, searchipdns, getaufstellungsort, getstats, gettoms, getsuggestions, gencombinedpdf) angegeben!';
+      $output['error'] = 'Es wurde kein oder kein unterstützter Modus (list, listdsb, get, create, update, delete, finish, updatecomment, history, dependencies, searchperson, serachabteilung, searchivv, getusergroups, searchapp, searchos, searchipdns, getaufstellungsort, getstats, gettoms, getsuggestions, gencombinedpdf) angegeben!';
       break;
     }
   }

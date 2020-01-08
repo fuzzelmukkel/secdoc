@@ -136,6 +136,22 @@
     }
 
     /**
+     * Durchsucht alle Nutzergruppen.
+     *
+     * @param  string $query Suchbegriff
+     * @return array Liste der Nutzergruppen ([['value' => 'u0mitarb', 'label' => 'Beschreibung'], ...])
+     */
+    public static function searchGroups($query) {
+      $groups = [
+        ['value' => 'demogroup', 'label' => 'Gruppe für SecDoc Demosystem'],
+        ['value' => 'demogroup2', 'label' => 'Zweite Gruppe für SecDoc Demosystem'],
+        ['value' => 'demogroup3', 'label' => 'Dritte Gruppe für SecDoc Demosystem'],
+        ['value' => 'demogroup4', 'label' => 'Vierte Gruppe für SecDoc Demosystem'],
+      ];
+      return $groups;
+    }
+
+    /**
      * Holt den Namen zu einer Nutzergruppe.
      *
      * @global type $oci_handle Datenkbank-Handle für externe Datenbank

@@ -66,6 +66,10 @@ i[data-toggle="tooltip"] {
     cursor: help;
 }
 
+.tooltip-inner::after, .tooltip-inner::before {
+  display: none !important;
+}
+
 /* Overlay für den Ladebildschirm */
 .loadingOverlay {
   position:fixed;
@@ -124,4 +128,23 @@ table.dataTable.dtr-column > tbody > tr > th.control::before {
 
 .modal-lg {
   width: 65%;
+}
+
+/* Eigene Fehler-Klassen für die Überprüfung von Hidden-Fields (.error kollidiert mit Typeahead Funktion) */
+span.error {
+  display: inline;
+  color: #EB5E28;
+}
+
+input.customError {
+  background-color: #FFC0A4 !important;
+  color: #EB5E28 !important;
+  border-color: #EB5E28 !important;
+}
+
+/* Fix: Typeahead Vorschläge ragen über Body hinaus */
+.typeahead__container.result .typeahead__list, .typeahead__container.filter .typeahead__dropdown, .typeahead__container.hint .typeahead__hint, .typeahead__container.backdrop + .typeahead__backdrop {
+    overflow-y: auto;
+    overflow-x: hidden;
+    max-height: 250px;
 }

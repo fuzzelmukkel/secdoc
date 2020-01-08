@@ -10,7 +10,7 @@
 
   # Globale Variablen
   $prog_name = "SecDoc Demosystem";
-  $prog_version = "1.2 (2019.10.15)";
+  $prog_version = "1.3 (2020.01.08)";
   $debug = isset($_REQUEST['debug']) ? filter_var($_REQUEST['debug'], FILTER_VALIDATE_BOOLEAN) : FALSE; # Für Live-System ausschalten, im Testsystem ist Debug-Modus standardmäßig an
   $debugGroups = ['demogroup']; # Nutzergruppen, die Zugriff auf die Debug-Ausgaben haben
   $GLOBALS['DEBUG'] = $debug;
@@ -91,4 +91,12 @@
 
   # Infos über eingeloggten Bearbeiter holen (wird genutzt von imap_send_mime_mail())
   $cert_bearbeiter = Utils::getCurrentUserId();
+
+  # ----------------------------------------
+  # LDAP Verbindung
+  # ----------------------------------------
+  $ldap_host   = "";
+  $ldap_port   = 389;
+  $ldap_user   = '';
+  $ldap_pass   = '';
 ?>

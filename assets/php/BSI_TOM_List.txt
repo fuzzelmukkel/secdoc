@@ -1637,7 +1637,7 @@ ORP.1.A11|Organisation und Personal|Organisation|Rechtzeitige Beteiligung der Pe
 ORP.1.A12|Organisation und Personal|Organisation|Regelungen für Wartungs- und Reparaturarbeiten	|2|2|
 ORP.1.A13|Organisation und Personal|Organisation|Sicherheit bei Umzügen	|2|2|
 ORP.1.A14|Organisation und Personal|Organisation|Kontrollgänge	|3|2|
-SYS.4.1.A1|IT-Systeme|Drucker, Kopierer und Multifunktionsgeräte|Erstellung eines |1|1|-Konzepts für den Einsatz von Druckern, Kopierern und Multifunktionsgeräten	|1|1|
+SYS.4.1.A1|IT-Systeme|Drucker, Kopierer und Multifunktionsgeräte|Erstellung eines Basis-Konzepts für den Einsatz von Druckern, Kopierern und Multifunktionsgeräten	|1|1|
 SYS.4.1.A2|IT-Systeme|Drucker, Kopierer und Multifunktionsgeräte|Geeignete Aufstellung und Zugriff auf Drucker, Kopierer und Multifunktionsgeräte	|1|1|
 SYS.4.1.A3|IT-Systeme|Drucker, Kopierer und Multifunktionsgeräte|Regelmäßige Aktualisierung von Druckern, Kopieren und Multifunktionsgeräten	|1|1|
 SYS.4.1.A4|IT-Systeme|Drucker, Kopierer und Multifunktionsgeräte|Erstellung eines Sicherheitskonzeptes für den Einsatz von Druckern, Kopieren und Multifunktionsgeräten	|2|1|

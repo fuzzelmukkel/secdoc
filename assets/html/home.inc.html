@@ -1,0 +1,29 @@
+<h4 id="title" class="text-center">Startseite</h4>
+<div class="row mx-auto">
+  <p class="text-center">Bitte wählen Sie den gewünschten Modus aus:</p>
+  <p class="text-center">
+    <a class="btn btn-fill btn-default btn-wd" href="?page=wizit">IT-Verfahren verwalten</a> <i data-toggle="tooltip" title="Ein IT-Verfahren stellt eine IT-Infrastruktur bereit, die für eine oder mehrere Verarbeitungstätigkeiten verwendet wird, aber selbst keine personenbezogenen Daten verarbeitet (die Verarbeitung personenbezogener Daten ist nicht der Hauptzweck)." class="fa fa-question-circle-o fa-lg"></i>
+  </p>
+  <p class="text-center">
+    <a class="btn btn-fill btn-default btn-wd" href="?page=wizproc">Verarbeitungstätigkeit verwalten</a> <i data-toggle="tooltip" title="Eine Verarbeitungstätigkeit beschreibt einen oder mehrere Geschäftsprozesse, die personenbezogene Daten verwalten und verarbeiten." class="fa fa-question-circle-o fa-lg"></i>
+  </p>
+  <p id="dsbviewBtn" class="hidden text-center">
+    <a class="btn btn-fill btn-default btn-wd" href="?page=dsbview">DSB Ansicht</a>
+  </p>
+</div>
+<script>
+  $('#homeButton').addClass('hidden');
+
+  getUserPromise.then(() => {
+    if(userIsDSB) $('#dsbviewBtn').removeClass('hidden');
+  });
+
+  // Tooltips initialisieren
+  $('[data-toggle="tooltip"]').tooltip({
+    placement: 'auto',
+    container: 'body',
+    html: true
+  });
+
+  setOverlay(false);
+</script>

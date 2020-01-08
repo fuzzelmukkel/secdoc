@@ -37,7 +37,19 @@ var version = '';
  * @global
  * @type {String}
  */
-var page = ['dsbview'].includes(GetURLParameter('page')) ? GetURLParameter('page') : 'wizard';
+var page = ['dsbview', 'home', 'wizit', 'wizproc'].includes(GetURLParameter('page')) ? GetURLParameter('page') : 'home';
+
+/**
+ * ID der Dokumentation, die geladen werden soll
+ * @type {Number}
+ */
+var loadIdMain = GetURLParameter('id') === false ? 0 : parseInt(GetURLParameter('id'));
+
+/**
+ * ID der Dokumentation, die kopiert werden soll
+ * @type {Number}
+ */
+var copyIdMain = GetURLParameter('copy') === false ? 0 : parseInt(GetURLParameter('copy'));
 
 /**
  * Gibt an, ob der Nutzer ein Datenschutzbeauftragter ist
@@ -247,7 +259,7 @@ function getPDFFromServer(id, draft = false) {
       pdfBuffer[i] = pdfData.charCodeAt(i);
     }
     let blob = new Blob([pdfBuffer], {type: "application/pdf"});
-    let lastUpdate = new Date(data['data']['lastupdate'].replace(' ', 'T'));  // Safari benötigt das Format YYYY-MM-DDTHH:MM:SS (mit T)
+    let lastUpdate = data['data']['lastupdate'] ? new Date(data['data']['lastupdate'].replace(' ', 'T')) : new Date();  // Safari benötigt das Format YYYY-MM-DDTHH:MM:SS (mit T)
 
     // PDF-Anzeige starten (Unterscheidung, ob Edge genutzt wird)
     if(window.navigator && window.navigator.msSaveOrOpenBlob) {
@@ -269,10 +281,25 @@ function getPDFFromServer(id, draft = false) {
   });
 }
 
+/**
+ * Löscht ein Verfahren vom Server
+ * @param {type} id Eindeutige ID des Verfahrens
+ * @returns {undefined}
+ */
+function deleteFromServer(id) {
+  $.get(backendPath, { 'action': 'delete', 'id': id, 'debug': debug }).done(function(data) {
+    if(!data['success']) {
+      showError('Löschen der Dokumentation', data['error']);
+    }
+  }).fail((jqXHR, error, errorThrown) => {
+    showError('Löschen der Dokumentation', 'HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
+  });
+}
+
 /*
  * Nutzerkennung holen und anzeigen
  */
-$.getJSON(backendPath + '?action=searchperson' + (debug ? '&debug=true' : '')).done((data) => {
+let getUserPromise = $.getJSON(backendPath + '?action=searchperson' + (debug ? '&debug=true' : '')).done((data) => {
   if(data.length !== 0 && data['data'].length !== 0) {
     $('#userLabel').text(data['data'][0]['name']);
     $('#userLabel').attr('title', 'SSO-Kennung: ' + data['data'][0]['value']);
@@ -292,7 +319,30 @@ $.getJSON(backendPath + '?action=searchperson' + (debug ? '&debug=true' : '')).d
 /*
  * Angefragte Unterseite laden
  */
-$.get('assets/html/' + page + '.inc.html').done((data) => { $('#content').html(data); }).fail((jqXHR, error, errorThrown) => {
-  console.error('Fehler beim Laden der Unterseite "' + page + '"! HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
-  showError('Laden der Unterseite "' + page + '"');
-});
+if(page === 'home' && (loadIdMain > 0 || copyIdMain > 0)) {
+  $.getJSON(backendPath + '?action=get&id=' + (copyIdMain ? copyIdMain : loadIdMain)+ (debug ? '&debug=true' : '')).done((data) => {
+    if(data['success']) {
+      page = parseInt(data['data'][0]['Typ']) === 2 ? 'wizit' : 'wizproc';
+      $.get('assets/html/' + page + '.inc.html').done((data) => { $('#content').html(data); }).fail((jqXHR, error, errorThrown) => {
+        showError('Laden der Unterseite "' + page + '"', 'HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
+        setOverlay(false);
+      });
+    }
+    else {
+      showError('Laden der Dokumentation', data['error']);
+      $.get('assets/html/' + page + '.inc.html').done((data) => { $('#content').html(data); }).fail((jqXHR, error, errorThrown) => {
+        showError('Laden der Unterseite "' + page + '"', 'HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
+        setOverlay(false);
+      });
+    }
+  }).fail((jqXHR, error, errorThrown) => {
+    showError('Laden der Dokumentation', 'HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
+    setOverlay(false);
+  });
+}
+else {
+  $.get('assets/html/' + page + '.inc.html').done((data) => { $('#content').html(data); }).fail((jqXHR, error, errorThrown) => {
+    showError('Laden der Unterseite "' + page + '"', 'HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
+    setOverlay(false);
+  });
+}

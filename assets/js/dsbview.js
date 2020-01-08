@@ -79,7 +79,7 @@ $.get(backendPath, { 'action': 'listdsb', 'debug': debug }).done((data) => {
     newEntry.append('<td>' + data['data'][c]['Erstelldatum'] + '</td>');
     newEntry.append('<td>' + data['data'][c]['Aktualisierung'] + '</td>');
     newEntry.append('<td><textarea class="form-control comment" data-id="' + data['data'][c]['ID'] + '" style="resize: both;">' + htmlDecode(data['data'][c]['DSBKommentar']) + '</textarea></td>');
-    newEntry.append('<td><div class="btn-group inline"><a class="btn" href="?id=' + data['data'][c]['ID'] + (debug ? '&debug=true' : '') + '" target="_blank">Bearbeiten</a><button type="button" class="btn pdfdownload" data-id="' + data['data'][c]['ID'] + '" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '>PDF anzeigen</button></div></td>');
+    newEntry.append('<td><div class="btn-group inline"><a class="btn" href="?id=' + data['data'][c]['ID'] + (debug ? '&debug=true' : '') + '" target="_blank">Bearbeiten</a><a class="btn" href="?copy=' + data['data'][c]['ID'] + (debug ? '&debug=true' : '') + '" target="_blank">Kopieren</a><button type="button" class="btn pdfdownload" data-id="' + data['data'][c]['ID'] + '" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '>PDF anzeigen</button></div> <button type="button" data-id="' + data['data'][c]['ID'] +'" data-name="' + data['data'][c]['Bezeichnung'] +'" class="btn del btn-danger"><i class="fa fa-minus"></i> Löschen</button></td>');
 
     if(parseInt(data['data'][c]['Status']) === 0) {
       inbTable.append(newEntry);
@@ -124,6 +124,17 @@ $.get(backendPath, { 'action': 'listdsb', 'debug': debug }).done((data) => {
   // PDF-Download ermöglichen
   $('#content').on('click', 'button.pdfdownload', function(event) {
     getPDFFromServer($(event.target).data('id'));
+  });
+
+  // Handler für das Löschen von Verfahren
+  $('#content').on('click', 'button.del', function() {
+    var confirmed = confirm('Achtung: Von diesem Verfahren könnten andere Verfahren abhängen! Wollen Sie das Verfahren "' + $(this).data('name') + '" wirklich löschen?');
+    if(confirmed) {
+      deleteFromServer($(this).data('id'));
+      let row = $(this).parents('tr');
+      if(row.hasClass('child')) row = row.prev();
+      $(this).parents('table').DataTable().row(row).remove().draw();
+    }
   });
 
   // DataTables anpassen und initialisieren
