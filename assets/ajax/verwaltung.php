@@ -208,8 +208,8 @@ EOH;
     require_once '../vendor/autoload.php';
 
     global $dbcon, $userId, $pdf_dir, $prog_name, $prog_version;
-    $res = $dbcon->searchPerson($userId);
-    $author = $res[0]['Name'];
+    $res = Utils::searchUsers($userId, TRUE);
+    $author = $res[0]['name'];
 
     # MPDF initialisieren
     $mpdf = new \Mpdf\Mpdf(['debug' => false, 'CSSselectMedia' => 'screen', 'mode' => 'utf-8', 'format' => 'A4']);
@@ -862,21 +862,17 @@ EOH;
     case 'searchperson': {
       if(empty($search)) {
         $search = $userId;
-        $result = $dbcon->searchPerson($search, FALSE, TRUE);
+        $result = Utils::searchUsers($search, TRUE);
       }
       else {
-        $result = $dbcon->searchPerson($search);
+        $result = Utils::searchUsers($search);
       }
 
-      $resultMod = [];
-      foreach($result as $val) {
-        array_push($resultMod, ['value' => $val['Kennung'], 'label' => $val['Name'], 'name' => $val['Name']]);
-      }
       if($search == $userId) {
-        $resultMod[0]['userIsDSB'] = $userIsDSB;
+        $result[0]['userIsDSB'] = $userIsDSB;
       }
-      $output['data'] = $resultMod;
-      $output['count'] = count($resultMod);
+      $output['data'] = $result;
+      $output['count'] = count($result);
       break;
     }
 
@@ -885,13 +881,9 @@ EOH;
       if(empty($search)) {
         $search = $userId;
       }
-      $result = $dbcon->searchPerson($search, TRUE);
-      $resultMod = [];
-      foreach($result as $val) {
-        array_push($resultMod, ['value' => $val['Kennung'], 'label' => $val['Anzeigename'] , 'name' => $val['Name']]);
-      }
-      $output['data'] = $resultMod;
-      $output['count'] = count($resultMod);
+      $result = Utils::searchUsers($search);
+      $output['data'] = $result;
+      $output['count'] = count($result);
       break;
     }
 

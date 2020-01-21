@@ -320,7 +320,6 @@ function myFinish() {
  * Hilfsfunktionen
  */
 /**
- * # TODO Unterscheidung zwischen IT-Verfahren und verarbeitungstätigkeit
  * Zeigt eine Liste aller Verfahren an, auf die der Nutzer Zugriff hat
  * @param {Boolean} startup (optional) Gibt an, ob es sich um den Aufruf beim Laden der Seite handelt (wird nur geladen falls editierbare Verfahren vorhanden) oder ein manueller Aufruf
  * @returns {undefined}
@@ -978,7 +977,10 @@ function initTypeahead(node) {
             break;
           }
         }
-        if(!foundinKeys) break;
+        if(!foundinKeys) {
+          found = undefined;
+          break;
+        }
       }
       return found;
     }
@@ -1633,6 +1635,11 @@ Promise.all(promises).then(function() {
       $(this).prop('disabled', false);
       setOverlay(false);
     })
+  });
+
+  // Titel anhand Bezeichnung aktualisieren
+  $('input[name="allgemein_bezeichnung"]').on('input', (e) => {
+    document.title = e.target.value + ' - ' + document.title.split(' - ').slice(-1)[0];
   });
 
   // Warnung vor dem Schließen der Webseite, falls ungespeicherte Änderungen vorhanden sind
