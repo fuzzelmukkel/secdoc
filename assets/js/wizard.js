@@ -444,7 +444,7 @@ function showVerfahrensliste(startup = false) {
     setOverlay(false);
     console.timeEnd('Verfahrensliste laden');
     if(show) {
-      modalBody.append('<p><span><button type="button" class="btn loadEmpty btn-success">Neue Dokumentation anlegen</button></span></p>');
+      modalBody.append('<p><span><button type="button" class="btn loadEmpty btn-success btn-fill">Neue Dokumentation anlegen</button></span></p>');
       modalBody.find('.loadEmpty').click(function() {
         history.replaceState({}, document.title, window.location.href.split('?')[0]);
         loadEmpty();
@@ -473,6 +473,9 @@ function loadEmpty() {
   $('input[type=text], textarea').not('[name$="_nummer[]"]').val('');
   $('input[type=checkbox]').prop('checked', false);
   $('.wizard-navigation li a').first().click();
+  endlessTables.forEach(function(table) {
+    addTableRow(table);
+  });
   setSaveLabel('failed');
   setOverlay(false);
   console.timeEnd('Leeres Verfahren laden');
