@@ -36,7 +36,11 @@
     * @return bool Gibt TRUE zurück, falls der Nutzer eine der notwendigen Berechtigungen hat, sonst FALSE
     */
     public static function checkUserGroups($ownedGroups, $searchGroups): bool {
-     $access = TRUE;
+     $access = FALSE;
+     foreach($searchGroups as $group) {
+       $access = in_array($group, $ownedGroups);
+       if($access) break;
+     }
      return $access;
    }
 
@@ -126,13 +130,13 @@
      *
      * @global LDAPHandle $ldap_handle  LDAP Verbindung
      * @global array      $ldap_configs LDAP Konfigurationen
-     * @global bool       $ldap_use     Gibt an, ob LDAP genutzt werden soll
-     * @global DBCon      $dbcon        Datenbank Verbindung
-     * @param  string $query Suchbegriff
+     * @param  string $query    Suchbegriff
+     * @param  bool   $id       Soll exakt nach einer Kennung gesucht werden?
+     * @param  bool   $employee Soll nur nach Mitarbeitern gesucht werden?
      * @return array Liste der Nutzer ([['value' => 'u0mitarb', 'label' => 'Anzeigename, Abteilung, Telefon, Mail'], ...])
      */
-    public static function searchUsers($query, $id = FALSE) {
-      global $ldap_handle, $ldap_configs, $ldap_use, $dbcon;
+    public static function searchUsers($query, $id = FALSE, $employee = FALSE) {
+      global $ldap_handle, $ldap_configs, $ldap_use, $ldap_user_filter, $dbcon;
 
       if(empty($query)) return [];
 
@@ -153,7 +157,8 @@
       }
 
       if($id) {
-        $result = self::getfromLDAP($ldap_configs['users_id']['ldap_base'], str_replace('$', ldap_escape($query), $ldap_configs['users_id']['ldap_filter']), $ldap_configs['users_id']['ldap_attributes']);
+        $ldap_filter = str_replace('$', ldap_escape($query), $ldap_configs['users_id']['ldap_filter']);
+        $result = self::getfromLDAP($ldap_configs['users_id']['ldap_base'], $ldap_filter, $ldap_configs['users_id']['ldap_attributes']);
       }
       else {
         $terms = explode(' ', trim($query));
@@ -175,10 +180,15 @@
           return [];
         }
 
+        if($employee) {
+          $ldap_filter = substr($ldap_filter, 0, -1) . $ldap_user_filter['employee'] . ')';
+        }
+        else {
+          $ldap_filter = substr($ldap_filter, 0, -1) . $ldap_user_filter['active'] . ')';
+        }
+
         $result = self::getfromLDAP($ldap_configs['users_one']['ldap_base'], $ldap_filter, $ldap_configs['users_one']['ldap_attributes']);
       }
-      print_r($ldap_filter);
-      print_r($result);
 
       if(is_array($result) && array_key_exists('count', $result) && $result['count'] > 0) {
         $foundUsers = [];

@@ -284,6 +284,22 @@ function myFinish() {
         return;
       }
 
+      // Zeigt eine Fehlermeldung an, wenn Datenkategorien ohne Betroffene vorhanden sind (nur bei Verarbeitungstätigkeiten)
+      let currentState = saveAsObject();
+      if(mode === 'wizproc' && currentState.daten_kategorien_nummer !== undefined) {
+        let usedCats = new Set([]);
+        if(currentState.daten_personen_kategorie !== undefined) {
+          usedCats = new Set([].concat(...currentState.daten_personen_kategorie));
+        }
+        let knownCats = new Set([].concat(...currentState.daten_kategorien_nummer));
+        if(usedCats.size !== knownCats.size) {
+          let missCats = [...knownCats].filter(x => !usedCats.has(x));
+          showError('Abschließen des Verfahrens', 'Es sind Datenkategorien (' + missCats.join(', ') + ') vorhanden, die keinem Betroffenen zugeordnet sind! Bitte tragen Sie die entsprechenden Betroffenen ein und verknüpfen diese oder löschen Sie die nicht benötigten Kategorien.');
+          setOverlay(false);
+          return;
+        }
+      }
+
       // HTML-Code für PDF-Version generieren
       var pdfCode = genHTMLforPDF();
 
@@ -615,18 +631,6 @@ function saveOnServer() {
     setSaveLabel('failed');
     showError('Speichern der Dokumentation', 'Es wurden nicht alle Gruppen- bzw. Nutzerkennungen für die Zugriffsberechtigungen korrekt ausgewählt! Bitte überprüfen Sie die Eingaben und nutzen Sie nur Vorschläge aus der Liste.');
     return false;
-  }
-
-  // Zeigt eine Fehlermeldung an, wenn Datenkategorien ohne Betroffene vorhanden sind (nur bei Verarbeitungstätigkeiten)
-  if(mode === 'wizproc') {
-    let usedCats = new Set([].concat(...currentState.daten_personen_kategorie));
-    let knownCats = new Set([].concat(...currentState.daten_kategorien_nummer));
-    if(usedCats.size !== knownCats.size) {
-      let missCats = [...knownCats].filter(x => !usedCats.has(x));
-      setSaveLabel('failed');
-      showError('Speichern der Dokumentation', 'Es sind Datenkategorien (' + missCats.join(', ') + ') vorhanden, die keinem Betroffenen zugeordnet sind! Bitte tragen Sie die entsprechenden Betroffenen ein und verknüpfen diese oder löschen Sie die nicht benötigten Kategorien.');
-      return false;
-    }
   }
 
   // Falls ID == 0 wird ein neues Verfahren auf dem Server angelegt

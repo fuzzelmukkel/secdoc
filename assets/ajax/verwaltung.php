@@ -103,8 +103,8 @@
     require_once '../vendor/autoload.php';
 
     global $dbcon, $userId, $pdf_dir, $prog_name, $prog_version;
-    $res = $dbcon->searchPerson($userId);
-    $author = $res[0]['Name'];
+    $res = Utils::searchUsers($userId, TRUE);
+    $author = $res[0]['name'];
 
     # MPDF initialisieren
     $mpdf = new \Mpdf\Mpdf(['debug' => false, 'CSSselectMedia' => 'screen', 'mode' => 'utf-8', 'format' => 'A4']);
@@ -881,7 +881,7 @@ EOH;
       if(empty($search)) {
         $search = $userId;
       }
-      $result = Utils::searchUsers($search);
+      $result = Utils::searchUsers($search, FALSE, TRUE);
       $output['data'] = $result;
       $output['count'] = count($result);
       break;
