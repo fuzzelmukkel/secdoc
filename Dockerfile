@@ -1,7 +1,7 @@
-# Get apache with php 7.2 as base image
-FROM php:7.2-apache
+# Get apache with php 7.4 as base image
+FROM php:7.4-apache
 # Install needed tools and php extensions
-RUN apt-get update && apt-get install -y libpng-dev git zip
+RUN apt-get update && apt-get install -y libpng-dev git zip libonig-dev
 RUN docker-php-ext-install mbstring gd
 # Install composer
 RUN curl -o /tmp/composer-setup.php https://getcomposer.org/installer \
