@@ -50,6 +50,13 @@
   #ini_set('smtp_port', 25);
   #ini_set('sendmail_from', 'SecDoc <secdoc@uni-muenster.de>');
   #set_time_limit(60);                    # Skript Timeout in Sekunden ein/ausschalten
+  $eMailconfig = array (
+    "fromEmail" => ' ',                        # Die Email Adresse die als Sender angezeigt werden soll
+    "fromName" => ' ',                         # Der Name der Als Absender Angezeigt werden soll
+    "replyEmail" => ' ',                       # eMail addresse die als reply angezeigt werden soll
+    "replyName" => ' ',                        # Name der als reply to angezeigt werden soll
+    "text" => '$verfahrensId $role \n',        # Text der Email $verfahrensId wird durch die Verfahrensnummer ersetzt $role wird durch die rolle der Person ersetzt (Ersteller, Techkontakt, Fachkontakt) \n wird zu linebreak
+  );
 
   # Basispfad
   $base_dir = dirname($_SERVER['DOCUMENT_ROOT']);     # => "/www/data/ZIV.CERT"
