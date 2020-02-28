@@ -480,6 +480,41 @@
     }
 
     /**
+     *
+     *  Holt de UID des TechKontakt aus einem Verfahren um eine E-Mail versenden zu können
+     *
+     */
+
+    public function getTechKontakt($verfahrensId) {
+      if($this->isConnected()) {
+        $sth = $this->pdo->query("SELECT TECHKONTAKT FROM VERFAHREN WHERE ID = $verfahrensId LIMIT 1");
+        $result = $sth->fetch(PDO::FETCH_BOTH);
+        return $result[0];
+      }
+      else {
+        throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
+      }
+    }
+    
+    
+    
+    /**
+    *
+    * Holt de UID des FachKontakt aus einem Verfahren um eine E-Mail versenden zu können
+    *
+    */
+    public function getFachKontakt($verfahrensId) {
+      if($this->isConnected()) {
+        $sth = $this->pdo->query("SELECT FACHKONTAKT FROM VERFAHREN WHERE ID = $verfahrensId LIMIT 1");
+        $result = $sth->fetch(PDO::FETCH_BOTH);
+        return $result[0];
+      }
+      else {
+        throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
+      }
+    }
+
+    /**
      * Listet alle Verfahren auf, die der Nutzer mit Kennung $userId bearbeiten kann.
      *
      * @param string $userId     Nutzerkennung des ausführenden Nutzers
