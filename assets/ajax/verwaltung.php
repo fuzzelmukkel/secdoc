@@ -323,7 +323,75 @@ EOH;
    */
   function generateEmail(DBCon $dbcon, string $userId, array $userGroups, bool $userIsDSB, int $verfahrensId): bool
   {
-    return true;
+    global $pdf_dir, $eMailconfig;
+    $ersteller = $userId;
+    $techkontakt = $dbcon->getTechKontakt($verfahrensId);
+    $fachkontakt = $dbcon->getFachKontakt($verfahrensId);
+    $personen = array(
+      "Ersteller" => array(
+        "uid" => $ersteller,
+        "mail" => Utils::getUserAlias($ersteller),
+      ),
+      "Technischer Ansprechpartner" => array(
+        "uid" => $techkontakt,
+        "mail" => Utils::getUserAlias($techkontakt),
+      ),
+      "Fachlicher Ansprechpartner" => array(
+        "uid" => $fachkontakt,
+        "mail" => Utils::getUserAlias($fachkontakt),
+      ),
+    );
+    require_once '../vendor/autoload.php';
+      
+    //Create a new PHPMailer instance
+    $mail = new PHPMailer;
+    $mail->isSendmail();
+    $mail->CharSet = "UTF-8";
+    $mail->setFrom($eMailconfig['fromEmail'], $eMailconfig['fromName']);
+    $mail->addReplyTo($eMailconfig['replyEmail'], $eMailconfig['replyName']);
+    $mail->Subject = "Secdoc Verfahren Nr. $verfahrensId";
+    $mail->addAttachment($pdf_dir.DIRECTORY_SEPARATOR."$verfahrensId.pdf");
+  
+    /**Überprüft ob ein Kontakt merhmals eingetragen worden ist*/    
+    if ($personen['Ersteller']['uid'] == $personen['Technischer Ansprechpartner']['uid'] && $personen['Ersteller']['uid'] == $personen['Fachlicher Ansprechpartner']['uid'] ) {
+      $personen['Ersteller, Technischer Ansprechpartner, Fachlicher Ansprechpartner'] = $personen['Ersteller'];
+      unset($personen['Ersteller']);
+      unset($personen['Technischer Ansprechpartner']);
+      unset($personen['Fachlicher Ansprechpartner']);
+    } elseif ($personen['Ersteller']['uid'] == $personen['Technischer Ansprechpartner']['uid']) {
+      $personen['Ersteller, Technischer Ansprechpartner'] = $personen['Ersteller'];
+      unset($personen['Ersteller']);
+      unset($personen['Technischer Ansprechpartner']);
+    } elseif ($personen['Ersteller']['uid'] == $personen['Fachlicher Ansprechpartner']['uid']) {
+      $personen['Ersteller, Fachlicher Ansprechpartner'] = $personen['Ersteller'];
+      unset($personen['Ersteller']);
+      unset($personen['Fachlicher Ansprechpartner']);
+    } elseif ($personen['Fachlicher Ansprechpartner']['uid'] == $personen['Technischer Asnprechpartner']['uid']) {
+      $personen['Fachlicher Ansprechpartner, Technischer Ansprechpartner'] = $personen['Technischer Ansprechpartner'];
+      unset($personen['Fachkontakt']);
+      unset($personen['Techkontakt']);
+    }
+    $last_entry = array_keys($personen)[count($personen)-1]; 
+  
+    foreach($personen as $key => $value) {
+      $emailText = str_replace('$role', $key, $eMailconfig['text']);
+      $emailText = str_replace('$verfahrensId', $verfahrensId, $emailText);
+      $emailText = str_replace('\n', "\n", $emailText);
+      if (!empty($personen[$key]['mail'])) {
+        $mail->addAddress($personen[$key]['mail'], $personen[$key]['name']);
+        $mail->Body = $personen['Fachkontakt']['mail']."\nDas Secdoc Verfahren mit der Nummer $verfahrensId wurde abgeschlossen.\nBei diesem verfahren wurden Sie als ".$key." eingetragen.\nIm Anhang dieser E-Mail finden die ein PDF mit allen Details über das erstellte Verfahren. ";
+        if (!$mail->send()) {
+          trigger_error("[SecDoc] Verwaltung.php -> Fehler beim Senden der eMail. $mail->ErrorInfo");
+          error_log("[SecDoc] Verwaltung.php -> Fehler beim Senden der e-mail. $mail->ErrorInfo ");
+          break;
+        } 
+      }
+      if ($key == $last_entry) {
+        return true;
+      }
+      $mail->clearAddresses();
+      }
+
   }
 
   /**
