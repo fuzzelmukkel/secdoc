@@ -62,7 +62,17 @@ Zur Nutzung der PDF-Ausgabe muss zusätzlich noch das MPDF Plugin installiert we
 
 Im Anschluss kann entweder die Demo-Datenbank [demo.db](/assets/demo.db) verwendet werden oder eine neue, leere Datenbank erstellt werden. Zur Verwendung der Demo-Datenkbank muss diese nur im konfigurierten Pfad hinterlegt werden (standardmäßig `/var/www/secdoc/demo.db`) und SecDoc kann im Browser aufgerufen werden. Eine leere Datenbank wird automatisch von SecDoc angelegt, sollte keine vorhandene gefunden werden. In der leeren Datenbank fehlen allerdings die teschnichen und organisatorischen Maßnahmen (TOMs), sowie die Vorschläge für die Eingabefelder. Diese können mit Hilfe der [install.php](install.php), die im Browser aufgerufen werden kann, geladen werden. Die [install.php](install.php) Datei muss unbedingt vor Inbetriebnahme der Anwendung gelöscht oder verschoben werden, sodass kein Zugriff darauf besteht!
 
-**Achtung:** Das System bietet keinen allgemeinen Zugriffsschutz (z.B. durch Registrierung und Login-Mechanismus), sondern hat nur die Möglichkeit, die Anzeige von Verarbeitungstätigkeiten zu unterbinden, wenn eine Nutzerkennung oder Nutzergruppen bereitsgestellt wurden, die überprüft werden können. Dies geschieht in unserem System mittels SSO-Mechanismus (Single Sign On) und einem externen Funktionsaufruf zum Erlangen der Nutzergruppen, die im PHP-Skript überprüft werden. Der allgemeine Zugriffsschutz wird über `.htaccess`-Dateien mit Nutzergruppeneinschränkungen realisiert.
+### Konfiguration
+
+Grundlegende Konfigurationen können in der [config.inc.php](/assets/ajax/config.inc.php) Datei gefunden werden.
+
+Es stehen aktuell drei Methoden zur Authentifizierung zur Verfügung, welche mit der Variable `$auth_method` eingestellt werden können. Mögliche Einstellungen hierbei sind:
+
+1. `demo` - Bietet **keine** Überprüfung des Zugriffs. Nur für öffentliche Testsysteme nutzen!
+2. `ldap` - Stellt eine eigene Session-Verwaltung bereit. Zugangsdaten werden an einem AD/LDAP-Server überprüft. Einstellungen der Variable `$auth_ldap_config` beachten.
+3. `sso` - Bietet Authentifizierung über SSO-Systeme an (beispielsweise mittles `.htaccess` bei Apache).
+
+Neue Methoden zur Authentifizierung können als neue Klassen von [Auth.class.php](/assets/ajax/auth/Auth.class.php) implementiert werden.
 
 ### Notwendige Anpassungen
 

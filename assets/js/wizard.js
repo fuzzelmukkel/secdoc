@@ -176,7 +176,7 @@ else {
     if(mode === 'wizit' && itTOMList) tomsMapping = tomsMapping.filter((elem) => (parseInt(elem['Mode']) === 1));
     if(mode === 'wizproc' && itTOMList) tomsMapping = tomsMapping.filter((elem) => (parseInt(elem['Mode']) === 0));
   }).fail((jqXHR, error, errorThrown) => {
-    showError('Holen der TOMs', 'HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
+    showError('Holen der TOMs', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
   });
 }
 
@@ -326,7 +326,7 @@ function myFinish() {
 
         modal.modal();
       }).fail((jqXHR, error, errorThrown) => {
-        showError('Abschließen des Verfahrens', 'HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
+        showError('Abschließen des Verfahrens', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
       }).always(() => { setOverlay(false); });
     });
   }
@@ -438,7 +438,7 @@ function showVerfahrensliste(startup = false) {
       autoWidth: false
     });
   }).fail((jqXHR, error, errorThrown) => {
-    showError('Abrufen der Verfahrensliste', 'HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
+    showError('Abrufen der Verfahrensliste', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
   }).always(() => {
     $('#showVerfahrensliste').prop('disabled', false);
     setOverlay(false);
@@ -651,7 +651,7 @@ function saveOnServer() {
         setSaveLabel('failed');
       }
     }).fail((jqXHR, error, errorThrown) => {
-      showError('Anlegen der Dokumentation', 'HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
+      showError('Anlegen der Dokumentation', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
       setSaveLabel('failed');
     });
   }
@@ -686,7 +686,7 @@ function saveOnServer() {
         }
       }
     }).fail((jqXHR, error, errorThrown) => {
-      showError('Speichern der Dokumentation', 'HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
+      showError('Speichern der Dokumentation', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
       setSaveLabel('failed');
     });
   }
@@ -751,7 +751,7 @@ function loadFromServer(id) {
     }
   }).fail((jqXHR, error, errorThrown) => {
     loadId = false;
-    showError('Laden der Dokumentation', 'HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
+    showError('Laden der Dokumentation', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
   }).always(() => { setOverlay(false); console.timeEnd('Verfahren laden'); });
 }
 
@@ -777,7 +777,7 @@ function copyFromServer(id) {
       showError('Kopieren der Dokumentation', data['error']);
     }
   }).fail((jqXHR, error, errorThrown) => {
-    showError('Kopieren der Dokumentation', 'HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
+    showError('Kopieren der Dokumentation', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
   }).always(() => { setOverlay(false); console.timeEnd('Verfahren kopieren'); });
 }
 
@@ -1645,7 +1645,7 @@ Promise.all(promises).then(function() {
       getPDFFromServer(loadId, true);
       $(this).prop('disabled', false);
     }).fail((jqXHR, error, errorThrown) => {
-      showError('Erzeugen der Vorschau-PDF', 'HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
+      showError('Erzeugen der Vorschau-PDF', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
       $(this).prop('disabled', false);
       setOverlay(false);
     })

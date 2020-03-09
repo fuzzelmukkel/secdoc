@@ -37,7 +37,7 @@ var version = '';
  * @global
  * @type {String}
  */
-var page = ['dsbview', 'home', 'wizit', 'wizproc'].includes(GetURLParameter('page')) ? GetURLParameter('page') : 'home';
+var page = ['dsbview', 'home', 'login', 'wizit', 'wizproc'].includes(GetURLParameter('page')) ? GetURLParameter('page') : 'home';
 
 /**
  * ID der Dokumentation, die geladen werden soll
@@ -71,6 +71,13 @@ var backendPath = 'assets/ajax/verwaltung.php';
  * @type {jQuery-Object}
  */
 var modal = $('#modalWindow'); // Modal-Fenster für Meldungen/Fehler
+
+/**
+ * Promise für die Abfrage des eingeloggten Nutzers
+ * @global
+ * @type {Promise}
+ */
+var getUserPromise = Promise.resolve();
 
 // Mappings
 /**
@@ -213,18 +220,29 @@ function setOverlay(active = true) {
 
 /**
  * Zeigt dem Nutzer eine Fehlermeldung an
- * @param {String} action  Aktion, bei der der Fehler aufgetreten ist
- * @param {String} message (optional) Fehlermeldung
+ * @param {String} action    Aktion, bei der der Fehler aufgetreten ist
+ * @param {String} message   (optional) Fehlermeldung
+ * @param {Object} httperror (optional) Objekt der Form {'jqXHR':..., 'error':..., 'errorThrown':...} für HTTP Fehlermeldungen
  * @returns {undefined}
  */
-function showError(action, message = false) {
-  console.error('Fehler beim ' + action + ' - Fehlermeldung: ' + message);
+function showError(action, message = false, httperror = false) {
+  console.error('Fehler beim ' + action + ' - Fehlermeldung: ' + message + (httperror ? (' - HTTP Error: ' + httperror) : ''));
   modal.find('.modal-title').text('Fehler');
   if(message) {
     modal.find('.modal-body').html('<div class="alert alert-danger"><p>Beim ' + action + ' ist ein Fehler aufgetreten!</p> <p><strong>Fehlermeldung:</strong> ' + message + '</p></div>');
   }
   else {
-    modal.find('.modal-body').html('<div class="alert alert-danger"><p>Beim ' + action + ' ist ein unbekannter Fehler aufgetreten! Bitte versuchen Sie es in Kürze erneut!</p></div>');
+    if(httperror !== false) {
+      if(httperror.jqXHR.status === 401) {
+        modal.find('.modal-body').html('<div class="alert alert-danger"><p>Beim ' + action + ' ist ein Fehler aufgetreten!</p> <p><strong>Fehlermeldung:</strong> Sie sind nicht angemeldet! Bitte erneut anmelden: <a class="btn btn-success btn-fill" href="index.html" target="_blank">Anmelden</a></p></div>');
+      }
+      else {
+        modal.find('.modal-body').html('<div class="alert alert-danger"><p>Beim ' + action + ' ist ein Fehler aufgetreten!</p> <p><strong>Fehlermeldung:</strong> HTTP Code: ' + httperror.jqXHR.status + ' Fehler: ' + httperror.error + ' - ' + httperror.errorThrown + '</p></div>');
+      }
+    }
+    else {
+      modal.find('.modal-body').html('<div class="alert alert-danger"><p>Beim ' + action + ' ist ein unbekannter Fehler aufgetreten! Bitte versuchen Sie es in Kürze erneut!</p></div>');
+    }
   }
   modal.find('.modal-body').append('<p><button type="button" class="center-block btn btn-primary" data-dismiss="modal" aria-label="Close">Schließen</button></p>');
   modal.modal();
@@ -275,7 +293,7 @@ function getPDFFromServer(id, draft = false) {
       download.remove();
     }
   }).fail((jqXHR, error, errorThrown) => {
-    showError('Laden der PDF', 'HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
+    showError('Laden der PDF', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
   }).always(() => {
     setOverlay(false);
   });
@@ -292,57 +310,107 @@ function deleteFromServer(id) {
       showError('Löschen der Dokumentation', data['error']);
     }
   }).fail((jqXHR, error, errorThrown) => {
-    showError('Löschen der Dokumentation', 'HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
+    showError('Löschen der Dokumentation', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
   });
 }
 
 /*
- * Nutzerkennung holen und anzeigen
+ * Login-Unterseite laden
  */
-let getUserPromise = $.getJSON(backendPath + '?action=searchperson' + (debug ? '&debug=true' : '')).done((data) => {
-  if(data.length !== 0 && data['data'].length !== 0) {
-    $('#userLabel').text(data['data'][0]['name']);
-    $('#userLabel').attr('title', 'SSO-Kennung: ' + data['data'][0]['value']);
-    version = data['version'];
-    userIsDSB = data['data'][0]['userIsDSB'];
+function loadLogin() {
+  $.get('assets/html/login.inc.html').done((data) => { $('#content').html(data); }).fail((jqXHR, error, errorThrown) => {
+    showError('Laden der Unterseite "' + page + '"', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+    setOverlay(false);
+  });
+}
+
+/**
+ * Läd die angefragte Unterseite und Informationen über den aktuell eingeloggten Nutzer
+ * @return {undefined}
+ */
+function loadSubpage() {
+  $('#loginLabel').removeClass('hidden');
+  $('#logoutLabel').removeClass('hidden');
+  
+  /*
+   * Nutzerkennung holen und anzeigen
+   */
+  getUserPromise = $.getJSON(backendPath + '?action=searchperson' + (debug ? '&debug=true' : '')).done((data) => {
+    if(data.length !== 0 && data['data'].length !== 0) {
+      $('#userLabel').text(data['data'][0]['name']);
+      $('#userLabel').attr('title', 'SSO-Kennung: ' + data['data'][0]['value']);
+      version = data['version'];
+      userIsDSB = data['data'][0]['userIsDSB'];
+    }
+    else {
+      console.error('Fehler beim Abruf der Nutzerkennung! Antwort: ' + data);
+      $('#userLabel').text('Unbekannt');
+    }
+    console.info(version);
+  }).fail((jqXHR, error, errorThrown) => {
+    console.error('Fehler beim Abruf der Nutzerkennung! HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
+    $('#userLabel').text('Unbekannt');
+  });
+
+  /*
+   * Angefragte Unterseite laden
+   */
+  if(page === 'home' && (loadIdMain > 0 || copyIdMain > 0)) {
+    $.getJSON(backendPath + '?action=get&id=' + (copyIdMain ? copyIdMain : loadIdMain)+ (debug ? '&debug=true' : '')).done((data) => {
+      if(data['success']) {
+        page = parseInt(data['data'][0]['Typ']) === 2 ? 'wizit' : 'wizproc';
+        $.get('assets/html/' + page + '.inc.html').done((data) => { $('#content').html(data); }).fail((jqXHR, error, errorThrown) => {
+          showError('Laden der Unterseite "' + page + '"', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+          setOverlay(false);
+        });
+      }
+      else {
+        showError('Laden der Dokumentation', data['error']);
+        $.get('assets/html/' + page + '.inc.html').done((data) => { $('#content').html(data); }).fail((jqXHR, error, errorThrown) => {
+          showError('Laden der Unterseite "' + page + '"', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+          setOverlay(false);
+        });
+      }
+    }).fail((jqXHR, error, errorThrown) => {
+      showError('Laden der Dokumentation', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+      setOverlay(false);
+    });
   }
   else {
-    console.error('Fehler beim Abruf der Nutzerkennung! Antwort: ' + data);
-    $('#userLabel').text('Unbekannt');
+    $.get('assets/html/' + page + '.inc.html').done((data) => { $('#content').html(data); }).fail((jqXHR, error, errorThrown) => {
+      showError('Laden der Unterseite "' + page + '"', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+      setOverlay(false);
+    });
   }
-  console.info(version);
-}).fail((jqXHR, error, errorThrown) => {
-  console.error('Fehler beim Abruf der Nutzerkennung! HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
-  $('#userLabel').text('Unbekannt');
+}
+
+/*
+ * Logout Button
+ */
+$('#logoutLabel').css({'cursor': 'pointer', 'margin-left': '5px'}).click(() => {
+  setOverlay(true);
+  $.getJSON(backendPath + '?action=logout' + (debug ? '&debug=true' : '')).done((data) => {
+    if(data['success']) {
+      $(window).off('beforeunload'); // Meldung vor dem Verlassen der Seite abschalten
+      window.location.replace('index.html');
+    }
+    else {
+      showError('Abmelden', 'Funktion nicht verfügbar bei externer Anmeldung!');
+      setOverlay(false);
+    }
+  }).fail((jqXHR, error, errorThrown) => {
+    showError('Abmelden', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+    setOverlay(false);
+  });
 });
 
 /*
- * Angefragte Unterseite laden
+ * Überprüfen ob der Nutzer eingeloggt ist
  */
-if(page === 'home' && (loadIdMain > 0 || copyIdMain > 0)) {
-  $.getJSON(backendPath + '?action=get&id=' + (copyIdMain ? copyIdMain : loadIdMain)+ (debug ? '&debug=true' : '')).done((data) => {
-    if(data['success']) {
-      page = parseInt(data['data'][0]['Typ']) === 2 ? 'wizit' : 'wizproc';
-      $.get('assets/html/' + page + '.inc.html').done((data) => { $('#content').html(data); }).fail((jqXHR, error, errorThrown) => {
-        showError('Laden der Unterseite "' + page + '"', 'HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
-        setOverlay(false);
-      });
-    }
-    else {
-      showError('Laden der Dokumentation', data['error']);
-      $.get('assets/html/' + page + '.inc.html').done((data) => { $('#content').html(data); }).fail((jqXHR, error, errorThrown) => {
-        showError('Laden der Unterseite "' + page + '"', 'HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
-        setOverlay(false);
-      });
-    }
-  }).fail((jqXHR, error, errorThrown) => {
-    showError('Laden der Dokumentation', 'HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
-    setOverlay(false);
-  });
-}
-else {
-  $.get('assets/html/' + page + '.inc.html').done((data) => { $('#content').html(data); }).fail((jqXHR, error, errorThrown) => {
-    showError('Laden der Unterseite "' + page + '"', 'HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
-    setOverlay(false);
-  });
-}
+$.getJSON(backendPath + '?action=loggedin' + (debug ? '&debug=true' : '')).done((data) => {
+  if(data.length !== 0 && data['success']) {
+    loadSubpage();
+  }
+}).fail((jqXHR, error, errorThrown) => {
+  loadLogin();
+});

@@ -10,7 +10,7 @@
 
   # Globale Variablen
   $prog_name = "SecDoc Demosystem";
-  $prog_version = "1.3.1 (2020.01.22)";
+  $prog_version = "1.3.2 (2020.03.05)";
   $debug = isset($_REQUEST['debug']) ? filter_var($_REQUEST['debug'], FILTER_VALIDATE_BOOLEAN) : FALSE; # Für Live-System ausschalten, im Testsystem ist Debug-Modus standardmäßig an
   $debugGroups = ['demogroup']; # Nutzergruppen, die Zugriff auf die Debug-Ausgaben haben
   $GLOBALS['DEBUG'] = $debug;
@@ -43,6 +43,7 @@
   # Benötigte Funktionen einbinden
   require_once('DBCon.class.php');
   require_once('Utils.class.php');
+  require_once('auth/Auth.class.php');
 
   # Mail-Konfiguration
   #ini_set('SMTP', 'mail.uni-muenster.de');
@@ -53,22 +54,16 @@
   # Basispfad
   $base_dir = dirname($_SERVER['DOCUMENT_ROOT']);     # => "/www/data/ZIV.CERT"
   $base_dir = $base_dir ? $base_dir : "/var/www";
-  #$ckusrgrp = "/www/bin/ckusrgrp -n";
 
   $temp_dir     = "$base_dir/secdoc/temp";  # Hier landen temporäre Dateien
-  #$sess_dir     = "$base_dir/sessions";    # Hier landen die PHP sessions und Tickets von ticket.class.php
-  #$secret_dir   = "$base_dir/secret";      # Hier liegen Passwörter und Zertifikate
-  #$font_dir     = "$base_dir/fonts";       # Fonts für JpGraph (http://jpgraph.net/)
   $db_dir       = "$base_dir/secdoc";       # Hier liegt die SecDoc SQlite Datenbank
   $includes_dir = "$base_dir/secdoc/inc";   # Hier liegen die HTML Include-Bausteine
   $pdf_dir      = "$base_dir/secdoc/PDF";   # Hier liegen die PDF-Dateien (temporär für E-Mail-Versand)
   $vendor_dir   = '../vendor/autoload.php'; # Pfad zur Composer autoload.php für MPDF
+  $sessions_dir = "$base_dir/secdoc/sessions";
 
   $db_name      = 'demo.db';
 
-  # Passwörter und X.509-Zertifikat
-  #$key_filename  = "$secret_dir/cert.access.dat";  # Enthält alle von CERT_online benötigten Passwörter
-  #$info_filename = "$secret_dir/cert.access.txt";  # Enthält Informationen zum jeweiligen Zugang
 
   # ----------------------------------------
   # IMAP.UNI-MUENSTER.DE
@@ -91,14 +86,34 @@
 
   #$x509_info = imap_check_x509();
 
-  # Infos über eingeloggten Bearbeiter holen (wird genutzt von imap_send_mime_mail())
-  $cert_bearbeiter = Utils::getCurrentUserId();
+  # ----------------------------------------
+  # Security Konfiguration
+  # ----------------------------------------
+  $auth_method      = 'demo'; # Aktuell werden die Werte 'ldap', 'sso' und 'demo' unterstützt
+  $auth_class       = $auth_method . 'Auth';
+  $auth_ldap_config = [
+    'host' => '',
+    'port' => 389,
+    'domain' => '@wwu.de',
+    'check_user_ip' => TRUE,
+    'check_user_agent' => TRUE,
+    'refresh_token' => FALSE,
+    'cookie_lifetime' => 1800,
+    'cookie_secure' => FALSE
+  ];
+  $useGroups        = [];
+  $adminGroups      = ['demogroup'];
+  $dpoGroups        = ['demogroup'];
+
+  if(!@require_once("auth/{$auth_method}Auth.class.php")) throw new Exception("[SecDoc] config.inc.php Fehler: Authentifizierungsklasse '{$auth_method}Auth.class.php' wurde nicht gefunden oder konnte nicht eingebunden werden!");
+
+  $authClass = new $auth_class;
 
   # ----------------------------------------
   # LDAP Verbindung
   # ----------------------------------------
-  $ldap_use    = FALSE;
-  $ldap_host   = "";
+  $ldap_use    = FALSE; # Für Demo-Modus auf FALSE setzen
+  $ldap_host   = '';
   $ldap_port   = 389;
   $ldap_user   = '';
   $ldap_pass   = '';

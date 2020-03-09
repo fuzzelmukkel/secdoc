@@ -372,20 +372,6 @@ EOH;
   $ivv = '-- keine --';
   $search = '';
 
-  # Nutzerkennung des aktuellen Nutzers holen
-  $userId = Utils::getCurrentUserId();
-
-  # Überprüfen, ob die Nutzerkennung gefunden wurde
-  if(empty($userId)) {
-    returnError('Es konnte keine Nutzerkennung über das SSO-System erlangt werden! Eventuell sind Sie nicht über SSO eingeloggt.');
-  }
-
-  # Nutzergruppen holen
-  $userGroups = Utils::getUserGroups($userId);
-
-  # Prüfen, ob der Nutzer ein DSB ist
-  $userIsDSB = in_array($userId, $dsbIDs);
-
   # Anfrageparamter holen
   switch($reqMethod) {
     case 'GET': {
@@ -415,10 +401,48 @@ EOH;
 
   $action = strtolower(trim($action));
 
+  # Prüfen ob ein Login durchgeführt werden soll
+  if($action === 'login') {
+    if(!isset($data['user']) || !isset($data['password'])) {
+      http_response_code(401);
+      returnError('Keine Zugangsdaten übergeben!');
+    }
+
+    if(!$authClass->loginUser(trim($data['user']), $data['password'])) {
+      http_response_code(401);
+      returnError('Ungültige Zugangsdaten übergeben!');
+    }
+  }
+
+  # Prüfen ob der Nutzer eingeloggt ist
+  if(!$authClass->checkSession()) {
+    http_response_code(401);
+    returnError('Keine gültige Session vorhanden! Bitte zuerst einloggen!');
+  }
+
+  # Prüfen ob der Nutzer Berechtigung zur Nutzung von SecDoc hat
+  if(!$authClass->checkUsePerm()) {
+    http_response_code(403);
+    returnError('Sie haben keine Berechtigung zur Nutzung von SecDoc!');
+  }
+
+  # Nutzerkennung des aktuellen Nutzers holen
+  $userId = $authClass->getUserID();
+  $cert_bearbeiter = $userId; # Infos über eingeloggten Bearbeiter holen (wird genutzt von imap_send_mime_mail())
+
+  # Nutzergruppen holen
+  $userGroups = $authClass->getUserGroups();
+
+  # Prüfen, ob der Nutzer ein DSB oder Admin ist
+  $userIsDSB   = in_array($userId, $dsbIDs) || $authClass->checkDPOPerm();
+  $userIsAdmin = $authClass->checkAdminPerm();
+
+  # DB Verbindung überprüfen
   if(!$dbcon->isConnected()) {
     returnError('Es konnte keine DB-Verbindung hergestellt werden! Versuchen Sie es später erneut.');
   }
 
+  # Gewünschte Aktion ausführen
   switch($action) {
     # Liest alle Verfahren aus, auf die $userId Zugriff hat
     case 'list': {
@@ -1041,6 +1065,21 @@ EOH;
       }
 
       if(!unlink($filename)) error_log("[SecDoc] verwaltung.php -> Konnte kombinierte PDF '$filename' nicht löschen!");
+      break;
+    }
+
+    case 'login': {
+      $output['data']['msg'] = 'Erfolgreich eingeloggt';
+      break;
+    }
+
+    case 'logout': {
+      $output['error'] = $authClass->logoutUser() ? '' : 'Abmeldung fehlgeschlagen oder nicht verfügbar.';
+      break;
+    }
+
+    case 'loggedin': {
+      $output['success'] = TRUE;
       break;
     }
 
