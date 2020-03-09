@@ -831,8 +831,15 @@ function genHTMLforPDF() {
   });
 
   /* Link hinzufügen */
-  var link = window.location.href.split('?')[0].replace(/x?sso/i, 'www') + '?id=' + loadId;
+  let baseURL = window.location.href.split('?')[0].replace(/x?sso/i, 'www');
+  let link = baseURL + '?id=' + loadId;
   toSend.append('<div class="text-center"><h5 class="info-text text-ul">Dokumentation online einsehen</h5><p><a href="' + link + '">' + link + '</a></p></div>');
+
+  /* Links in Abhängigkeiten anpassen */
+  toSend.find('table#abschluss_vonabhaengig tr').each(function(idx) {
+    let abhLnk = $(this).find('td:last a');
+    abhLnk.attr('href', baseURL + abhLnk.attr('href'));
+  });
 
   /* Layout-Anpassungen (Buttons durch Text ersetzen, Typeahead und andere aktive Elemente entschärfen) */
   toSend.find('select[data-tool="selectpicker"], select.selectpicker, [id$="_add"], .typeahead__cancel-button, .typeahead__hint, .typeahead__result').remove();

@@ -1006,7 +1006,12 @@ EOH;
         returnError('Sie haben keine Berechtigung, um auf das Verfahren zuzugreifen!');
       }
 
-      $output['success'] = generatePDF(htmlspecialchars($data['title'], ENT_QUOTES, 'UTF-8', FALSE), $data['pdfCode'], $verfahrensId, TRUE);
+      if(generatePDF(htmlspecialchars($data['title'], ENT_QUOTES, 'UTF-8', FALSE), $data['pdfCode'], $verfahrensId, TRUE)) {
+        $output['success'] = TRUE;
+      }
+      else {
+        $output['error'] = 'PDF konnte nicht erzeugt werden. Bitte versuchen Sie es später erneut!';
+      }
       break;
     }
 
