@@ -255,7 +255,7 @@
       else
       {
         trigger_error('[SecDoc] Utils.class.php -> ldap_get_entries() Fehler: ' . ldap_error($ldap_handle));
-        error_log('[SecDoc] Utils.class.php ->ldap_get_entries() Fehler: ' . ldap_error($ldap_handle));
+        error_log('[SecDoc] Utils.class.php -> ldap_get_entries() Fehler: ' . ldap_error($ldap_handle));
         return [];
       }
     }

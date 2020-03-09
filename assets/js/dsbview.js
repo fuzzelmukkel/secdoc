@@ -49,7 +49,7 @@ function getCombinedPDF() {
      download.remove();
    }
  }).fail((jqXHR, error, errorThrown) => {
-   showError('Laden der PDF', 'HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
+   showError('Laden der PDF', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
  }).always(() => {
    setOverlay(false);
  });
@@ -115,7 +115,7 @@ $.get(backendPath, { 'action': 'listdsb', 'debug': debug }).done((data) => {
         }
         setSaveLabel('saved');
       }).fail((jqXHR, error, errorThrown) => {
-        showError('Speichern des Kommentars', 'HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
+        showError('Speichern des Kommentars', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
         setSaveLabel('failed');
       });
     }, timeout));
@@ -258,7 +258,7 @@ $.get(backendPath, { 'action': 'listdsb', 'debug': debug }).done((data) => {
 
   setSaveLabel('refreshed');
 }).fail((jqXHR, error, errorThrown) => {
-  showError('Abrufen der Verfahrensliste', 'HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
+  showError('Abrufen der Verfahrensliste', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
   setSaveLabel('none');
 }).always(() => {
   setOverlay(false);
@@ -280,7 +280,7 @@ $.get(backendPath, { 'action': 'getstats', 'debug': debug }).done((data) => {
 
   $('#statistik tbody').append(newEntry);
 }).fail((jqXHR, error, errorThrown) => {
-  showError('Abrufen der Statistiken', 'HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
+  showError('Abrufen der Statistiken', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
   setSaveLabel('none');
 });
 
