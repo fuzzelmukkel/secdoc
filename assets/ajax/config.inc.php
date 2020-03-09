@@ -50,11 +50,23 @@
   #ini_set('sendmail_from', 'SecDoc <secdoc@uni-muenster.de>');
   #set_time_limit(60);                    # Skript Timeout in Sekunden ein/ausschalten
   $eMailconfig = array (
-    "fromEmail" => ' ',                        # Die Email Adresse die als Sender angezeigt werden soll
-    "fromName" => ' ',                         # Der Name der Als Absender Angezeigt werden soll
-    "replyEmail" => ' ',                       # eMail addresse die als reply angezeigt werden soll
-    "replyName" => ' ',                        # Name der als reply to angezeigt werden soll
+    "fromEmail" => '',                        # Die Email Adresse die als Sender angezeigt werden soll
+    "fromName" => '',                         # Der Name der Als Absender Angezeigt werden soll
+    "replyEmail" => '',                       # eMail addresse die als reply angezeigt werden soll
+    "replyName" => '',                        # Name der als reply to angezeigt werden soll
     "text" => '$verfahrensId $role \n',        # Text der Email $verfahrensId wird durch die Verfahrensnummer ersetzt $role wird durch die rolle der Person ersetzt (Ersteller, Techkontakt, Fachkontakt) \n wird zu linebreak
+    "smtp" => false,                            # soll smtp verwendet werden
+    "host" => '',                   # SMTP Server Adresse
+    "SMTPAuth" => true,                        # soll eine Authentifizierung verwendet werden
+    "SMTPSecure"=> 'ssl',                      # Verschlüsselungsmethode
+    "Username" => '',                     # Benutzername
+    "Password" => '',              # Passwort
+    "Port"     => 465,              # Port
+    "signed" => false,          # soll ein S/MIME Zertifikat genutzt werden? 
+    "CRT" => '',                  #Pfad zur Zertifikatsdatei mit der Endung crt
+    "KEY" => '',                  #Pfad zur Schlüsseldatei mit der Endung key
+    "PKP" => '',              # 'yourSecretPrivateKeyPassword'= Das Passwort mit dem der private Schlüssel gesichert wurde, nicht das Import Passwort!, kann auch leer sein. Parameter muss aber angegeben werden
+    "PEM" => '',            # Pfad zur PEM Datei
   );
 
   # Basispfad

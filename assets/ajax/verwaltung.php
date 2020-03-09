@@ -20,6 +20,10 @@
 
   # Benötigte Dateien einbinden
   require_once('config.inc.php');
+  use PHPMailer\PHPMailer\PHPMailer;
+  use PHPMailer\PHPMailer\SMTP;
+  use PHPMailer\PHPMailer\Exception;
+
 
   # Ausgabe Array vorbereiten
   $output = [];
@@ -341,18 +345,43 @@ EOH;
         "mail" => Utils::getUserAlias($fachkontakt),
       ),
     );
-    require_once '../vendor/autoload.php';
-      
-    //Create a new PHPMailer instance
-    $mail = new PHPMailer;
+    
+    require_once '../vendor/autoload.php'; 
+  
+
+    $mail = new PHPMailer; //Create a new PHPMailer instance
     $mail->isSendmail();
     $mail->CharSet = "UTF-8";
     $mail->setFrom($eMailconfig['fromEmail'], $eMailconfig['fromName']);
     $mail->addReplyTo($eMailconfig['replyEmail'], $eMailconfig['replyName']);
     $mail->Subject = "Secdoc Verfahren Nr. $verfahrensId";
     $mail->addAttachment($pdf_dir.DIRECTORY_SEPARATOR."$verfahrensId.pdf");
-  
-    /**Überprüft ob ein Kontakt merhmals eingetragen worden ist*/    
+    
+    #Überprüft ob smtp genutzt werden soll und holt entsprechend die Einstellungen
+    if ($eMailconfig['smtp'] == true){
+
+        $mail->isSMTP();
+        $mail->Host = $eMailconfig['host'];
+        $mail->SMTPAuth = $eMailconfig['SMTPAuth'];
+        $mail->SMTPSecure =$eMailconfig['SMTPSecure'];
+        $mail->Username = $eMailconfig['Username'];
+        $mail->Password = $eMailconfig['Password'];
+        $mail->Port = $eMailconfig['Port'];
+     }
+
+     if ($eMailconfig['signed'] == true) {
+     $mail->sign(
+      $eMailconfig['CRT'], //The location of your certificate file
+      $eMailconfig['KEY'], //The location of your private key file
+      //The password you protected your private key with (not the Import Password!
+      //May be empty but the parameter must not be omitted!
+      $eMailconfig['PKP'],
+      $eMailconfig['PEM'] //The location of your chain file
+      );
+    }
+ 
+
+    #Überprüft ob ein Kontakt merhmals eingetragen worden ist    
     if ($personen['Ersteller']['uid'] == $personen['Technischer Ansprechpartner']['uid'] && $personen['Ersteller']['uid'] == $personen['Fachlicher Ansprechpartner']['uid'] ) {
       $personen['Ersteller, Technischer Ansprechpartner, Fachlicher Ansprechpartner'] = $personen['Ersteller'];
       unset($personen['Ersteller']);
