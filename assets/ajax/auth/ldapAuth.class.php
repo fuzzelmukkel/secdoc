@@ -65,8 +65,19 @@ class ldapAuth extends Auth {
       return FALSE;
     }
 
-    @ldap_set_option($ldap_handle, LDAP_OPT_PROTOCOL_VERSION, 3);
-    @ldap_set_option($ldap_handle, LDAP_OPT_NETWORK_TIMEOUT, 3);
+    $ldapOptSuccess = @ldap_set_option($ldap_handle, LDAP_OPT_PROTOCOL_VERSION, 3)
+      && @ldap_set_option($ldap_handle, LDAP_OPT_X_TLS_PROTOCOL_MIN, LDAP_OPT_X_TLS_PROTOCOL_TLS1_2)
+      && @ldap_set_option($ldap_handle, LDAP_OPT_NETWORK_TIMEOUT, 3);
+
+    if($auth_ldap_config['startTLS']) {
+      $ldapOptSuccess = $ldapOptSuccess && @ldap_start_tls($ldap_handle);
+    }
+
+    if(!$ldapOptSuccess) {
+      trigger_error('[SecDoc] ldapAuth.class.php -> Fehler beim Setzen der LDAP Optionen: ' . ldap_error($ldap_handle));
+      error_log('[SecDoc] ldapAuth.class.php -> Fehler beim Setzen der LDAP Optionen: ' . ldap_error($ldap_handle));
+      return FALSE;
+    }
 
     # Try to login with supplied data
     $ldap_success = @ldap_bind($ldap_handle, $user . $auth_ldap_config['domain'], $pass);

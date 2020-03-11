@@ -404,7 +404,7 @@
      * @return array Liste der gefundenen Einträge
      */
     private static function getfromLDAP($base, $filter, $attributes) {
-      global $ldap_handle, $ldap_host, $ldap_port, $ldap_user, $ldap_pass;
+      global $ldap_handle, $ldap_host, $ldap_port, $ldap_user, $ldap_pass, $ldap_startTLS;
 
       if(empty($base) || empty($filter) || empty($attributes)) return [];
 
@@ -419,9 +419,19 @@
           return [];
         }
 
-        @ldap_set_option($ldap_handle, LDAP_OPT_PROTOCOL_VERSION, 3);
-        @ldap_set_option($ldap_handle, LDAP_OPT_NETWORK_TIMEOUT, 3);
-        #ldap_start_tls($ldapcon);
+        $ldapOptSuccess = @ldap_set_option($ldap_handle, LDAP_OPT_PROTOCOL_VERSION, 3)
+          && @ldap_set_option($ldap_handle, LDAP_OPT_X_TLS_PROTOCOL_MIN, LDAP_OPT_X_TLS_PROTOCOL_TLS1_2)
+          && @ldap_set_option($ldap_handle, LDAP_OPT_NETWORK_TIMEOUT, 3);
+
+        if($ldap_startTLS) {
+          $ldapOptSuccess = $ldapOptSuccess && @ldap_start_tls($ldap_handle);
+        }
+
+        if(!$ldapOptSuccess) {
+          trigger_error('[SecDoc] Utils.class.php -> Fehler beim Setzen der LDAP Optionen: ' . ldap_error($ldap_handle));
+          error_log('[SecDoc] Utils.class.php -> Fehler beim Setzen der LDAP Optionen: ' . ldap_error($ldap_handle));
+          return [];
+        }
 
         if(!empty($ldap_user) && !empty($ldap_user)) {
           $ldap_success = @ldap_bind($ldap_handle, $ldap_user, $ldap_pass);

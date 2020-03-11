@@ -95,6 +95,7 @@
     'host' => '',
     'port' => 389,
     'domain' => '@wwu.de',
+    'startTLS' => FALSE, # Im Betrieb auf TRUE setzen
     'check_user_ip' => TRUE,
     'check_user_agent' => TRUE,
     'refresh_token' => FALSE,
@@ -112,11 +113,12 @@
   # ----------------------------------------
   # LDAP Verbindung
   # ----------------------------------------
-  $ldap_use    = FALSE; # Für Demo-Modus auf FALSE setzen
-  $ldap_host   = '';
-  $ldap_port   = 389;
-  $ldap_user   = '';
-  $ldap_pass   = '';
+  $ldap_use      = FALSE; # Für Demo-Modus auf FALSE setzen
+  $ldap_host     = '';
+  $ldap_port     = 389;
+  $ldap_user     = '';
+  $ldap_pass     = '';
+  $ldap_startTLS = FALSE; # Im Betrieb auf TRUE setzen
 
   # Suchparameter für die verschiedenen LDAP-Abrufe ($ als Placeholder für Suchstrings in ldap_filter)
   $ldap_configs = [
