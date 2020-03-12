@@ -480,39 +480,77 @@
     }
 
     /**
+     * Holt die Nutzerkennung des TechKontakts aus einem Verfahren.
      *
-     *  Holt de UID des TechKontakt aus einem Verfahren um eine E-Mail versenden zu können
-     *
+     * @param  int $verfahrensId ID eines Verfahrens
+     * @return string Nutzerkennung
      */
-
     public function getTechKontakt($verfahrensId) {
       if($this->isConnected()) {
-        $sth = $this->pdo->query("SELECT TECHKONTAKT FROM VERFAHREN WHERE ID = $verfahrensId LIMIT 1");
+        $sth = $this->pdo->prepare("SELECT TechKontakt FROM verfahren WHERE ID = ? LIMIT 1;");
+        $sth->execute([$verfahrensId]);
+
+        ob_start();
+        $sth->debugDumpParams();
+        $sqlDump = ob_get_clean();
+        print "DBCon.class.php -> getTechKontakt() Execute: $sqlDump";
+
         $result = $sth->fetch(PDO::FETCH_BOTH);
-        return $result[0];
+        return !empty($result) ? $result[0] : '';
       }
       else {
         throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
       }
     }
-    
-    
-    
-    /**
+
+
+   /**
+    * Holt die Nutzerkennung des FachKontakts aus einem Verfahren.
     *
-    * Holt de UID des FachKontakt aus einem Verfahren um eine E-Mail versenden zu können
-    *
+    * @param  int $verfahrensId ID eines Verfahrens
+    * @return string Nutzerkennung
     */
     public function getFachKontakt($verfahrensId) {
       if($this->isConnected()) {
-        $sth = $this->pdo->query("SELECT FACHKONTAKT FROM VERFAHREN WHERE ID = $verfahrensId LIMIT 1");
+        $sth = $this->pdo->prepare("SELECT FachKontakt FROM verfahren WHERE ID = ? LIMIT 1;");
+        $sth->execute([$verfahrensId]);
+
+        ob_start();
+        $sth->debugDumpParams();
+        $sqlDump = ob_get_clean();
+        print "DBCon.class.php -> getTechKontakt() Execute: $sqlDump";
+
         $result = $sth->fetch(PDO::FETCH_BOTH);
-        return $result[0];
+        return !empty($result) ? $result[0] : '';
       }
       else {
         throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
       }
     }
+
+    /**
+     * Holt die Nutzerkennung des FachKontakts aus einem Verfahren.
+     *
+     * @param  int $verfahrensId ID eines Verfahrens
+     * @return array Generelle Infos über eine Dokumentation ['ID' => 123, 'Typ' => 1, 'Bezeichnung' => 'Test Verfahren', 'Beschreibung' => 'Das ist ein Verfahren zum Testen']
+     */
+     public function getVerfahrenInfo($verfahrensId) {
+       if($this->isConnected()) {
+         $sth = $this->pdo->prepare("SELECT ID, Typ, Bezeichnung, Beschreibung, MAX(Datum) AS Aktualisierung FROM verfahren LEFT JOIN verfahren_historie ON verfahren.ID = verfahren_historie.Verfahrens_Id  WHERE ID = ? GROUP BY ID LIMIT 1;");
+         $sth->execute([$verfahrensId]);
+
+         ob_start();
+         $sth->debugDumpParams();
+         $sqlDump = ob_get_clean();
+         print "DBCon.class.php -> getVerfahrenInfo() Execute: $sqlDump";
+
+         $result = $sth->fetch(PDO::FETCH_BOTH);
+         return !empty($result) ? $result : [];
+       }
+       else {
+         throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
+       }
+     }
 
     /**
      * Listet alle Verfahren auf, die der Nutzer mit Kennung $userId bearbeiten kann.

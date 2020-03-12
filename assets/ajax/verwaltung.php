@@ -108,7 +108,7 @@
 
     global $dbcon, $userId, $pdf_dir, $prog_name, $prog_version;
     $res = Utils::searchUsers($userId, TRUE);
-    $author = $res[0]['name'];
+    $author = !empty($res) ? $res[0]['name'] : '';
 
     # MPDF initialisieren
     $mpdf = new \Mpdf\Mpdf(['debug' => false, 'CSSselectMedia' => 'screen', 'mode' => 'utf-8', 'format' => 'A4']);
@@ -315,9 +315,10 @@ EOH;
   /**
    * Generiert eine E-Mail an die eingetragenen Verantwortlichen mit PDF-Datei des Verfahrens als Anhang.
    *
-   * @author Thorsten Küfer <thorsten.kuefer@uni-muenster.de>
+   * @author Victor Nellißen <vinellis@uni-mainz.de>
    *
    * @global string $pdf_dir Verzeichnis für die PDF-Speicherung
+   * @global array  $eMailconfig Konfiguration für den E-Mail Versand
    * @param DBCon  $dbcon        Datenbank-Verbindung als PDO Objekt
    * @param string $userId       Nutzerkennung
    * @param array  $userGroups   Nutzergruppen
@@ -328,9 +329,14 @@ EOH;
   function generateEmail(DBCon $dbcon, string $userId, array $userGroups, bool $userIsDSB, int $verfahrensId): bool
   {
     global $pdf_dir, $eMailconfig;
+
     $ersteller = $userId;
     $techkontakt = $dbcon->getTechKontakt($verfahrensId);
     $fachkontakt = $dbcon->getFachKontakt($verfahrensId);
+
+    $verfahrensInfo = $dbcon->getVerfahrenInfo($verfahrensId);
+    $lastUpdate = date('YmdHi', strtotime($verfahrensInfo['Aktualisierung']));
+
     $personen = array(
       "Ersteller" => array(
         "uid" => $ersteller,
@@ -345,21 +351,20 @@ EOH;
         "mail" => Utils::getUserAlias($fachkontakt),
       ),
     );
-    
-    require_once '../vendor/autoload.php'; 
-  
+
+    require_once '../vendor/autoload.php';
+
 
     $mail = new PHPMailer; //Create a new PHPMailer instance
     $mail->isSendmail();
     $mail->CharSet = "UTF-8";
     $mail->setFrom($eMailconfig['fromEmail'], $eMailconfig['fromName']);
     $mail->addReplyTo($eMailconfig['replyEmail'], $eMailconfig['replyName']);
-    $mail->Subject = "Secdoc Verfahren Nr. $verfahrensId";
-    $mail->addAttachment($pdf_dir.DIRECTORY_SEPARATOR."$verfahrensId.pdf");
-    
-    #Überprüft ob smtp genutzt werden soll und holt entsprechend die Einstellungen
-    if ($eMailconfig['smtp'] == true){
+    $mail->Subject = "Secdoc Dokumentation Nr. $verfahrensId abgeschlossen";
+    $mail->addAttachment($pdf_dir.DIRECTORY_SEPARATOR."$verfahrensId.pdf", "Dokumentation_{$verfahrensId}_{$lastUpdate}.pdf");
 
+    #Überprüft ob smtp genutzt werden soll und holt entsprechend die Einstellungen
+    if ($eMailconfig['smtp'] === true){
         $mail->isSMTP();
         $mail->Host = $eMailconfig['host'];
         $mail->SMTPAuth = $eMailconfig['SMTPAuth'];
@@ -369,19 +374,19 @@ EOH;
         $mail->Port = $eMailconfig['Port'];
      }
 
-     if ($eMailconfig['signed'] == true) {
+     if ($eMailconfig['signed'] === true) {
      $mail->sign(
-      $eMailconfig['CRT'], //The location of your certificate file
-      $eMailconfig['KEY'], //The location of your private key file
-      //The password you protected your private key with (not the Import Password!
-      //May be empty but the parameter must not be omitted!
-      $eMailconfig['PKP'],
-      $eMailconfig['PEM'] //The location of your chain file
+       $eMailconfig['CRT'], //The location of your certificate file
+       $eMailconfig['KEY'], //The location of your private key file
+       //The password you protected your private key with (not the Import Password!)
+       //May be empty but the parameter must not be omitted!
+       $eMailconfig['PKP'],
+       $eMailconfig['PEM'] //The location of your chain file
       );
     }
- 
 
-    #Überprüft ob ein Kontakt merhmals eingetragen worden ist    
+
+    #Überprüft ob ein Kontakt merhmals eingetragen worden ist
     if ($personen['Ersteller']['uid'] == $personen['Technischer Ansprechpartner']['uid'] && $personen['Ersteller']['uid'] == $personen['Fachlicher Ansprechpartner']['uid'] ) {
       $personen['Ersteller, Technischer Ansprechpartner, Fachlicher Ansprechpartner'] = $personen['Ersteller'];
       unset($personen['Ersteller']);
@@ -395,32 +400,37 @@ EOH;
       $personen['Ersteller, Fachlicher Ansprechpartner'] = $personen['Ersteller'];
       unset($personen['Ersteller']);
       unset($personen['Fachlicher Ansprechpartner']);
-    } elseif ($personen['Fachlicher Ansprechpartner']['uid'] == $personen['Technischer Asnprechpartner']['uid']) {
+    } elseif ($personen['Fachlicher Ansprechpartner']['uid'] == $personen['Technischer Ansprechpartner']['uid']) {
       $personen['Fachlicher Ansprechpartner, Technischer Ansprechpartner'] = $personen['Technischer Ansprechpartner'];
       unset($personen['Fachkontakt']);
       unset($personen['Techkontakt']);
     }
-    $last_entry = array_keys($personen)[count($personen)-1]; 
-  
+    $last_entry = array_keys($personen)[count($personen)-1];
+
+    $mailSuccess = TRUE;
+
     foreach($personen as $key => $value) {
       $emailText = str_replace('$role', $key, $eMailconfig['text']);
       $emailText = str_replace('$verfahrensId', $verfahrensId, $emailText);
+      $emailText = str_replace('$title', $verfahrensInfo['Bezeichnung'], $emailText);
       $emailText = str_replace('\n', "\n", $emailText);
+      $emailText = strip_tags($emailText);
+
       if (!empty($personen[$key]['mail'])) {
         $mail->addAddress($personen[$key]['mail'], $personen[$key]['name']);
-        $mail->Body = $personen['Fachkontakt']['mail']."\nDas Secdoc Verfahren mit der Nummer $verfahrensId wurde abgeschlossen.\nBei diesem verfahren wurden Sie als ".$key." eingetragen.\nIm Anhang dieser E-Mail finden die ein PDF mit allen Details über das erstellte Verfahren. ";
-        if (!$mail->send()) {
+        $mail->Body = Utils::getUserAnrede($personen[$key]['uid']) . ",\n\n$emailText";
+        $currSuccess = $mail->send();
+        $mailSuccess = $mailSuccess && $currSuccess;
+        if (!$currSuccess) {
           trigger_error("[SecDoc] Verwaltung.php -> Fehler beim Senden der eMail. $mail->ErrorInfo");
           error_log("[SecDoc] Verwaltung.php -> Fehler beim Senden der e-mail. $mail->ErrorInfo ");
           break;
-        } 
-      }
-      if ($key == $last_entry) {
-        return true;
+        }
       }
       $mail->clearAddresses();
-      }
+    }
 
+    return $mailSuccess;
   }
 
   /**
