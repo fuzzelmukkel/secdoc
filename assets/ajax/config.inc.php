@@ -11,6 +11,7 @@
   # Globale Variablen
   $prog_name = "SecDoc Demosystem";
   $prog_version = "1.3.2 (2020.03.05)";
+  $url = 'http://localhost.de/';
   $debug = isset($_REQUEST['debug']) ? filter_var($_REQUEST['debug'], FILTER_VALIDATE_BOOLEAN) : FALSE; # Für Live-System ausschalten, im Testsystem ist Debug-Modus standardmäßig an
   $debugGroups = ['demogroup']; # Nutzergruppen, die Zugriff auf die Debug-Ausgaben haben
   $GLOBALS['DEBUG'] = $debug;
@@ -45,11 +46,29 @@
   require_once('Utils.class.php');
   require_once('auth/Auth.class.php');
 
+  # ----------------------------------------
   # Mail-Konfiguration
-  #ini_set('SMTP', 'mail.uni-muenster.de');
-  #ini_set('smtp_port', 25);
-  #ini_set('sendmail_from', 'SecDoc <secdoc@uni-muenster.de>');
-  #set_time_limit(60);                    # Skript Timeout in Sekunden ein/ausschalten
+  # ----------------------------------------
+  $eMailconfig = array (
+    "fromEmail" => '',                        # Die Email Adresse die als Sender angezeigt werden soll
+    "fromName" => '',                         # Der Name der Als Absender Angezeigt werden soll
+    "replyEmail" => '',                       # eMail addresse die als reply angezeigt werden soll
+    "replyName" => '',                        # Name der als reply to angezeigt werden soll
+    # Text der Email $verfahrensId wird durch die Verfahrensnummer ersetzt $role wird durch die rolle der Person ersetzt (Ersteller, Techkontakt, Fachkontakt) \n wird zu linebreak
+    "text" => "Das SecDoc Verfahren \"\$title\" mit der Nummer \$verfahrensId wurde abgeschlossen.\nBei diesem Verfahren wurden Sie als \$role eingetragen.\n\nIm Anhang dieser E-Mail finden Sie eine PDF mit allen Details über das erstellte Verfahren.\n\nDarüber hinaus ist das Verfahren online unter $url?id=\$verfahrensId einsehbar.\n\nMit freundlichen Grüßen\nIhr SecDoc-Team\n",
+    "smtp" => false,                          # soll smtp verwendet werden
+    "host" => '',                             # SMTP Server Adresse
+    "SMTPAuth" => true,                       # soll eine Authentifizierung verwendet werden
+    "SMTPSecure"=> 'ssl',                     # Verschlüsselungsmethode
+    "Username" => '',                         # Benutzername
+    "Password" => '',                         # Passwort
+    "Port"     => 465,                        # Port
+    "signed" => false,                        # soll ein S/MIME Zertifikat genutzt werden?
+    "CRT" => '',                              #Pfad zur Zertifikatsdatei mit der Endung crt
+    "KEY" => '',                              #Pfad zur Schlüsseldatei mit der Endung key
+    "PKP" => '',                              # 'yourSecretPrivateKeyPassword'= Das Passwort mit dem der private Schlüssel gesichert wurde, nicht das Import Passwort!, kann auch leer sein. Parameter muss aber angegeben werden
+    "PEM" => '',                              # Pfad zur PEM Datei
+  );
 
   # Basispfad
   $base_dir = dirname($_SERVER['DOCUMENT_ROOT']);     # => "/www/data/ZIV.CERT"
@@ -63,16 +82,6 @@
   $sessions_dir = "$base_dir/secdoc/sessions";
 
   $db_name      = 'demo.db';
-
-
-  # ----------------------------------------
-  # IMAP.UNI-MUENSTER.DE
-  # ----------------------------------------
-  #$imap_user   = "secdoc";  # Benötigt für Signierung
-  #$imap_pass   = user_read_pass($imap_user);
-  #$imap_inbox  = "{imap.uni-muenster.de/ssl}INBOX";
-  #$imap_inbox  = "{eximap.uni-muenster.de/tls}INBOX";
-  #$imap_handle = imap_connect($imap_inbox);
 
   # ----------------------------------------
   # ORACLE Verbindung
