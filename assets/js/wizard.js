@@ -42,14 +42,16 @@ var copyId = GetURLParameter('copy') === false ? false : parseInt(GetURLParamete
  * @global
  * @type {String}
  */
-var mode = ['wizit', 'wizproc'].includes(page) ? page : 'wizproc';
+var mode = ['wizit', 'wizproc', 'wizapp'].includes(page) ? page : 'wizproc';
 
 /**
  * Lesbarer Name des Modus; genutzt für die Ersetzung in Texten
  * @global
  * @type {Array}
  */
-var modeName = (mode === 'wizproc' ? ['Verarbeitungstätigkeit', 'Verarbeitungstätigkeiten'] : ['IT-Verfahren', 'IT-Verfahren']);
+var modeName = ['Verarbeitungstätigkeit', 'Verarbeitungstätigkeiten'];
+if(mode === 'wizapp') modeName = ['Fachapplikation', 'Fachapplikationen'];
+if(mode === 'wizit')  modeName = ['IT-Verfahren', 'IT-Verfahren'];
 
 /**
  * Gibt an, ob Eingaben geändert wurden seit dem letzten Laden/Speichern

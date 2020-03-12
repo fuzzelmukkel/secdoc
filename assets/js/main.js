@@ -37,7 +37,7 @@ var version = '';
  * @global
  * @type {String}
  */
-var page = ['dsbview', 'home', 'login', 'wizit', 'wizproc'].includes(GetURLParameter('page')) ? GetURLParameter('page') : 'home';
+var page = ['dsbview', 'home', 'login', 'wizit', 'wizproc', 'wizapp'].includes(GetURLParameter('page')) ? GetURLParameter('page') : 'home';
 
 /**
  * ID der Dokumentation, die geladen werden soll
@@ -331,7 +331,7 @@ function loadLogin() {
 function loadSubpage() {
   $('#loginLabel').removeClass('hidden');
   $('#logoutLabel').removeClass('hidden');
-  
+
   /*
    * Nutzerkennung holen und anzeigen
    */
