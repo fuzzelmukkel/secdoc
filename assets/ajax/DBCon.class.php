@@ -22,7 +22,7 @@
    * |PRIMARY KEY|   |            |            |            |           |             |            |           |           |          |                |      |            |    |            |
    * +-----------+---+------------+------------+------------+-----------+-------------+------------+-----------+-----------+----------+----------------+------+------------+----+------------+
    * </pre>
-   * * Typ: 1 = Verarbeitungstätigkeit, 2 = IT-Verfahren
+   * * Typ: 1 = Verarbeitungstätigkeit, 2 = IT-Verfahren, 3 = Fachapplikation
    * * Risikolevel: 1 = Niedrig, 2 = Mittel, 3 = Hoch
    * * Status: 0 = In Bearbeitung, 2 = Fertiggestellt, 3 = Gelöscht
    * * Sichtbarkeit: 0 = Nur für Bearbeiter (Ersteller, FachKontakt, TechKontakt und Bearbeitergruppe), 3 = Jeder eingeloggte Nutzer
@@ -138,7 +138,7 @@
     protected $path = '/secdoc/';
 
     /** @var int Aktuelle DB-Version */
-    const DBVERSION = 7; # Version für eine DB-Struktur; zur Überprüfung beim Laden genutzt
+    const DBVERSION = 8; # Version für eine DB-Struktur; zur Überprüfung beim Laden genutzt
 
     /** @var int Maximale Anzahl an Historien-Einträgen */
     const MAXHISTORY = 15; # Nur diese Anzahl an Historien-Einträgen wird behalten
@@ -227,6 +227,12 @@
             PRIMARY KEY (Dependent, Dependency),
             FOREIGN KEY (Dependent) REFERENCES verfahren(ID) ON UPDATE CASCADE ON DELETE CASCADE,
             FOREIGN KEY (Dependency) REFERENCES verfahren(ID) ON UPDATE CASCADE ON DELETE CASCADE
+        );",
+        "CREATE TABLE tomassignment (
+          TOMID VARCHAR(10), -- TOM identifier
+          Tier INT,          -- Tier (1 = processing activity, 2 = app tier, 3 = IT process)
+          PRIMARY KEY (TOMID, Tier),
+          FOREIGN KEY (TOMID) REFERENCES toms(Identifier) ON UPDATE CASCADE ON DELETE CASCADE
         );"
     ];
 
@@ -387,6 +393,15 @@
           $this->pdo->exec("ALTER TABLE toms ADD COLUMN Mode INT NOT NULL DEFAULT 0;");
           $this->pdo->exec("UPDATE verfahren SET Typ = 1 WHERE Typ = 0;");
           $this->pdo->exec("PRAGMA user_version = 7;");
+          $this->pdo->commit();
+        }
+        else if($db_version == 7) {
+          trigger_error("[SecDoc] DBCon.class.php -> Aktualisiere Datenbank von Version $db_version zu " . self::DBVERSION . "!");
+          error_log("[SecDoc] DBCon.class.php -> Aktualisiere Datenbank von Version $db_version zu " . self::DBVERSION . "!");
+
+          $this->pdo->beginTransaction();
+          $this->pdo->exec(self::TABLES[11]);
+          $this->pdo->exec("PRAGMA user_version = 8;");
           $this->pdo->commit();
         }
         else {
@@ -1268,18 +1283,24 @@
     /**
      * Gibt die Liste der hinterlegten TOMs aus.
      *
+     * @param int      $tier TOMs für eine bestimmte Ebene zurückgeben (0 = Alle, 1 = Verarbeitungstätigkeit, 2 = IT-Verfahren, 3 = Fachapplikation)
      * @return mixed[] Array mit den TOMs
      * @throws PDOException
      * @throws Exception
      */
-    public function getTOMs() {
+    public function getTOMs($tier = 0) {
       if(!$this->isConnected()) {
         throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
       }
 
-      $sth = $this->pdo->prepare("SELECT * FROM toms ORDER BY Identifier ASC;");
-
-      $sth->execute();
+      if($tier !== 0) {
+        $sth = $this->pdo->prepare("SELECT * FROM tomassignment LEFT JOIN toms ON tomassignment.TOMID = toms.Identifier WHERE Identifier = ? ORDER BY Identifier ASC;");
+        $sth->execute([$tier]);
+      }
+      else {
+        $sth = $this->pdo->prepare("SELECT * FROM toms ORDER BY Identifier ASC;");
+        $sth->execute();
+      }
 
       ob_start();
       $sth->debugDumpParams();

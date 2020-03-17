@@ -366,7 +366,11 @@ function showVerfahrensliste(startup = false) {
     }
 
     for(var c=0; c < data['count']; c++) {
-      if((mode === 'wizproc' && parseInt(data['data'][c]['Typ']) === 2) || (mode === 'wizit' && parseInt(data['data'][c]['Typ']) === 1)) continue;
+      // Filter nach Ebene
+      let currType = parseInt(data['data'][c]['Typ']);
+      if(currType === 1 && mode !== 'wizproc') continue;
+      if(currType === 2 && mode !== 'wizit') continue;
+      if(currType === 3 && mode !== 'wizapp') continue;
 
       var currId = parseInt(data['data'][c]['ID']);
       var newEntry = $('<tr></tr>');
@@ -815,7 +819,7 @@ function genHTMLforPDF() {
   */
 
   /* TOM Liste formatieren */
-  toSend.find('#technicaltoms, #organizationaltoms').find('.panel-collapse').each(function() {
+  toSend.find('#tom_accordion').find('.panel-collapse').each(function() {
     if($(this).closest('.panel').hasClass('hidden')) {
       $(this).closest('.panel').prev('h6').remove();
       $(this).remove();
@@ -828,7 +832,7 @@ function genHTMLforPDF() {
 
   /* Nur TOMs in der PDF anzeigen, die dem Risiko entsprechen */
   let currRiskLevel = parseInt($('[name="massnahmen_risiko"]:checked').val());
-  toSend.find('#technicaltoms, #organizationaltoms').find('tr').each(function() {
+  toSend.find('#tom_accordion').find('tr').each(function() {
     if(parseInt($(this).data('risk')) > currRiskLevel) $(this).remove();
   });
 
@@ -1340,14 +1344,14 @@ function generateTOMList() {
  * @return {undefined}
  */
 function filterTOMList(risklevel) {
-  let tomRows = $('#technical_accordion, #organizational_accordion').find('tbody tr');
+  let tomRows = $('#tom_accordion').find('tbody tr');
   tomRows.each(function() {
     let tomRisklevel = parseInt($(this).data('risk'));
     if(tomRisklevel <= risklevel) $(this).removeClass('hidden');
     if(tomRisklevel > risklevel) $(this).addClass('hidden');
   });
 
-  $('#technical_accordion, #organizational_accordion').find('div.panel').each((idx, elem) => {
+  $('#tom_accordion').find('div.panel').each((idx, elem) => {
     $(elem).removeClass('hidden');
 
     if($(elem).find('tbody tr:not(.hidden)').length === 0) $(elem).addClass('hidden');
@@ -1367,7 +1371,7 @@ function toggleTOMList(evt) {
     tomsMapping.forEach(function(row) {
       if(row['Category'] !== toggleCategory || row['Subcategory'] !== toggleSubcategory) return;
 
-      let targetID = row['Type'] == 1 ? 'technical_accordion' : 'organizational_accordion';
+      let targetID = 'tom_accordion';
       let targetElem = $('#' + targetID);
       let category = row['Category'].trim() + (row['Subcategory'] ? ' - ' + row['Subcategory'].trim() : '');
       let targetCategory = 'tom_category_' + category.replace(/\W/g, '_');
@@ -1388,8 +1392,15 @@ function toggleTOMList(evt) {
           targetElem.append('<div class="panel panel-default printHide"><div class="panel-heading" role="tab" id="heading_' + targetCategory + '"><h4 class="panel-title"><a role="button" data-toggle="collapse" data-parent="#' + targetID + '" href="#' + targetCategory + '" aria-expanded="true" aria-controls="' + targetCategory + '">' + category + '</a></h4></div></div>');
         }
 
+        let statusDesc = "Als Antworten bezüglich des Umsetzungsstatus der einzelnen Anforderungen kommen folgende Aussagen in Betracht:" +
+          "<ul style='text-align: left;'>" +
+            "<li><strong>Ja</strong> - Zu der Anforderung wurden geeignete Maßnahmen vollständig, wirksam und angemessen umgesetzt.</li>" +
+            "<li><strong>Teilweise</strong> - Die Anforderung wurde nur teilweise umgesetzt.</li>" +
+            "<li><strong>Nein</strong> - Die Anforderung wurde noch nicht erfüllt, also geeignete Maßnahmen sind größtenteils noch nicht umgesetzt worden.</li>" +
+            "<li><strong>Entbehrlich</strong> - Die Erfüllung der Anforderung ist in der vorgeschlagenen Art nicht notwendig, weil die Anforderung im betrachteten Informationsverbund nicht relevant ist (z. B. weil Dienste nicht aktiviert wurden) oder bereits durch Alternativmaßnahmen erfüllt wurde. Wird der Umsetzungsstatus einer Anforderung auf „entbehrlich“ gesetzt, müssen über die Kreuzreferenztabelle des jeweiligen Bausteins die zugehörigen elementaren Gefährdungen identifiziert werden. Wurden Alternativmaßnahmen ergriffen, muss begründet werden, dass das Risiko, das von allen betreffenden elementaren Gefährdungen ausgeht, angemessen minimiert wurde. Wenn Basisanforderungen nicht erfüllt werden, bleibt grundsätzlich ein erhöhtes Risiko bestehen. Anforderungen dürfen nicht auf „entbehrlich“ gesetzt werden, indem das Risiko für eine im Baustein identifizierte elementare Gefährdung über die Kreuzreferenztabelle pauschal akzeptiert oder ausgeschlossen wird." +
+          "</ul>";
         $('#heading_' + targetCategory).after('<div id="' + targetCategory + '" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading_' + targetCategory + '"><div class="panel-body"></div></div>');
-        $('#' + targetCategory).find('.panel-body').append('<table class="table table-striped table-hover"><thead><tr><th class="col-sm-1">ID</th><th class="col-sm-6">Beschreibung</th><th class="col-sm-2">Umgesetzt?</th><th class="col-sm-3">Erläuterung bzw. Begründung</th></tr></thead><tbody></tbody></table>');
+        $('#' + targetCategory).find('.panel-body').append('<table class="table table-striped table-hover"><thead><tr><th class="col-sm-1">ID</th><th class="col-sm-6">Beschreibung</th><th class="col-sm-2">Umgesetzt? <i data-toggle="tooltip" title="' + statusDesc + '" class="fa fa-question-circle-o fa-lg"></i></th><th class="col-sm-3">Erläuterung bzw. Begründung</th></tr></thead><tbody></tbody></table>');
         $('#heading_' + targetCategory + ', #heading_' + targetCategory + ' a').click((evt) => {
           if(evt.target.nodeName === "A") return;
           $(evt.target).find('a').click();
@@ -1402,21 +1413,20 @@ function toggleTOMList(evt) {
       let tableBody = $('#' + targetCategory).find('tbody');
 
       let tomDropdown = $('<select data-tool="selectpicker" name="massnahmen_' + tomID + '"></select>')
-        .append('<option value="0" selected>Nein</option>')
         .append('<option value="1">Ja</option>')
+        .append('<option value="0" selected>Nein</option>')
         .append('<option value="2">Teilweise</option>')
-        .append('<option value="3">Nicht anwendbar</option>')
-        .append('<option value="4">Nicht sinnvoll</option>');
+        .append('<option value="4">Entbehrlich</option>');
       tableBody.append('<tr data-risk="' + row['Risklevel'] + '" class="' + className + '"><td>' + row['Identifier'] + '</td><td>' + tomContent + '</td><td>' + tomDropdown[0].outerHTML + '</td><td><textarea name="massnahmen_' + tomID + '_kommentar" class="form-control"></textarea></td></tr>');
     });
 
     // Tooltips aktivieren
-    $('#technical_accordion, #organizational_accordion').find('[data-toggle="tooltip"]').tooltip({
+    $('#tom_accordion').find('[data-toggle="tooltip"]').tooltip({
       placement: 'auto'
     });
 
     // Selectpicker aktivieren
-    $('#technical_accordion, #organizational_accordion').find('select[data-tool="selectpicker"]').selectpicker();
+    $('#tom_accordion').find('select[data-tool="selectpicker"]').selectpicker();
 
     // Risikofilter anwenden
     filterTOMList(parseInt($('[name=massnahmen_risiko]:checked').val()));

@@ -76,7 +76,7 @@
           <input data-tool="typeahead" data-action="getsuggestions" data-minlength="0" data-dynamic="false" data-cache="true" data-display="entry" data-path="data.allgemein_bezeichnung.de" type="text" class="form-control" name="allgemein_bezeichnung" placeholder="Bsp.: E-Mail Service" required>
           <input type="hidden" name="meta_id" value="0" />
           <input type="hidden" name="meta_lastupdate" value="" />
-          <input type="hidden" name="allgemein_typ" value="2" />
+          <input type="hidden" name="allgemein_typ" value="3" />
         </div>
       </div>
       <div class="col-sm-3">
@@ -390,7 +390,7 @@
       <div class="col-sm-offset-1 col-sm-10">
         <p class="printOnly hidden">Die Fachapplikation hängt von den folgenden dokumentierten IT-Verfahren ab:</p>
         <p class="printHide">Ist Ihre Fachapplikation von anderen IT-Verfahren abhängig, die bereits dokumentiert wurden und für Sie sichtbar sind, können Sie diese hier auswählen.</p>
-        <table data-tool="endlessTable" id="abschluss_abhaengigkeit" class="table table-hover btn-table">
+        <table data-tool="endlessTable" id="itverfahren_abhaengigkeit" class="table table-hover btn-table">
           <thead>
             <tr>
               <th>IT-Verfahren</th>
@@ -401,17 +401,17 @@
           <tbody>
             <tr>
               <td>
-                <input type="text" data-tool="typeahead" data-action="searchVerfahren" data-minlength="0" data-dynamic="true" data-hiddenfield="abschluss_abhaengigkeit_id[]" class="form-control" name="abschluss_abhaengigkeit_name[]" placeholder="Bsp.: E-Mail Dienst">
-                <input type="hidden" name="abschluss_abhaengigkeit_id[]">
+                <input type="text" data-tool="typeahead" data-action="searchVerfahren" data-minlength="0" data-dynamic="true" data-hiddenfield="itverfahren_abhaengigkeit_id[]" class="form-control" name="itverfahren_abhaengigkeit_name[]" placeholder="Bsp.: E-Mail Dienst">
+                <input type="hidden" name="itverfahren_abhaengigkeit_id[]">
               </td>
               <td>
                 <textarea class="form-control" rows="3" disabled></textarea>
               </td>
-              <td class="text-center"><button type="button" class="abschluss_abhaengigkeit_del btn btn-danger"><i class="fa fa-minus"></i> Löschen</button></td>
+              <td class="text-center"><button type="button" class="itverfahren_abhaengigkeit_del btn btn-danger"><i class="fa fa-minus"></i> Löschen</button></td>
             </tr>
           </tbody>
         </table>
-        <button type="button" id="abschluss_abhaengigkeit_add" class="btn btn-wd btn-success"><i class="fa fa-plus"></i> Hinzufügen</button>
+        <button type="button" id="itverfahren_abhaengigkeit_add" class="btn btn-wd btn-success"><i class="fa fa-plus"></i> Hinzufügen</button>
       </div>
 
     </div>
@@ -440,7 +440,7 @@
         <h5 class="info-text text-ul">Technische und organisatorische Maßnahmen <i data-toggle="tooltip" data-html="true" title="vgl.
 Art. 25 DSGVO Datenschutz durch Technikgestaltung und durch datenschutzfreundliche Voreinstellungen, Art. 32 DSGVO Sicherheit der Verarbeitung" class="fa fa-question-circle-o fa-lg"></i></h5>
         <p class="printHide">Gibt es ein Datenschutz- und Datensicherheitskonzept oder ein anderes Dokument, das die technischen und organisatorischen Maßnahmen enthält, müssen die Angaben nicht hier erfolgen, sondern es kann stattdessen (oder zusätzlich) auf der nächsten Seite auf dieses Dokument verwiesen werden. In diesem Fall bitte das entsprechende Dokument mit genauer Bezeichnung und unter Angabe von Version und/oder Stand benennen.</p>
-        <p class="printHide">Wählen Sie in der folgenden Liste für Ihr IT-Verfahren relevante Kategorien aus, um die Auswahl der TOMs zu vereinfachen:</p>
+        <p class="printHide">Wählen Sie in der folgenden Liste für Ihre Fachapplikation relevante Kategorien aus, um die Auswahl der TOMs zu vereinfachen:</p>
       </div>
       <div class="col-sm-offset-1 col-sm-10 printHide" id="toggletoms">
         <ul class="nav nav-tabs printHide" role="tablist">
@@ -449,104 +449,8 @@ Art. 25 DSGVO Datenschutz durch Technikgestaltung und durch datenschutzfreundlic
         </div>
       </div>
       <div class="col-sm-offset-1 col-sm-10">
-        <ul class="nav nav-tabs printHide" role="tablist">
-          <li role="presentation" class="active"><a href="#technicaltoms" aria-controls="technical" role="tab" data-toggle="tab">Technische Maßnahmen</a></li>
-          <li role="presentation"><a href="#organizationaltoms" aria-controls="organizational" role="tab" data-toggle="tab">Organisatorische Maßnahmen</a></li>
-        </ul>
-        <div class="tab-content" style="min-height: auto;">
-          <div role="tabpanel" class="tab-pane active" id="technicaltoms">
-            <div class="panel-group" id="technical_accordion" role="tablist" aria-multiselectable="true">
-            </div>
-          </div>
-          <div role="tabpanel" class="tab-pane" id="organizationaltoms">
-            <div class="panel-group" id="organizational_accordion" role="tablist" aria-multiselectable="true">
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-sm-offset-1 col-sm-10 printHide">
-        <p class="printHide"><strong>Ergänzende Maßnahmen / Hinweis:</strong> Die manuelle Eingabe der TOMs wird eingestellt und die folgenden Felder werden demnächst entfernt. Bitte übertragen Sie die Eingaben in die neue Vorlage.</p>
-      </div>
-      <div class="col-sm-offset-1 col-sm-10 printHide">
-        <div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true">
-          <h6 class="info-text text-ul-dot printOnly hidden">Gewährleistung der Vertraulichkeit</h6>
-          <div class="panel panel-default printHide">
-            <div class="panel-heading" role="tab" id="headingOne">
-              <h4 class="panel-title">
-                <a role="button" data-toggle="collapse" data-parent="#accordion" href="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
-                  Gewährleistung der Vertraulichkeit
-                </a>
-              </h4>
-            </div>
-            <div id="collapseOne" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingOne">
-              <div class="panel-body">
-                <p>Beschreiben Sie, durch welche Maßnahmen verhindert wird, dass ein unautorisierter Zugang oder Zugriff auf personenbezogene Daten erfolgt. Dies gilt zum einen innerhalb der Organisation des Verantwortlichen selbst als auch beim Transport bzw. Weitergabe zu einem Auftragsverarbeiter oder bei der Übermittlung zu einem Dritten. Ferner ist hier zu beschreiben, wie eine Trennung von Mandanten erfolgt.</p>
-                <textarea class="form-control" name="massnahmen_vertraulichkeit" rows="5" style="resize:vertical" disabled></textarea>
-                <br>
-                <p>Beispiele für Maßnahmen:</p>
-                <ul>
-                  <li>Pseudonymisierung (beispielsweise die Trennung von Daten, wie z.B. Trennung von Nutzern und Protokolldaten, oder Verwendung von Kennziffern/IDs anstatt direkt personenbezogene Merkmale)</li>
-                  <li>Verschlüsselung (hierzu zählen Verschlüsselungen abseits von Netzwerkverkehr, wie z.B. die Verschlüsselung von Festplatten, Medien oder bei Chipkarten)</li>
-                  <li>Sensibilisierung und/oder Schulung der an Verarbeitungsvorgängen Beteiligten</li>
-                  <li>Hinweis/Verpflichtung der an Verarbeitungsvorgängen Beteiligten auf das Datengeheimnis</li>
-                  <li>Zugriffskontrolle (beispielsweise der Einsatz eines Rollen- und Rechtekonzepts, Protokollierung der Zugriffe, aber auch der Einsatz von Firewalls und ähnlichen Techniken)</li>
-                  <li>Weitergabekontrolle</li>
-                  <li>Passwortrichtlinien</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-          <h6 class="info-text text-ul-dot printOnly hidden">Gewährleistung der Integrität</h6>
-          <div class="panel panel-default printHide">
-            <div class="panel-heading" role="tab" id="headingTwo">
-              <h4 class="panel-title">
-                <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
-                  Gewährleistung der Integrität
-                </a>
-              </h4>
-            </div>
-            <div id="collapseTwo" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingTwo">
-              <div class="panel-body">
-                <p>Beschreiben Sie, durch welche Maßnahmen sichergestellt wird, dass personenbezogene Daten nicht unbemerkt oder ungewollt geändert werden können.</p>
-                <textarea class="form-control" name="massnahmen_integritaet" rows="5" style="resize:vertical" disabled></textarea>
-                <br>
-                <p>Beispiele für Maßnahmen:</p>
-                <ul>
-                  <li>Ausfüllanweisungen</li>
-                  <li>Plausibilitätskontrollen in Eingabemasken</li>
-                  <li>Protokollierung von Eingaben, Änderungen oder Löschungen von Daten</li>
-                  <li>Trennung von Benutzerkonten und Zugriffen</li>
-                  <li>Nutzung des Vier-Augen-Prinzips</li>
-                  <li>Regelmäßige Auswertung von Protokollen/Logs</li>
-                  <li>Dokumentationen</li>
-                  <li>Regelmäßige Evaluierung von eingesetzten Maßnahmen (beispielsweise externe Prüfungen oder Zertifizierungen)</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-          <h6 class="info-text text-ul-dot printOnly hidden">Gewährleistung der Verfügbarkeit</h6>
-          <div class="panel panel-default printHide">
-            <div class="panel-heading" role="tab" id="headingThree">
-              <h4 class="panel-title">
-                <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
-                  Gewährleistung der Verfügbarkeit
-                </a>
-              </h4>
-            </div>
-            <div id="collapseThree" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingThree">
-              <div class="panel-body">
-                <p>Beschreiben Sie, durch welche Maßnahmen sichergestellt wird, dass die personenbezogenen Daten dauernd und uneingeschränkt verfügbar und insbesondere vorhanden sind, wenn diese gebraucht werden.</p>
-                <textarea class="form-control" name="massnahmen_verfuegbarkeit" rows="5" style="resize:vertical" disabled></textarea>
-                <br>
-                <p>Beispiele für Maßnahmen:</p>
-                <ul>
-                  <li>Verfügbarkeitskontrollen (beispielsweise der Einsatz von USVs, Backups oder Brandschutzmaßnahmen)</li>
-                  <li>Gewährleistung der Belastbarkeit des Systems (beispielsweise dynamische Erweiterbarkeit bei hohen Auslastungen ohne Datenverlust)</li>
-                  <li>Verfahren zur Wiederherstellung der Verfügbarkeit personenbezogener Daten (beispielsweise Datensicherungskonzepte, Notfallpläne, doppelte IT-Infrastruktur)</li>
-                </ul>
-              </div>
-            </div>
-          </div>
+        <h6 class="info-text text-ul-dot">Ausgewählte Maßnahmen</h6>
+        <div class="panel-group" id="tom_accordion" role="tablist" aria-multiselectable="true">
         </div>
       </div>
     </div>

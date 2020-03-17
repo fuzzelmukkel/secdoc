@@ -625,6 +625,27 @@ EOH;
       break;
     }
 
+    # Durchsucht die für den aktuellen Nutzer einsehbaren Fachapplikationen
+    case 'searchfachapp': {
+      if($userIsDSB) {
+        $list = $dbcon->listVerfahrenDSB($search);
+      }
+      else {
+        $list = $dbcon->listVerfahrenOwn($userId, $userGroups, $search);
+        $list = array_merge($list, $dbcon->listVerfahrenShared($userId, $userGroups, $search));
+      }
+
+      $result = array();
+      foreach($list as $entry) {
+        if(intval($entry['Typ']) === 3) array_push($result, array('value' => $entry['ID'], 'label' => $entry['Bezeichnung'] . " [" . $entry['Fachabteilung'] . "]"));
+      }
+
+      $output['data'] = $result;
+      $output['count'] = count($result);
+      $output['success'] = TRUE;
+      break;
+    }
+
     # Liest ein bestehendes Verfahren aus (sowohl bearbeitbare, wie auch nur einsehbare)
     case 'get': {
       if(empty($verfahrensId)) {
@@ -1113,7 +1134,12 @@ EOH;
     }
 
     case 'gettoms': {
-      $output['data'] = $dbcon->getTOMs();
+      if(empty($data) || empty($data['tier'])) {
+        $output['data'] = $dbcon->getTOMs();
+      }
+      else {
+        $output['data'] = $dbcon->getTOMs(intval($data['tier']));
+      }
       $output['count'] = count($output['data']);
       break;
     }
