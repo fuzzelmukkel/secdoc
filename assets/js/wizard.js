@@ -38,11 +38,21 @@ var loadId = GetURLParameter('id') === false ? 0 : parseInt(GetURLParameter('id'
 var copyId = GetURLParameter('copy') === false ? false : parseInt(GetURLParameter('copy'));
 
 /**
- * Speichert den aktuellen Bearbeitungs-Modus (entweder IT-Verfahren oder Verarbeitungstätigkeit)
+ * Speichert den aktuellen Bearbeitungs-Modus (entweder IT-Verfahren, Fachapplikation Verarbeitungstätigkeit)
  * @global
  * @type {String}
  */
 var mode = ['wizit', 'wizproc', 'wizapp'].includes(page) ? page : 'wizproc';
+
+/**
+ * Interne Nummerierung für die Dokumentations-Modi
+ * @global
+ * @type {Number}
+ */
+let modeNum = 0;
+if(mode === 'wizproc') modeNum = 1;
+if(mode === 'wizapp')  modeNum = 3;
+if(mode === 'wizit')   modeNum = 2;
 
 /**
  * Lesbarer Name des Modus; genutzt für die Ersetzung in Texten
@@ -129,16 +139,27 @@ var validator = $('.wizard-card form').validate();
 /*
  * Notwendige Variablen vom Server holen
  */
-let tom_cache = JSON.parse(localStorage.getItem('tom_cache_' + (document.location.host + document.location.pathname).replace(/\W/g, '_')));
-let currTime = new Date();
+// Cache entfernen; erschwert nur die Aktualisierung von TOMs ohne großen Geschwindigkeitsvorteil
+if(localStorage.getItem('tom_cache_' + (document.location.host + document.location.pathname).replace(/\W/g, '_')) !== null) {
+  localStorage.removeItem('tom_cache_' + (document.location.host + document.location.pathname).replace(/\W/g, '_'));
+}
 
-if(tom_cache && tom_cache.toms.length > 0 && parseInt(tom_cache.ttl) > currTime.getTime()) {
-  console.info('Nutze TOM Liste aus Cache');
-  tomsMapping = tom_cache.toms;
-  tom_cache.ttl = currTime.getTime() + (1 * 60 * 60 * 1000);
-  localStorage.setItem('tom_cache_' + (document.location.host + document.location.pathname).replace(/\W/g, '_'), JSON.stringify(tom_cache));
+// TOM Liste holen
+promises[0] = $.getJSON(backendPath + '?action=gettoms&data={"tier":' + modeNum + '}' + (debug ? '&debug=true' : '')).done((data) => {
+  if(!data['success']) {
+    showError('Holen der TOMs', data['error']);
+    return;
+  }
 
-  // Prüfen, ob eigene TOMs für IT-Verfahren vorhanden
+  if(data['data'].length === 0) {
+    showError('Holen der TOMs', 'TOM Liste ist leer!');
+    return;
+  }
+
+  tomsMapping = data['data'];
+  // Nach Identifier sortieren
+  tomsMapping = tomsMapping.sort((a,b) =>  a.Identifier.localeCompare(b.Identifier, 'en', { numeric: true }));
+
   let itTOMList = false;
   tomsMapping.some((elem) => {
     if(parseInt(elem['Mode']) === 1) {
@@ -146,41 +167,9 @@ if(tom_cache && tom_cache.toms.length > 0 && parseInt(tom_cache.ttl) > currTime.
       return true;
     }
   });
-
-  if(mode === 'wizit' && itTOMList) tomsMapping = tomsMapping.filter((elem) => (parseInt(elem['Mode']) === 1));
-  if(mode === 'wizproc' && itTOMList) tomsMapping = tomsMapping.filter((elem) => (parseInt(elem['Mode']) === 0));
-}
-else {
-  promises[0] = $.getJSON(backendPath + '?action=gettoms' + (debug ? '&debug=true' : '')).done((data) => {
-    if(!data['success']) {
-      showError('Holen der TOMs', data['error']);
-      return;
-    }
-
-    if(data['data'].length === 0) {
-      showError('Holen der TOMs', 'TOM Liste ist leer!');
-      return;
-    }
-
-    tomsMapping = data['data'];
-    // Nach Identifier sortieren
-    tomsMapping = tomsMapping.sort((a,b) =>  a.Identifier.localeCompare(b.Identifier, 'en', { numeric: true }));
-    localStorage.setItem('tom_cache_' + (document.location.host + document.location.pathname).replace(/\W/g, '_'), JSON.stringify({ttl: currTime.getTime() + (1 * 60 * 60 * 1000), toms: data['data']}));
-
-    let itTOMList = false;
-    tomsMapping.some((elem) => {
-      if(parseInt(elem['Mode']) === 1) {
-        itTOMList = true;
-        return true;
-      }
-    });
-
-    if(mode === 'wizit' && itTOMList) tomsMapping = tomsMapping.filter((elem) => (parseInt(elem['Mode']) === 1));
-    if(mode === 'wizproc' && itTOMList) tomsMapping = tomsMapping.filter((elem) => (parseInt(elem['Mode']) === 0));
-  }).fail((jqXHR, error, errorThrown) => {
-    showError('Holen der TOMs', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
-  });
-}
+}).fail((jqXHR, error, errorThrown) => {
+  showError('Holen der TOMs', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+});
 
 /*
  * Funktionen für den BSWizard
@@ -365,12 +354,16 @@ function showVerfahrensliste(startup = false) {
       return;
     }
 
+    let modeCount = 0;
+
     for(var c=0; c < data['count']; c++) {
       // Filter nach Ebene
       let currType = parseInt(data['data'][c]['Typ']);
       if(currType === 1 && mode !== 'wizproc') continue;
       if(currType === 2 && mode !== 'wizit') continue;
       if(currType === 3 && mode !== 'wizapp') continue;
+
+      modeCount++;
 
       var currId = parseInt(data['data'][c]['ID']);
       var newEntry = $('<tr></tr>');
@@ -396,6 +389,11 @@ function showVerfahrensliste(startup = false) {
         newEntry.append('<td><div class="btn-group inline"><a class="btn" href="?id=' + currId + (debug ? '&debug=true' : '') + '" target="_blank"><i class="fa fa-edit"></i> Anzeigen</a><a class="btn" href="?copy=' + currId + '" target="_blank"><i class="fa fa-copy"></i> Kopieren</a><button type="button" data-id="' + currId + '" class="btn pdfdownload" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '>PDF anzeigen</button></div></td>');
         modalBody.find('#readableprocesses tbody').append(newEntry);
       }
+    }
+
+    if(modeCount === 0) {
+      show = false;
+      return;
     }
 
     // Handler für PDF-Anzeige
@@ -1409,7 +1407,7 @@ function toggleTOMList(evt) {
 
       let className = row['Risklevel'] == 1 ? 'success' : row['Risklevel'] == 2 ? 'warning' : 'danger';
       let tomID = row['Identifier'].trim().replace(/ /g, '_');
-      let tomContent = row['Title'] ? row['Title'] + '<i data-toggle="tooltip" title="' + row['Description'] + '" class="fa fa-question-circle-o fa-lg"></i>' : row['Description'];
+      let tomContent = row['Title'] ? row['Title'] + ' <i data-toggle="tooltip" title="' + row['Description'] + '" class="fa fa-question-circle-o fa-lg"></i>' : row['Description'];
       let tableBody = $('#' + targetCategory).find('tbody');
 
       let tomDropdown = $('<select data-tool="selectpicker" name="massnahmen_' + tomID + '"></select>')
@@ -1422,7 +1420,8 @@ function toggleTOMList(evt) {
 
     // Tooltips aktivieren
     $('#tom_accordion').find('[data-toggle="tooltip"]').tooltip({
-      placement: 'auto'
+      placement: 'auto',
+      html: true
     });
 
     // Selectpicker aktivieren

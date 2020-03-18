@@ -229,10 +229,11 @@
             FOREIGN KEY (Dependency) REFERENCES verfahren(ID) ON UPDATE CASCADE ON DELETE CASCADE
         );",
         "CREATE TABLE tomassignment (
-          TOMID VARCHAR(10), -- TOM identifier
-          Tier INT,          -- Tier (1 = processing activity, 2 = app tier, 3 = IT process)
-          PRIMARY KEY (TOMID, Tier),
-          FOREIGN KEY (TOMID) REFERENCES toms(Identifier) ON UPDATE CASCADE ON DELETE CASCADE
+          TOMID VARCHAR(10),            -- TOM identifier
+          Lang VARCHAR(2) DEFAULT 'de', -- Language, part of primary key of TOM
+          Tier INT,                     -- Tier (1 = processing activity, 2 = app tier, 3 = IT process)
+          PRIMARY KEY (TOMID, Lang, Tier),
+          FOREIGN KEY (TOMID, Lang) REFERENCES toms(Identifier, Lang) ON UPDATE CASCADE ON DELETE CASCADE
         );"
     ];
 
@@ -400,7 +401,7 @@
           error_log("[SecDoc] DBCon.class.php -> Aktualisiere Datenbank von Version $db_version zu " . self::DBVERSION . "!");
 
           $this->pdo->beginTransaction();
-          $this->pdo->exec(self::TABLES[11]);
+          $this->pdo->exec(self::TABLES[11]);          
           $this->pdo->exec("PRAGMA user_version = 8;");
           $this->pdo->commit();
         }
@@ -1294,7 +1295,7 @@
       }
 
       if($tier !== 0) {
-        $sth = $this->pdo->prepare("SELECT * FROM tomassignment LEFT JOIN toms ON tomassignment.TOMID = toms.Identifier WHERE Identifier = ? ORDER BY Identifier ASC;");
+        $sth = $this->pdo->prepare("SELECT * FROM tomassignment LEFT JOIN toms ON tomassignment.TOMID = toms.Identifier WHERE Tier = ? ORDER BY Identifier ASC;");
         $sth->execute([$tier]);
       }
       else {

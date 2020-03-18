@@ -358,7 +358,11 @@ function loadSubpage() {
   if(page === 'home' && (loadIdMain > 0 || copyIdMain > 0)) {
     $.getJSON(backendPath + '?action=get&id=' + (copyIdMain ? copyIdMain : loadIdMain)+ (debug ? '&debug=true' : '')).done((data) => {
       if(data['success']) {
-        page = parseInt(data['data'][0]['Typ']) === 2 ? 'wizit' : 'wizproc';
+        page = 'home';
+        if(parseInt(data['data'][0]['Typ']) === 1) page = 'wizproc';
+        if(parseInt(data['data'][0]['Typ']) === 2) page = 'wizit';
+        if(parseInt(data['data'][0]['Typ']) === 3) page = 'wizapp';
+
         $.get('assets/html/' + page + '.inc.html').done((data) => { $('#content').html(data); }).fail((jqXHR, error, errorThrown) => {
           showError('Laden der Unterseite "' + page + '"', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
           setOverlay(false);
