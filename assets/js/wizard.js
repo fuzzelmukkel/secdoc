@@ -475,11 +475,12 @@ function loadEmpty() {
     removeTableRows(table);
   });
   $('input[type=text], textarea').not('[name$="_nummer[]"]').val('');
-  $('input[type=checkbox]').prop('checked', false);
+  $('input[type=checkbox]').prop('checked', false).trigger('change');
   $('.wizard-navigation li a').first().click();
   endlessTables.forEach(function(table) {
     addTableRow(table);
   });
+  $('#abschluss_vonabhaengig tbody tr').remove();
   setSaveLabel('failed');
   setOverlay(false);
   console.timeEnd('Leeres Verfahren laden');
@@ -733,7 +734,7 @@ function loadFromServer(id) {
       changedValues = false;
 
       // Abhängigkeiten bei IT-Verfahren anzeigen
-      if(mode === 'wizit') {
+      if(mode === 'wizit' || mode === 'wizapp') {
         $('#abschluss_vonabhaengig tbody tr').remove();
         $.get(backendPath, { 'action': 'dependencies', 'id':  loadId, 'debug': debug}).done(function(data) {
           if(!data['success']) {
@@ -742,7 +743,10 @@ function loadFromServer(id) {
           }
 
           data['data'].forEach(dependant => {
-            $('#abschluss_vonabhaengig tbody').append('<tr><td>' + htmlDecode(dependant['name']) + '</td><td>' + (dependant['type'] === 2 ? 'IT-Verfahren' : 'Verarbeitungstätigkeit') + '</td><td><a class="btn" href="?id=' + dependant['id'] + '" target="_blank">Anzeigen</a></td></tr>');
+            dependantType = 'Verarbeitungstätigkeit';
+            if(dependant['type'] === 2) dependantType = 'IT-Verfahren';
+            if(dependant['type'] === 3) dependantType = 'Fachapplikation';
+            $('#abschluss_vonabhaengig tbody').append('<tr><td>' + htmlDecode(dependant['name']) + '</td><td>' + dependantType + '</td><td><a class="btn" href="?id=' + dependant['id'] + '" target="_blank">Anzeigen</a></td></tr>');
           });
         }).fail((jqXHR, error, errorThrown) => {
           console.error('Fehler beim Abruf von abhängigen Verfahren! HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
@@ -840,15 +844,20 @@ function genHTMLforPDF() {
   toSend.append('<div class="text-center"><h5 class="info-text text-ul">Dokumentation online einsehen</h5><p><a href="' + link + '">' + link + '</a></p></div>');
 
   /* Links in Abhängigkeiten anpassen */
-  toSend.find('table#abschluss_vonabhaengig tr').each(function(idx) {
+  toSend.find('table#abschluss_vonabhaengig tr, table#abschluss_abhaengigkeit tr, table#itverfahren_abhaengigkeit tr').each(function(idx) {
     let abhLnk = $(this).find('td:last a');
     abhLnk.attr('href', baseURL + abhLnk.attr('href'));
+  });
+
+  toSend.find('table#abschluss_abhaengigkeit tr, table#itverfahren_abhaengigkeit tr').each(function(idx) {
+    $(this).find('td:last button').remove();
+    $(this).append($(this).find('td:last, th:last').clone());
   });
 
   /* Layout-Anpassungen (Buttons durch Text ersetzen, Typeahead und andere aktive Elemente entschärfen) */
   toSend.find('select[data-tool="selectpicker"], select.selectpicker, [id$="_add"], .typeahead__cancel-button, .typeahead__hint, .typeahead__result').remove();
   toSend.find('table[data-tool="endlessTable"] tr').each(function(idx) {
-    $(this).find('th:last, td:last').remove();
+      $(this).find('th:last, td:last').remove();
   });
   toSend.find('table[data-tool="endlessTable"]').each(function(idx){
     var tbl = $(this);
@@ -1540,21 +1549,22 @@ Promise.all(promises).then(function() {
   });
 
   // Zeigt die aktuelle Beschreibung der abhängigen Verfahren an
-  $('#abschluss_abhaengigkeit').on('change', 'input[name="abschluss_abhaengigkeit_id[]"]', function() {
+  $('#abschluss_abhaengigkeit, #itverfahren_abhaengigkeit').on('change', 'input[name="abschluss_abhaengigkeit_id[]"], input[name="itverfahren_abhaengigkeit_id[]"]', function() {
     var idField = $(this);
     var descText = idField.closest('td').next('td').find('textarea');
     if(idField.val() !== '') {
       $.get(backendPath, { 'action': 'get', 'id':  idField.val(), 'debug': debug}).done(function(data) {
         if(!data['success']) {
-          showError('Auslesen der Abhängigkeiten', 'Scheinbar existiert ein Verfahren nicht mehr, von dem dieses Verfahren abhängig ist!');
-          console.error('Fehler beim Abruf von abhängigen Verfahren! Fehler: ' + data['error']);
+          showError('Auslesen der Abhängigkeiten', 'Scheinbar existiert eine Abhängigkeit nicht mehr!');
+          console.error('Fehler beim Abruf von Abhängigkeiten! Fehler: ' + data['error']);
           descText.val('<Das Verfahren existiert nicht!>');
           return;
         }
-        idField.closest('td').find('input[name="abschluss_abhaengigkeit_name[]"]').val(htmlDecode(data['data'][0]['Bezeichnung']) + ' [' + htmlDecode(data['data'][0]['Fachabteilung']) + ']');
+        idField.closest('td').find('input[name="abschluss_abhaengigkeit_name[]"], input[name="itverfahren_abhaengigkeit_id[]"]').val(htmlDecode(data['data'][0]['Bezeichnung']) + ' [' + htmlDecode(data['data'][0]['Fachabteilung']) + ']');
+        idField.closest('tr').find('a').attr('href', '?id=' + idField.val());
         descText.val(htmlDecode(data['data'][0]['Beschreibung']));
       }).fail((jqXHR, error, errorThrown) => {
-        console.error('Fehler beim Abruf von abhängigen Verfahren! HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
+        console.error('Fehler beim Abruf von Abhängigkeiten! HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
         descText.val('<Fehler beim Abrufen>');
       });
     }

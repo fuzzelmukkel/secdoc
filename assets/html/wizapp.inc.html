@@ -23,9 +23,9 @@
     <li>
       <a href="#systeme" data-toggle="tab">
         <div class="icon-circle">
-          <i class="fa fa-server"></i>
+          <i class="fa fa-window-maximize"></i>
         </div>
-        Systeme
+        Software
       </a>
     </li>
 
@@ -210,6 +210,7 @@
       </div>
 
       <!-- Tabelle für beteiligte Klienten -->
+      <!--
       <div class="col-sm-12">
         <h5 class="info-text text-ul">Beteiligte Klienten <i data-toggle="tooltip" data-html="true" title="Arbeitsplatzrechner, mobile Rechner, Terminal, Videokamera usw." class="fa fa-question-circle-o fa-lg"></i></h5>
         <div class="form-check text-center">
@@ -252,8 +253,10 @@
         </table>
         <button type="button" id="systeme_klienten_add" class="btn btn-wd btn-success"><i class="fa fa-plus"></i> Hinzufügen</button>
       </div>
+      -->
 
       <!-- Tabelle für beteiligte Server -->
+      <!--
       <div class="col-sm-12">
         <h5 class="info-text text-ul">Beteiligte Server <i data-toggle="tooltip" title="Bei virtuellen Instanzen sind sowohl bei den Angaben der verwendeten Software der verwendete Hypervisor zu ergänzen, als auch die beteiligten Server, auf denen die Infrastruktur des Hypervisors läuft, im Anmerkungsfeld zu referenzieren. Sollte diese Infrastruktur aus mehr als einem Server oder aus einem Servercluster bestehen, so reicht es aus, stellvertretend einen repräsentativen Server zu beschreiben." class="fa fa-question-circle-o fa-lg"></i></h5>
       </div>
@@ -298,6 +301,7 @@
         </table>
         <button type="button" id="systeme_server_add" class="btn btn-wd btn-success"><i class="fa fa-plus"></i> Hinzufügen</button>
       </div>
+      -->
 
       <!-- Tabelle für Datensicherung -->
       <div class="col-sm-12">
@@ -330,10 +334,12 @@
                   <label>Genutzte Software:</label><br>
                   <select class="nutzt_systeme_software_nummer" data-tool="selectpicker" name="systeme_datensicherung_software[]" multiple></select>
                 </div>
+                <!--
                 <div class="form-group">
                   <label>Beteiligte Server:</label><br>
                   <select class="nutzt_systeme_server_nummer" data-tool="selectpicker" name="systeme_datensicherung_server[]" multiple></select>
                 </div>
+                -->
               </td>
               <td class="text-center"><button type="button" class="systeme_datensicherung_del btn btn-danger"><i class="fa fa-minus"></i> Löschen</button></td>
             </tr>
@@ -343,6 +349,7 @@
       </div>
 
       <!-- Tabelle für verwendete Protokolle/Dienste/Verschlüsselung -->
+      <!--
       <div class="col-sm-12">
         <h5 class="info-text text-ul">Verwendete Protokolle, Dienste und Verschlüsselung</h5>
       </div>
@@ -377,6 +384,7 @@
         </table>
         <button type="button" id="systeme_protokolle_add" class="btn btn-wd btn-success"><i class="fa fa-plus"></i> Hinzufügen</button>
       </div>
+      -->
     </div>
   </div>
 
@@ -407,7 +415,10 @@
               <td>
                 <textarea class="form-control" rows="3" disabled></textarea>
               </td>
-              <td class="text-center"><button type="button" class="itverfahren_abhaengigkeit_del btn btn-danger"><i class="fa fa-minus"></i> Löschen</button></td>
+              <td class="text-center">
+                <button type="button" class="itverfahren_abhaengigkeit_del btn btn-danger"><i class="fa fa-minus"></i> Löschen</button><br />
+                <a class="btn" style="margin-top: 2px;" href="#" target="_blank">Anzeigen</a>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -535,7 +546,10 @@ Art. 25 DSGVO Datenschutz durch Technikgestaltung und durch datenschutzfreundlic
               <td>
                 <textarea class="form-control" rows="3" disabled></textarea>
               </td>
-              <td class="text-center"><button type="button" class="abschluss_abhaengigkeit_del btn btn-danger"><i class="fa fa-minus"></i> Löschen</button></td>
+              <td class="text-center">
+                <button type="button" class="abschluss_abhaengigkeit_del btn btn-danger"><i class="fa fa-minus"></i> Löschen</button><br />
+                <a class="btn" style="margin-top: 2px;" href="#" target="_blank">Anzeigen</a>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -546,7 +560,7 @@ Art. 25 DSGVO Datenschutz durch Technikgestaltung und durch datenschutzfreundlic
         <h6 class="info-text text-ul-dot">Abhängige Fachapplikationen und IT-Verfahren</h6>
       </div>
       <div class="col-sm-offset-1 col-sm-10">
-        <p>Von diesem IT-Verfahren hängen die folgenden Fachapplikationen und IT-Verfahren ab:</p>
+        <p>Von dieser Fachapplikation hängen die folgenden Fachapplikationen und IT-Verfahren ab:</p>
         <table id="abschluss_vonabhaengig" class="table table-hover btn-table">
           <thead>
             <tr>

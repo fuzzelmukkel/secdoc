@@ -112,7 +112,7 @@
 
     # MPDF initialisieren
     $mpdf = new \Mpdf\Mpdf(['debug' => false, 'CSSselectMedia' => 'screen', 'mode' => 'utf-8', 'format' => 'A4']);
-    $mpdf->SetTitle('Verfahrensdokumentation - ' . $title . ($isDraft ? ' (ENTWURF)' : ''));
+    $mpdf->SetTitle('SecDoc Dokumentation - ' . $title . ($isDraft ? ' (ENTWURF)' : ''));
     $mpdf->SetAuthor($author);
     $mpdf->SetCreator($prog_name . ' v' . $prog_version);
 
@@ -735,6 +735,13 @@ EOH;
         }
       }
 
+      if(isset($data['itverfahren_abhaengigkeit_id']) && is_array($data['itverfahren_abhaengigkeit_id'])) {
+        foreach($data['itverfahren_abhaengigkeit_id'] as $dependency) {
+          $dependency = intval($dependency);
+          if($dependency !== 0) array_push($newDependencies, $dependency);
+        }
+      }
+
       if(!$dbcon->updateDependency($id, $newDependencies, $userId, $userGroups, $userIsDSB)) error_log("[SecDoc] verwaltung.php -> Konnte neue Abhängigkeiten für Verfahren #$id nicht eintragen!");
 
       $output['data'] = ['ID' => $id, 'Date' => date("Y-m-d H:i:s")];
@@ -813,6 +820,13 @@ EOH;
       $newDependencies = [];
       if(isset($data['abschluss_abhaengigkeit_id']) && is_array($data['abschluss_abhaengigkeit_id'])) {
         foreach($data['abschluss_abhaengigkeit_id'] as $dependency) {
+          $dependency = intval($dependency);
+          if($dependency !== 0) array_push($newDependencies, $dependency);
+        }
+      }
+
+      if(isset($data['itverfahren_abhaengigkeit_id']) && is_array($data['itverfahren_abhaengigkeit_id'])) {
+        foreach($data['itverfahren_abhaengigkeit_id'] as $dependency) {
           $dependency = intval($dependency);
           if($dependency !== 0) array_push($newDependencies, $dependency);
         }
