@@ -84,6 +84,29 @@
   $db_name      = 'demo.db';
 
   # ----------------------------------------
+  # Texte und Links für Platzhalter {{...}}
+  # ----------------------------------------
+  $htmlStrings = [
+    'org_short' => 'WWU',
+    'org_name' => 'Westfälische Wilhelms-Universität Münster',
+    'rector_name' => 'Prof. Dr. Johannes Wessels',
+    'org_addr1' => 'Schlossplatz 2',
+    'org_addr2' => '48149 Münster',
+    'org_tel' => '+ 49 251 83-0',
+    'org_mail' => 'verwaltung@uni-muenster.de',
+    'org_url' => 'https://www.uni-muenster.de/',
+    'org_legal' => 'https://www.uni-muenster.de/IT/impressum/',
+    'org_privacy' => 'https://www.uni-muenster.de/de/datenschutzerklaerung.html',
+    'groups_mgmt' => 'WWU IT Nutzergruppen',
+    'groups_mgmt_link' => 'https://www.uni-muenster.de/IT/services/benutzerverwaltung/nutzergruppen.html',
+    'dpo_name' => 'Nina Meyer-Pachur',
+    'dpo_addr1' => 'Schlossplatz 2',
+    'dpo_addr2' => '48149 Münster',
+    'dpo_tel' => '+ 49 251 83-22446',
+    'dpo_mail' => 'datenschutz@uni-muenster.de',
+  ];
+
+  # ----------------------------------------
   # ORACLE Verbindung
   # ----------------------------------------
   # Verbindungen mit WBDB herstellen

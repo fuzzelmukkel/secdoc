@@ -143,12 +143,12 @@
       <body>
         <div class="logo-container-left">
           <div class="logo">
-            <img src="../img/logo1.png" alt="WWU logo" title="Westfälische Wilhelms-Universität" width="200">
+            <img src="../img/logo1.png" alt="Logo 1" title="Logo 1" width="200">
           </div>
         </div>
         <div class="logo-container-right">
           <div class="logo">
-            <img src="../img/logo2.png" alt="SecDoc logo" title="SecDoc" width="180">
+            <img src="../img/logo2.png" alt="SecDoc Logo" title="SecDoc Logo" width="180">
           </div>
         </div>
         <div style="padding-top: 50px;">

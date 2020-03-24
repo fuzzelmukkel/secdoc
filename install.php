@@ -99,6 +99,29 @@
         }
         break;
 
+      case 'process_templates':
+        $templateFiles = [
+          'index.template.html',
+          'assets/html/pdf_titlepage.inc.template.html',
+          'assets/html/wizapp.inc.template.html',
+          'assets/html/wizit.inc.template.html',
+          'assets/html/wizproc.inc.template.html',
+        ];
+
+        foreach($templateFiles as $tFile) {
+          if(file_exists($tFile)) {
+            $tFileContent = file_get_contents($tFile);
+            foreach($htmlStrings as $placeholder => $string) {
+              $tFileContent = str_replace('{{' . $placeholder . '}}', $string, $tFileContent);
+            }
+            file_put_contents(str_replace('.template', '', $tFile), $tFileContent);
+          }
+          else {
+            echo "Template unter $tFile nicht gefunden! Überspringe...\n";
+          }
+        }
+        break;
+
       default:
         break;
     }
@@ -129,10 +152,37 @@
           <div class="alert alert-info">
             <p>
               <h4>PHP Output:</h4>
-              <textare disabled><?= $phpOutput ?></textare>
+              <pre>
+                <code><?= $phpOutput ?></code>
+              </pre>
             </p>
           </div>
         <?php } ?>
+
+          <h4>HTML Templates ersetzen</h4>
+          <p>
+            Zur einfacheren Konfiguration von Texten und Links in der Oberfläche, können hier aus HTML Templates fertige HTML-Dateien zur Auslieferung erzeugt werden. Die notwendige Konfiguration findet in der der Variable <code>$htmlStrings</code> in <code>assets/ajax/config.inc.php</code> statt.
+          </p>
+          <div class="panel panel-default">
+            <div class="panel-heading">Aktuelle Konfiguration der Texte und Links</div>
+            <div class="panel-body">
+              <pre>
+                <code><?= print_r($htmlStrings, TRUE) ?></code>
+              </pre>
+            </div>
+          </div>
+          <div class="panel panel-default">
+            <div class="panel-heading">Aktualisierte HTML-Dateien generieren</div>
+            <div class="panel-body">
+              <p>
+                Wenn die Konfiguration stimmt, können die HTML-Dateien generiert werden:
+                <form method="post">
+                  <input type="hidden" name="do" value="process_templates" />
+                  <input class="btn btn-default" type="submit" value="HTML generieren" />
+                </form>
+              </p>
+            </div>
+          </div>
 
         <?php if($step === 0 && !file_exists($db_dir . DIRECTORY_SEPARATOR . $db_name)) { ?>
           <h4>Keine Datenbank-Datei vorhanden</h4>

@@ -1,0 +1,48 @@
+<style>
+  body {
+    font-family: 'Muli', 'Helvetica', Arial, sans-serif;
+  }
+
+  .logo-container-left {
+    left: 50px;
+    position: absolute;
+  }
+
+  .logo-container-right {
+    right: 50px;
+    position: absolute;
+  }
+</style>
+<div class="logo-container-left">
+  <div class="logo">
+    <img src="../img/logo1.png" alt="{{short_name}} logo" title="{{org_name}}" width="200">
+  </div>
+</div>
+<div class="logo-container-right">
+  <div class="logo">
+    <img src="../img/logo2.png" alt="SecDoc logo" title="SecDoc" width="180">
+  </div>
+</div>
+<div style="padding-top:150px; text-align:center;">
+  <h1>Verzeichnis der Verarbeitungstätigkeiten</h1>
+  <div class="col-sm-12">
+    <h4 style="padding-top:100px; text-align:center;">Angaben zum Verantwortlichen</h4>
+    <p>{{org_name}} ({{org_short}}),
+    <br />vertreten durch den Rektor {{rector_name}}
+    <br />{{org_addr1}}
+    <br />{{org_addr2}}
+    <br />Tel.: {{org_tel}}
+    <br />E-Mail: <a href="mailto:{{org_mail}}">{{org_mail}}</a>
+    </p>
+  </div>
+
+  <div class="col-sm-12">
+    <h4 style="padding-top:100px; text-align:center;">Angaben zur Person des Datenschutzbeauftragten</h4>
+    <p>{{dpo_name}}
+    <br />{{dpo_addr1}}
+    <br />{{dpo_addr2}}
+    <br />Tel.: {{dpo_tel}}
+    <br />E-Mail: <a href="mailto:{{dpo_mail}}">{{dpo_mail}}</a>
+    </p>
+  </div>
+</div>
