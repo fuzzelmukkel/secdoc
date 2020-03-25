@@ -27,6 +27,9 @@
         if(!copy(__DIR__ . DIRECTORY_SEPARATOR . 'assets/demo.db', $db_dir . DIRECTORY_SEPARATOR . $db_name)) {
           $error = 'Konnte Demo-Datenbank nicht nach <code>' . $db_dir . DIRECTORY_SEPARATOR . $db_name . '</code> kopieren!';
         }
+        else {
+          echo 'Success';
+        }
         break;
 
       case 'init_newdb':
@@ -34,11 +37,17 @@
         if(!$dbcon->isConnected()) {
           $error = 'Neue Datenbank konnte nicht erstellt werden!';
         }
+        else {
+          echo 'Success';
+        }
         break;
 
       case 'del_install':
         if(!unlink(__DIR__ . DIRECTORY_SEPARATOR . 'install.php')) {
           $error = 'Konnte Installationsskript nicht löschen! Bitte manuell löschen oder verschieben!';
+        }
+        else {
+          echo 'Success';
         }
         break;
 
@@ -46,6 +55,9 @@
         $dbcon = new DBCon($db_dir, $db_name);
         if(!$dbcon->isConnected()) {
           $error = 'Update der Datenbank fehlgeschlagen!';
+        }
+        else {
+          echo 'Success';
         }
         break;
 
@@ -63,6 +75,7 @@
         }
         else {
           $pdo->exec(file_get_contents(__DIR__ . DIRECTORY_SEPARATOR . 'assets/php/Default_Suggestions.sql'));
+          echo 'Success';
         }
         break;
 
@@ -82,14 +95,17 @@
           switch(filter_var($_REQUEST['tomlist'], FILTER_SANITIZE_STRING)) {
             case 'enisa':
               $pdo->exec(file_get_contents(__DIR__ . DIRECTORY_SEPARATOR . 'assets/php/ENISA_TOM_List.sql'));
+              echo 'Success';
               break;
 
             case 'bsi':
               $pdo->exec(file_get_contents(__DIR__ . DIRECTORY_SEPARATOR . 'assets/php/BSI_TOM_List.sql'));
+              echo 'Success';
               break;
 
             case 'bsienisa':
               $pdo->exec(file_get_contents(__DIR__ . DIRECTORY_SEPARATOR . 'assets/php/BSI+ENISA_TOM_List.sql'));
+              echo 'Success';
               break;
 
             default:
@@ -111,15 +127,20 @@
         foreach($templateFiles as $tFile) {
           if(file_exists($tFile)) {
             $tFileContent = file_get_contents($tFile);
+            if($tFileContent === FALSE) $error .= "Template $tFile konnte nicht gelesen werden!\n";
             foreach($htmlStrings as $placeholder => $string) {
               $tFileContent = str_replace('{{' . $placeholder . '}}', $string, $tFileContent);
             }
-            file_put_contents(str_replace('.template', '', $tFile), $tFileContent);
+            if(file_put_contents(str_replace('.template', '', $tFile), $tFileContent) === FALSE) {
+              $error .= "Dokument " . str_replace('.template', '', $tFile) . " konnte nicht geschrieben werden!\n";
+            }
           }
           else {
             echo "Template unter $tFile nicht gefunden! Überspringe...\n";
           }
         }
+
+        if(empty($error)) echo 'Success';
         break;
 
       default:
