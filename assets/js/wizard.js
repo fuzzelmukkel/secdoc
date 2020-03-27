@@ -731,6 +731,7 @@ function loadFromServer(id) {
       setSaveLabel('saved', new Date(lastSaveDate.replace(' ', 'T')));  // Safari benötigt das Format YYYY-MM-DDTHH:MM:SS (mit T)
 
       document.title = data['data'][0]['Bezeichnung'] + ' - ' + document.title.split(' - ').slice(-1)[0];
+      $('#title').text('Dokumentation von ' + data['data'][0]['Bezeichnung']);
       changedValues = false;
 
       // Abhängigkeiten bei IT-Verfahren anzeigen
@@ -1675,6 +1676,7 @@ Promise.all(promises).then(function() {
   // Titel anhand Bezeichnung aktualisieren
   $('input[name="allgemein_bezeichnung"]').on('input', (e) => {
     document.title = e.target.value + ' - ' + document.title.split(' - ').slice(-1)[0];
+    $('#title').text('Dokumentation von ' + e.target.value);
   });
 
   // Warnung vor dem Schließen der Webseite, falls ungespeicherte Änderungen vorhanden sind

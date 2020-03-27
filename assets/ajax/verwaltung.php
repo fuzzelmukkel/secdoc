@@ -693,7 +693,7 @@ EOH;
       $data = Utils::encodeHTMLArray($data);
 
       # Verfahren erstellen
-      $id = $dbcon->addVerfahren($userId, $newId, intval($data['allgemein_typ']), $data['allgemein_bezeichnung'], $data['allgemein_datum'], $data['allgemein_beschreibung'], intval($data['massnahmen_risiko']), $data['allgemein_abteilung'], $data['allgemein_ivv'], $data['allgemein_fachlich_kennung'], $data['allgemein_technisch_kennung'], json_encode($data));
+      $id = $dbcon->addVerfahren($userId, $newId, intval($data['allgemein_typ']), $data['allgemein_bezeichnung'], $data['allgemein_datum'], $data['allgemein_beschreibung'], intval($data['massnahmen_risiko']), $data['allgemein_abteilung'], $data['allgemein_ivv'] ?: '', $data['allgemein_fachlich_kennung'] ?: '', $data['allgemein_technisch_kennung'] ?: '', json_encode($data));
 
       # Berechtigungen eintragen (falls schon gegeben)
       $newPermissions = [];
@@ -783,7 +783,7 @@ EOH;
       $data = Utils::encodeHTMLArray($data);
 
       # Verfahren aktualisieren
-      $success = $dbcon->updateVerfahren($verfahrensId, $userId, $userGroups, intval($data['allgemein_typ']), $data['allgemein_bezeichnung'], $data['allgemein_datum'], $data['allgemein_beschreibung'], intval($data['massnahmen_risiko']), $data['allgemein_abteilung'], $data['allgemein_ivv'], $data['allgemein_fachlich_kennung'], $data['allgemein_technisch_kennung'], isset($data['meta_sichtbarkeit']) ? $data['meta_sichtbarkeit'] : 0, json_encode($data), $userIsDSB);
+      $success = $dbcon->updateVerfahren($verfahrensId, $userId, $userGroups, intval($data['allgemein_typ']), $data['allgemein_bezeichnung'], $data['allgemein_datum'], $data['allgemein_beschreibung'], intval($data['massnahmen_risiko']), $data['allgemein_abteilung'], $data['allgemein_ivv'] ?: '', $data['allgemein_fachlich_kennung'] ?: '', $data['allgemein_technisch_kennung'] ?: '', isset($data['meta_sichtbarkeit']) ? $data['meta_sichtbarkeit'] : 0, json_encode($data), $userIsDSB);
 
       # Berechtigungen aktualisieren
       $newPermissions = [];

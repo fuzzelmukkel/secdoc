@@ -1,5 +1,7 @@
+<h4 id="title" class="text-center">
+  Dokumentation eines IT-Verfahrens
+</h4>
 <h4 class="text-center">
-  Dokumentation eines IT-Verfahrens<br>
   <small>Mit diesem Assistenten erzeugen Sie in wenigen Schritten eine Dokumentation für Ihr IT-Verfahren.</small>
 </h4>
 <!-- Wizard navigation -->
@@ -40,6 +42,16 @@
     </li>
 
     <!-- Wizard tab #4 -->
+    <li>
+      <a href="#abhaengigkeiten" data-toggle="tab">
+        <div class="icon-circle">
+          <i class="fa fa-exchange"></i>
+        </div>
+        Abhängigkeiten
+      </a>
+    </li>
+
+    <!-- Wizard tab #5 -->
     <li>
       <a href="#abschluss" data-toggle="tab">
         <div class="icon-circle">
@@ -100,58 +112,12 @@
           <input data-tool="typeahead" data-action="searchivv" data-minlength="0" type="text" class="form-control" name="allgemein_ivv" placeholder="Bsp.: IVV 09  Zentrale Universitätsverwaltung">
         </div>
       </div>
-      <div class="col-sm-5 col-sm-offset-1">
-        <h6 class="info-text">Fachlicher Ansprechpartner <i data-toggle="tooltip" title="Ansprechpartner für inhaltliche Fragen in der Organisationseinheit (z.B. Organisations- oder Projektleiter) <br /><br /> Es kann ein Mitarbeiter aus der Liste gewählt oder eine Funktionsbezeichnung (z.B. Leiter Abt. 3) eingetragen werden. Der automatische Zugriff bzw. die E-Mail-Benachrichtigungen funktionieren nur bei Auswahl eines Mitarbeiters aus der Liste!" class="fa fa-question-circle-o fa-lg"></i></h6>
+      <div class="col-sm-6 col-sm-offset-3">
+        <h6 class="info-text">Ansprechpartner IT-Verfahren <i data-toggle="tooltip" title="Ansprechpartner für technische Fragen zum IT-Verfahren <br /><br /> Es kann ein Mitarbeiter aus der Liste gewählt oder eine Funktionsbezeichnung (z.B. Leiter Abt. 3) eingetragen werden. Der automatische Zugriff bzw. die E-Mail-Benachrichtigungen funktionieren nur bei Auswahl eines Mitarbeiters aus der Liste!" class="fa fa-question-circle-o fa-lg"></i></h6>
         <div class="form-group">
           <label>Name</label><br>
           <input data-tool="typeahead" data-action="searchmitarbeiter" data-minlength="0" data-dynamic="true" data-cache="false" data-hiddenfield="allgemein_fachlich_kennung" type="text" class="form-control" name="allgemein_fachlich_name" placeholder="Geben Sie eine Kennung oder einen Namen (min. 4 Zeichen) ein...">
           <input type="hidden" name="allgemein_fachlich_kennung">
-        </div>
-      </div>
-      <div class="col-sm-5">
-        <h6 class="info-text">Technischer Ansprechpartner <i data-toggle="tooltip" title="Ansprechpartner für technische Fragen (z.B. Mitarbeiter in der betreuenden IVV) <br /><br /> Es kann ein Mitarbeiter aus der Liste gewählt oder eine Funktionsbezeichnung (z.B. Leiter Abt. 3) eingetragen werden. Der automatische Zugriff bzw. die E-Mail-Benachrichtigungen funktionieren nur bei Auswahl eines Mitarbeiters aus der Liste!" class="fa fa-question-circle-o fa-lg"></i></h6>
-        <div class="form-group">
-          <label>Name</label><br>
-          <input data-tool="typeahead" data-action="searchmitarbeiter" data-minlength="0" data-dynamic="true" data-cache="false" data-hiddenfield="allgemein_technisch_kennung" type="text" class="form-control" name="allgemein_technisch_name" placeholder="Geben Sie eine Kennung oder einen Namen (min. 4 Zeichen) ein...">
-          <input type="hidden" name="allgemein_technisch_kennung">
-        </div>
-      </div>
-      <div class="col-sm-12">
-        <h5 class="info-text text-ul">Angaben zum ggf. mit dem Verantwortlichen gemeinsam Verantwortlichen <i data-toggle="tooltip" title="Z.B. bei Projekten mit Partnern außerhalb der WWU, vgl. Art. 26 DSGVO Gemeinsam Verantwortliche" class="fa fa-question-circle-o fa-lg"></i></h5>
-      </div>
-      <div class="col-sm-12 form-check text-center">
-        <label class="form-check-label"><input class="form-check-input" name="allgemein_verantwortlich_extern" type="checkbox" value="1"> Es gibt Mitverantwortliche außerhalb der WWU</label>
-      </div>
-      <div class="col-sm-5 col-sm-offset-1 hidden">
-        <div class="form-group">
-          <label>Ansprechpartner</label><br>
-          <input type="text" class="form-control" name="allgemein_verantwortlich_name" placeholder="">
-        </div>
-        <div class="form-group">
-          <label>Telefon</label><br>
-          <input type="text" class="form-control" name="allgemein_verantwortlich_telefon" placeholder="">
-        </div>
-        <div class="form-group">
-          <label>E-Mail</label><br>
-          <input type="email" class="form-control" name="allgemein_verantwortlich_email" placeholder="">
-        </div>
-      </div>
-      <div class="col-sm-5 hidden">
-        <div class="form-group">
-          <label>Institution</label><br>
-          <input type="text" class="form-control" name="allgemein_verantwortlich_institution" placeholder="">
-        </div>
-        <div class="form-group">
-          <label>Straße</label><br>
-          <input type="text" class="form-control" name="allgemein_verantwortlich_strasse" placeholder="">
-        </div>
-        <div class="form-group">
-          <label>PLZ, Ort</label><br>
-          <input type="text" class="form-control" name="allgemein_verantwortlich_ort" placeholder="">
-        </div>
-        <div class="form-group">
-          <label>Land</label><br>
-          <input type="text" class="form-control" name="allgemein_verantwortlich_land" placeholder="">
         </div>
       </div>
     </div>
@@ -393,6 +359,7 @@
         <h5 class="info-text text-ul">Technische und organisatorische Maßnahmen <i data-toggle="tooltip" data-html="true" title="vgl.
 Art. 25 DSGVO Datenschutz durch Technikgestaltung und durch datenschutzfreundliche Voreinstellungen, Art. 32 DSGVO Sicherheit der Verarbeitung" class="fa fa-question-circle-o fa-lg"></i></h5>
         <p class="printHide">Gibt es ein Datenschutz- und Datensicherheitskonzept oder ein anderes Dokument, das die technischen und organisatorischen Maßnahmen enthält, müssen die Angaben nicht hier erfolgen, sondern es kann stattdessen (oder zusätzlich) auf der nächsten Seite auf dieses Dokument verwiesen werden. In diesem Fall bitte das entsprechende Dokument mit genauer Bezeichnung und unter Angabe von Version und/oder Stand benennen.</p>
+        <h6 class="info-text text-ul-dot">1. Bausteine auswählen</h6>
         <p class="printHide">Wählen Sie in der folgenden Liste für Ihr IT-Verfahren relevante Kategorien aus, um die Auswahl der TOMs zu vereinfachen:</p>
       </div>
       <div class="col-sm-offset-1 col-sm-10 printHide" id="toggletoms">
@@ -402,7 +369,7 @@ Art. 25 DSGVO Datenschutz durch Technikgestaltung und durch datenschutzfreundlic
         </div>
       </div>
       <div class="col-sm-offset-1 col-sm-10">
-        <h6 class="info-text text-ul-dot">Ausgewählte Maßnahmen</h6>
+        <h6 class="info-text text-ul-dot">2. Umsetzungsstand angeben</h6>
         <div class="panel-group" id="tom_accordion" role="tablist" aria-multiselectable="true">
         </div>
       </div>
@@ -410,6 +377,66 @@ Art. 25 DSGVO Datenschutz durch Technikgestaltung und durch datenschutzfreundlic
   </div>
 
   <!-- Wizard tab content #4 -->
+  <div class="tab-pane" id="abhaengigkeiten">
+    <div class="row">
+      <div class="col-sm-12">
+        <h5 class="info-text text-ul">Abhängigkeiten</h5>
+      </div>
+
+      <div class="col-sm-12">
+        <h6 class="info-text text-ul-dot">Abhängigkeit von IT-Verfahren</h6>
+      </div>
+      <div class="col-sm-offset-1 col-sm-10">
+        <p class="printOnly hidden">Das IT-Verfahren hängt von den folgenden dokumentierten IT-Verfahren ab und nutzt Daten und/oder Dienste dieser Verfahren:</p>
+        <p class="printHide">Ist Ihr IT-Verfahren von anderen IT-Verfahren abhängig, die bereits dokumentiert wurden und für Sie sichtbar sind, können Sie diese hier auswählen.</p>
+        <table data-tool="endlessTable" id="abschluss_abhaengigkeit" class="table table-hover btn-table">
+          <thead>
+            <tr>
+              <th>IT-Verfahren</th>
+              <th>Beschreibung</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <input type="text" data-tool="typeahead" data-action="searchVerfahren" data-minlength="0" data-dynamic="true" data-hiddenfield="abschluss_abhaengigkeit_id[]" class="form-control" name="abschluss_abhaengigkeit_name[]" placeholder="Bsp.: E-Mail Dienst">
+                <input type="hidden" name="abschluss_abhaengigkeit_id[]">
+              </td>
+              <td>
+                <textarea class="form-control" rows="3" disabled></textarea>
+              </td>
+              <td class="text-center">
+                <button type="button" class="abschluss_abhaengigkeit_del btn btn-danger"><i class="fa fa-minus"></i> Löschen</button><br />
+                <a class="btn" style="margin-top: 2px;" href="#" target="_blank">Anzeigen</a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <button type="button" id="abschluss_abhaengigkeit_add" class="btn btn-wd btn-success"><i class="fa fa-plus"></i> Hinzufügen</button>
+      </div>
+
+      <div class="col-sm-12">
+        <h6 class="info-text text-ul-dot">Abhängige Verarbeitungstätigkeiten und IT-Verfahren</h6>
+      </div>
+      <div class="col-sm-offset-1 col-sm-10">
+        <p>Von diesem IT-Verfahren hängen die folgenden Verarbeitungstätigkeiten und IT-Verfahren ab:</p>
+        <table id="abschluss_vonabhaengig" class="table table-hover btn-table">
+          <thead>
+            <tr>
+              <th>Bezeichnung</th>
+              <th>Typ</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Wizard tab content #5 -->
   <div class="tab-pane" id="abschluss">
     <div class="row">
       <div class="col-sm-12">
@@ -463,57 +490,6 @@ Art. 25 DSGVO Datenschutz durch Technikgestaltung und durch datenschutzfreundlic
             </div>
           </li>
         </ul>
-      </div>
-
-      <div class="col-sm-12">
-        <h6 class="info-text text-ul-dot">Abhängigkeiten</h6>
-      </div>
-      <div class="col-sm-offset-1 col-sm-10">
-        <p class="printOnly hidden">Das IT-Verfahren hängt von den folgenden dokumentierten IT-Verfahren ab und nutzt Daten und/oder Dienste dieser Verfahren:</p>
-        <p class="printHide">Ist Ihr IT-Verfahren von anderen IT-Verfahren abhängig, die bereits dokumentiert wurden und für Sie sichtbar sind, können Sie diese hier auswählen.</p>
-        <table data-tool="endlessTable" id="abschluss_abhaengigkeit" class="table table-hover btn-table">
-          <thead>
-            <tr>
-              <th>IT-Verfahren</th>
-              <th>Beschreibung</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>
-                <input type="text" data-tool="typeahead" data-action="searchVerfahren" data-minlength="0" data-dynamic="true" data-hiddenfield="abschluss_abhaengigkeit_id[]" class="form-control" name="abschluss_abhaengigkeit_name[]" placeholder="Bsp.: E-Mail Dienst">
-                <input type="hidden" name="abschluss_abhaengigkeit_id[]">
-              </td>
-              <td>
-                <textarea class="form-control" rows="3" disabled></textarea>
-              </td>
-              <td class="text-center">
-                <button type="button" class="abschluss_abhaengigkeit_del btn btn-danger"><i class="fa fa-minus"></i> Löschen</button><br />
-                <a class="btn" style="margin-top: 2px;" href="#" target="_blank">Anzeigen</a>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        <button type="button" id="abschluss_abhaengigkeit_add" class="btn btn-wd btn-success"><i class="fa fa-plus"></i> Hinzufügen</button>
-      </div>
-
-      <div class="col-sm-12">
-        <h6 class="info-text text-ul-dot">Abhängige Verarbeitungstätigkeiten und IT-Verfahren</h6>
-      </div>
-      <div class="col-sm-offset-1 col-sm-10">
-        <p>Von diesem IT-Verfahren hängen die folgenden Verarbeitungstätigkeiten und IT-Verfahren ab:</p>
-        <table id="abschluss_vonabhaengig" class="table table-hover btn-table">
-          <thead>
-            <tr>
-              <th>Bezeichnung</th>
-              <th>Typ</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-          </tbody>
-        </table>
       </div>
 
       <div class="col-sm-offset-1 col-sm-10 printHide">
@@ -620,4 +596,4 @@ Art. 25 DSGVO Datenschutz durch Technikgestaltung und durch datenschutzfreundlic
 <script src="assets/js/datatables.min.js" type="text/javascript"></script>
 
 <!--  Custom WWU JS Files  -->
-<script src="assets/js/wizard.js?202001221" type="text/javascript"></script>
+<script src="assets/js/wizard.js?20200327" type="text/javascript"></script>
