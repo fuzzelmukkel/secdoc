@@ -481,6 +481,14 @@ function loadEmpty() {
     addTableRow(table);
   });
   $('#abschluss_vonabhaengig tbody tr').remove();
+
+  // Clear title
+  document.title = document.title.split(' - ').slice(-1)[0];
+  let emptyTitle = 'Dokumentation einer Verarbeitungstätigkeit';
+  if(mode === 'wizapp') emptyTitle = 'Dokumentation einer Fachapplikation';
+  if(mode === 'wizit')  emptyTitle = ' Dokumentation eines IT-Verfahrens';
+  $('#title').text(emptyTitle);
+
   setSaveLabel('failed');
   setOverlay(false);
   console.timeEnd('Leeres Verfahren laden');
