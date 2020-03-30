@@ -458,6 +458,39 @@ Art. 25 DSGVO Datenschutz durch Technikgestaltung und durch datenschutzfreundlic
       </div>
 
       <div class="col-sm-12">
+        <h5 class="info-text text-ul">Abhängigkeiten von Verarbeitungstätigkeiten</h5>
+      </div>
+      <div class="col-sm-offset-1 col-sm-10">
+        <p class="printOnly hidden">Die Verarbeitungstätigkeit hängt von den folgenden dokumentierten Verarbeitungstätigkeiten ab:</p>
+        <p class="printHide">Ist Ihre Verarbeitungstätigkeit von anderen Verarbeitungstätigkeiten abhängig, die bereits dokumentiert wurden und für Sie sichtbar sind, können Sie diese hier auswählen.</p>
+        <table data-tool="endlessTable" id="verarbeitung_abhaengigkeit" class="table table-hover btn-table">
+          <thead>
+            <tr>
+              <th>Verarbeitungstätigkeit</th>
+              <th>Beschreibung</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <input type="text" data-tool="typeahead" data-action="searchverarbeitung" data-minlength="0" data-dynamic="true" data-hiddenfield="verarbeitung_abhaengigkeit_id[]" class="form-control" name="verarbeitung_abhaengigkeit_name[]" placeholder="Bsp.: Immatrikulation">
+                <input type="hidden" name="verarbeitung_abhaengigkeit_id[]">
+              </td>
+              <td>
+                <textarea class="form-control" rows="3" disabled></textarea>
+              </td>
+              <td class="text-center">
+                <button type="button" class="verarbeitung_abhaengigkeit_del btn btn-danger"><i class="fa fa-minus"></i> Löschen</button><br />
+                <a class="btn" style="margin-top: 2px;" href="#" target="_blank">Anzeigen</a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <button type="button" id="verarbeitung_abhaengigkeit_add" class="btn btn-wd btn-success"><i class="fa fa-plus"></i> Hinzufügen</button>
+      </div>
+
+      <div class="col-sm-12">
         <h5 class="info-text text-ul">Abhängigkeiten von IT-Fachapplikationen</h5>
       </div>
       <div class="col-sm-offset-1 col-sm-10">
@@ -488,6 +521,24 @@ Art. 25 DSGVO Datenschutz durch Technikgestaltung und durch datenschutzfreundlic
           </tbody>
         </table>
         <button type="button" id="abschluss_abhaengigkeit_add" class="btn btn-wd btn-success"><i class="fa fa-plus"></i> Hinzufügen</button>
+      </div>
+
+      <div class="col-sm-12">
+        <h6 class="info-text text-ul-dot">Abhängige Verarbeitungstätigkeiten</h6>
+      </div>
+      <div class="col-sm-offset-1 col-sm-10">
+        <p>Von dieser Verarbeitungstätigkeit hängen die folgenden anderen Verarbeitungstätigkeiten ab:</p>
+        <table id="abschluss_vonabhaengig" class="table table-hover btn-table">
+          <thead>
+            <tr>
+              <th>Bezeichnung</th>
+              <th>Typ</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+          </tbody>
+        </table>
       </div>
 
     </div>
@@ -666,4 +717,4 @@ Art. 35 DSGVO" class="fa fa-question-circle-o fa-lg"></i></h6>
 <script src="assets/js/datatables.min.js" type="text/javascript"></script>
 
 <!--  Custom WWU JS Files  -->
-<script src="assets/js/wizard.js?20200327" type="text/javascript"></script>
+<script src="assets/js/wizard.js?20200330" type="text/javascript"></script>

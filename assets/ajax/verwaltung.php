@@ -646,6 +646,27 @@ EOH;
       break;
     }
 
+    # Durchsucht die für den aktuellen Nutzer einsehbaren Verarbeitungstätigkeiten
+    case 'searchverarbeitung': {
+      if($userIsDSB) {
+        $list = $dbcon->listVerfahrenDSB($search);
+      }
+      else {
+        $list = $dbcon->listVerfahrenOwn($userId, $userGroups, $search);
+        $list = array_merge($list, $dbcon->listVerfahrenShared($userId, $userGroups, $search));
+      }
+
+      $result = array();
+      foreach($list as $entry) {
+        if(intval($entry['Typ']) === 1) array_push($result, array('value' => $entry['ID'], 'label' => $entry['Bezeichnung'] . " [" . $entry['Fachabteilung'] . "]"));
+      }
+
+      $output['data'] = $result;
+      $output['count'] = count($result);
+      $output['success'] = TRUE;
+      break;
+    }
+
     # Liest ein bestehendes Verfahren aus (sowohl bearbeitbare, wie auch nur einsehbare)
     case 'get': {
       if(empty($verfahrensId)) {
@@ -742,6 +763,13 @@ EOH;
         }
       }
 
+      if(isset($data['verarbeitung_abhaengigkeit_id']) && is_array($data['verarbeitung_abhaengigkeit_id'])) {
+        foreach($data['verarbeitung_abhaengigkeit_id'] as $dependency) {
+          $dependency = intval($dependency);
+          if($dependency !== 0) array_push($newDependencies, $dependency);
+        }
+      }
+
       if(!$dbcon->updateDependency($id, $newDependencies, $userId, $userGroups, $userIsDSB)) error_log("[SecDoc] verwaltung.php -> Konnte neue Abhängigkeiten für Verfahren #$id nicht eintragen!");
 
       $output['data'] = ['ID' => $id, 'Date' => date("Y-m-d H:i:s")];
@@ -827,6 +855,13 @@ EOH;
 
       if(isset($data['itverfahren_abhaengigkeit_id']) && is_array($data['itverfahren_abhaengigkeit_id'])) {
         foreach($data['itverfahren_abhaengigkeit_id'] as $dependency) {
+          $dependency = intval($dependency);
+          if($dependency !== 0) array_push($newDependencies, $dependency);
+        }
+      }
+
+      if(isset($data['verarbeitung_abhaengigkeit_id']) && is_array($data['verarbeitung_abhaengigkeit_id'])) {
+        foreach($data['verarbeitung_abhaengigkeit_id'] as $dependency) {
           $dependency = intval($dependency);
           if($dependency !== 0) array_push($newDependencies, $dependency);
         }

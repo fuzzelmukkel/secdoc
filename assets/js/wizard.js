@@ -735,7 +735,7 @@ function loadFromServer(id) {
       changedValues = false;
 
       // Abhängigkeiten bei IT-Verfahren anzeigen
-      if(mode === 'wizit' || mode === 'wizapp') {
+      if(mode === 'wizit' || mode === 'wizapp' || mode === 'wizproc') {
         $('#abschluss_vonabhaengig tbody tr').remove();
         $.get(backendPath, { 'action': 'dependencies', 'id':  loadId, 'debug': debug}).done(function(data) {
           if(!data['success']) {
@@ -1550,7 +1550,7 @@ Promise.all(promises).then(function() {
   });
 
   // Zeigt die aktuelle Beschreibung der abhängigen Verfahren an
-  $('#abschluss_abhaengigkeit, #itverfahren_abhaengigkeit').on('change', 'input[name="abschluss_abhaengigkeit_id[]"], input[name="itverfahren_abhaengigkeit_id[]"]', function() {
+  $('#abschluss_abhaengigkeit, #itverfahren_abhaengigkeit, #verarbeitung_abhaengigkeit').on('change', 'input[name="abschluss_abhaengigkeit_id[]"], input[name="itverfahren_abhaengigkeit_id[]"], input[name="verarbeitung_abhaengigkeit_id[]"]', function() {
     var idField = $(this);
     var descText = idField.closest('td').next('td').find('textarea');
     if(idField.val() !== '') {
@@ -1561,7 +1561,7 @@ Promise.all(promises).then(function() {
           descText.val('<Das Verfahren existiert nicht!>');
           return;
         }
-        idField.closest('td').find('input[name="abschluss_abhaengigkeit_name[]"], input[name="itverfahren_abhaengigkeit_id[]"]').val(htmlDecode(data['data'][0]['Bezeichnung']) + ' [' + htmlDecode(data['data'][0]['Fachabteilung']) + ']');
+        idField.closest('td').find('input[name="abschluss_abhaengigkeit_name[]"], input[name="itverfahren_abhaengigkeit_name[]"], input[name="verarbeitung_abhaengigkeit_name[]"]').val(htmlDecode(data['data'][0]['Bezeichnung']) + ' [' + htmlDecode(data['data'][0]['Fachabteilung']) + ']');
         idField.closest('tr').find('a').attr('href', '?id=' + idField.val());
         descText.val(htmlDecode(data['data'][0]['Beschreibung']));
       }).fail((jqXHR, error, errorThrown) => {
