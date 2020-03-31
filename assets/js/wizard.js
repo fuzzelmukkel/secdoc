@@ -1716,6 +1716,11 @@ Promise.all(promises).then(function() {
   // Überprüpft, ob Angaben geändert wurden
   $('form').on('change', '[name!=""]', (e) => { changedValues = true; });
 
+  // DSB Elemente anzeigen
+  if(userIsDSB) {
+    $('.dsbOnly').removeClass('dsbOnly');
+  }
+
   debugLog('Setup beendet!');
 
   // Timer beenden

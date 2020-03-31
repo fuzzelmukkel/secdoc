@@ -359,7 +359,7 @@
         <h5 class="info-text text-ul">Technische und organisatorische Maßnahmen <i data-toggle="tooltip" data-html="true" title="vgl.
 Art. 25 DSGVO Datenschutz durch Technikgestaltung und durch datenschutzfreundliche Voreinstellungen, Art. 32 DSGVO Sicherheit der Verarbeitung" class="fa fa-question-circle-o fa-lg"></i></h5>
         <p class="printHide">Gibt es ein Datenschutz- und Datensicherheitskonzept oder ein anderes Dokument, das die technischen und organisatorischen Maßnahmen enthält, müssen die Angaben nicht hier erfolgen, sondern es kann stattdessen (oder zusätzlich) auf der nächsten Seite auf dieses Dokument verwiesen werden. In diesem Fall bitte das entsprechende Dokument mit genauer Bezeichnung und unter Angabe von Version und/oder Stand benennen.</p>
-        <h6 class="info-text text-ul-dot">1. Bausteine auswählen</h6>
+        <h6 class="info-text text-ul-dot printHide">1. Bausteine auswählen</h6>
         <p class="printHide">Wählen Sie in der folgenden Liste für Ihr IT-Verfahren relevante Kategorien aus, um die Auswahl der TOMs zu vereinfachen:</p>
       </div>
       <div class="col-sm-offset-1 col-sm-10 printHide" id="toggletoms">
@@ -369,7 +369,7 @@ Art. 25 DSGVO Datenschutz durch Technikgestaltung und durch datenschutzfreundlic
         </div>
       </div>
       <div class="col-sm-offset-1 col-sm-10">
-        <h6 class="info-text text-ul-dot">2. Umsetzungsstand angeben</h6>
+        <h6 class="info-text text-ul-dot printHide">2. Umsetzungsstand angeben</h6>
         <div class="panel-group" id="tom_accordion" role="tablist" aria-multiselectable="true">
         </div>
       </div>
@@ -389,7 +389,7 @@ Art. 25 DSGVO Datenschutz durch Technikgestaltung und durch datenschutzfreundlic
       <div class="col-sm-offset-1 col-sm-10">
         <p class="printOnly hidden">Das IT-Verfahren hängt von den folgenden dokumentierten IT-Verfahren ab und nutzt Daten und/oder Dienste dieser Verfahren:</p>
         <p class="printHide">Ist Ihr IT-Verfahren von anderen IT-Verfahren abhängig, die bereits dokumentiert wurden und für Sie sichtbar sind, können Sie diese hier auswählen.</p>
-        <table data-tool="endlessTable" id="abschluss_abhaengigkeit" class="table table-hover btn-table">
+        <table data-tool="endlessTable" id="abschluss_abhaengigkeit" class="table table-hover btn-table table-striped">
           <thead>
             <tr>
               <th>IT-Verfahren</th>
@@ -416,12 +416,12 @@ Art. 25 DSGVO Datenschutz durch Technikgestaltung und durch datenschutzfreundlic
         <button type="button" id="abschluss_abhaengigkeit_add" class="btn btn-wd btn-success"><i class="fa fa-plus"></i> Hinzufügen</button>
       </div>
 
-      <div class="col-sm-12">
+      <div class="col-sm-12 dsbOnly">
         <h6 class="info-text text-ul-dot">Abhängige Verarbeitungstätigkeiten und IT-Verfahren</h6>
       </div>
-      <div class="col-sm-offset-1 col-sm-10">
+      <div class="col-sm-offset-1 col-sm-10 dsbOnly">
         <p>Von diesem IT-Verfahren hängen die folgenden Verarbeitungstätigkeiten und IT-Verfahren ab:</p>
-        <table id="abschluss_vonabhaengig" class="table table-hover btn-table">
+        <table id="abschluss_vonabhaengig" class="table table-hover btn-table table-striped">
           <thead>
             <tr>
               <th>Bezeichnung</th>
@@ -596,4 +596,4 @@ Art. 25 DSGVO Datenschutz durch Technikgestaltung und durch datenschutzfreundlic
 <script src="assets/js/datatables.min.js" type="text/javascript"></script>
 
 <!--  Custom WWU JS Files  -->
-<script src="assets/js/wizard.js?20200330" type="text/javascript"></script>
+<script src="assets/js/wizard.js?20200331" type="text/javascript"></script>
