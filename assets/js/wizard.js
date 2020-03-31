@@ -38,18 +38,30 @@ var loadId = GetURLParameter('id') === false ? 0 : parseInt(GetURLParameter('id'
 var copyId = GetURLParameter('copy') === false ? false : parseInt(GetURLParameter('copy'));
 
 /**
- * Speichert den aktuellen Bearbeitungs-Modus (entweder IT-Verfahren oder Verarbeitungstätigkeit)
+ * Speichert den aktuellen Bearbeitungs-Modus (entweder IT-Verfahren, Fachapplikation Verarbeitungstätigkeit)
  * @global
  * @type {String}
  */
-var mode = ['wizit', 'wizproc'].includes(page) ? page : 'wizproc';
+var mode = ['wizit', 'wizproc', 'wizapp'].includes(page) ? page : 'wizproc';
+
+/**
+ * Interne Nummerierung für die Dokumentations-Modi
+ * @global
+ * @type {Number}
+ */
+let modeNum = 0;
+if(mode === 'wizproc') modeNum = 1;
+if(mode === 'wizapp')  modeNum = 3;
+if(mode === 'wizit')   modeNum = 2;
 
 /**
  * Lesbarer Name des Modus; genutzt für die Ersetzung in Texten
  * @global
  * @type {Array}
  */
-var modeName = (mode === 'wizproc' ? ['Verarbeitungstätigkeit', 'Verarbeitungstätigkeiten'] : ['IT-Verfahren', 'IT-Verfahren']);
+var modeName = ['Verarbeitungstätigkeit', 'Verarbeitungstätigkeiten'];
+if(mode === 'wizapp') modeName = ['Fachapplikation', 'Fachapplikationen'];
+if(mode === 'wizit')  modeName = ['IT-Verfahren', 'IT-Verfahren'];
 
 /**
  * Gibt an, ob Eingaben geändert wurden seit dem letzten Laden/Speichern
@@ -127,16 +139,27 @@ var validator = $('.wizard-card form').validate();
 /*
  * Notwendige Variablen vom Server holen
  */
-let tom_cache = JSON.parse(localStorage.getItem('tom_cache_' + (document.location.host + document.location.pathname).replace(/\W/g, '_')));
-let currTime = new Date();
+// Cache entfernen; erschwert nur die Aktualisierung von TOMs ohne großen Geschwindigkeitsvorteil
+if(localStorage.getItem('tom_cache_' + (document.location.host + document.location.pathname).replace(/\W/g, '_')) !== null) {
+  localStorage.removeItem('tom_cache_' + (document.location.host + document.location.pathname).replace(/\W/g, '_'));
+}
 
-if(tom_cache && tom_cache.toms.length > 0 && parseInt(tom_cache.ttl) > currTime.getTime()) {
-  console.info('Nutze TOM Liste aus Cache');
-  tomsMapping = tom_cache.toms;
-  tom_cache.ttl = currTime.getTime() + (1 * 60 * 60 * 1000);
-  localStorage.setItem('tom_cache_' + (document.location.host + document.location.pathname).replace(/\W/g, '_'), JSON.stringify(tom_cache));
+// TOM Liste holen
+promises[0] = $.getJSON(backendPath + '?action=gettoms&data={"tier":' + modeNum + '}' + (debug ? '&debug=true' : '')).done((data) => {
+  if(!data['success']) {
+    showError('Holen der TOMs', data['error']);
+    return;
+  }
 
-  // Prüfen, ob eigene TOMs für IT-Verfahren vorhanden
+  if(data['data'].length === 0) {
+    showError('Holen der TOMs', 'TOM Liste ist leer!');
+    return;
+  }
+
+  tomsMapping = data['data'];
+  // Nach Identifier sortieren
+  tomsMapping = tomsMapping.sort((a,b) =>  a.Identifier.localeCompare(b.Identifier, 'en', { numeric: true }));
+
   let itTOMList = false;
   tomsMapping.some((elem) => {
     if(parseInt(elem['Mode']) === 1) {
@@ -144,41 +167,9 @@ if(tom_cache && tom_cache.toms.length > 0 && parseInt(tom_cache.ttl) > currTime.
       return true;
     }
   });
-
-  if(mode === 'wizit' && itTOMList) tomsMapping = tomsMapping.filter((elem) => (parseInt(elem['Mode']) === 1));
-  if(mode === 'wizproc' && itTOMList) tomsMapping = tomsMapping.filter((elem) => (parseInt(elem['Mode']) === 0));
-}
-else {
-  promises[0] = $.getJSON(backendPath + '?action=gettoms' + (debug ? '&debug=true' : '')).done((data) => {
-    if(!data['success']) {
-      showError('Holen der TOMs', data['error']);
-      return;
-    }
-
-    if(data['data'].length === 0) {
-      showError('Holen der TOMs', 'TOM Liste ist leer!');
-      return;
-    }
-
-    tomsMapping = data['data'];
-    // Nach Identifier sortieren
-    tomsMapping = tomsMapping.sort((a,b) =>  a.Identifier.localeCompare(b.Identifier, 'en', { numeric: true }));
-    localStorage.setItem('tom_cache_' + (document.location.host + document.location.pathname).replace(/\W/g, '_'), JSON.stringify({ttl: currTime.getTime() + (1 * 60 * 60 * 1000), toms: data['data']}));
-
-    let itTOMList = false;
-    tomsMapping.some((elem) => {
-      if(parseInt(elem['Mode']) === 1) {
-        itTOMList = true;
-        return true;
-      }
-    });
-
-    if(mode === 'wizit' && itTOMList) tomsMapping = tomsMapping.filter((elem) => (parseInt(elem['Mode']) === 1));
-    if(mode === 'wizproc' && itTOMList) tomsMapping = tomsMapping.filter((elem) => (parseInt(elem['Mode']) === 0));
-  }).fail((jqXHR, error, errorThrown) => {
-    showError('Holen der TOMs', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
-  });
-}
+}).fail((jqXHR, error, errorThrown) => {
+  showError('Holen der TOMs', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+});
 
 /*
  * Funktionen für den BSWizard
@@ -363,8 +354,16 @@ function showVerfahrensliste(startup = false) {
       return;
     }
 
+    let modeCount = 0;
+
     for(var c=0; c < data['count']; c++) {
-      if((mode === 'wizproc' && parseInt(data['data'][c]['Typ']) === 2) || (mode === 'wizit' && parseInt(data['data'][c]['Typ']) === 1)) continue;
+      // Filter nach Ebene
+      let currType = parseInt(data['data'][c]['Typ']);
+      if(currType === 1 && mode !== 'wizproc') continue;
+      if(currType === 2 && mode !== 'wizit') continue;
+      if(currType === 3 && mode !== 'wizapp') continue;
+
+      modeCount++;
 
       var currId = parseInt(data['data'][c]['ID']);
       var newEntry = $('<tr></tr>');
@@ -390,6 +389,11 @@ function showVerfahrensliste(startup = false) {
         newEntry.append('<td><div class="btn-group inline"><a class="btn" href="?id=' + currId + (debug ? '&debug=true' : '') + '" target="_blank"><i class="fa fa-edit"></i> Anzeigen</a><a class="btn" href="?copy=' + currId + '" target="_blank"><i class="fa fa-copy"></i> Kopieren</a><button type="button" data-id="' + currId + '" class="btn pdfdownload" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '>PDF anzeigen</button></div></td>');
         modalBody.find('#readableprocesses tbody').append(newEntry);
       }
+    }
+
+    if(modeCount === 0) {
+      show = false;
+      return;
     }
 
     // Handler für PDF-Anzeige
@@ -471,11 +475,20 @@ function loadEmpty() {
     removeTableRows(table);
   });
   $('input[type=text], textarea').not('[name$="_nummer[]"]').val('');
-  $('input[type=checkbox]').prop('checked', false);
+  $('input[type=checkbox]').prop('checked', false).trigger('change');
   $('.wizard-navigation li a').first().click();
   endlessTables.forEach(function(table) {
     addTableRow(table);
   });
+  $('#abschluss_vonabhaengig tbody tr').remove();
+
+  // Clear title
+  document.title = document.title.split(' - ').slice(-1)[0];
+  let emptyTitle = 'Dokumentation einer Verarbeitungstätigkeit';
+  if(mode === 'wizapp') emptyTitle = 'Dokumentation einer Fachapplikation';
+  if(mode === 'wizit')  emptyTitle = ' Dokumentation eines IT-Verfahrens';
+  $('#title').text(emptyTitle);
+
   setSaveLabel('failed');
   setOverlay(false);
   console.timeEnd('Leeres Verfahren laden');
@@ -726,10 +739,11 @@ function loadFromServer(id) {
       setSaveLabel('saved', new Date(lastSaveDate.replace(' ', 'T')));  // Safari benötigt das Format YYYY-MM-DDTHH:MM:SS (mit T)
 
       document.title = data['data'][0]['Bezeichnung'] + ' - ' + document.title.split(' - ').slice(-1)[0];
+      $('#title').text('Dokumentation von ' + data['data'][0]['Bezeichnung']);
       changedValues = false;
 
       // Abhängigkeiten bei IT-Verfahren anzeigen
-      if(mode === 'wizit') {
+      if(mode === 'wizit' || mode === 'wizapp' || mode === 'wizproc') {
         $('#abschluss_vonabhaengig tbody tr').remove();
         $.get(backendPath, { 'action': 'dependencies', 'id':  loadId, 'debug': debug}).done(function(data) {
           if(!data['success']) {
@@ -738,7 +752,10 @@ function loadFromServer(id) {
           }
 
           data['data'].forEach(dependant => {
-            $('#abschluss_vonabhaengig tbody').append('<tr><td>' + htmlDecode(dependant['name']) + '</td><td>' + (dependant['type'] === 2 ? 'IT-Verfahren' : 'Verarbeitungstätigkeit') + '</td><td><a class="btn" href="?id=' + dependant['id'] + '" target="_blank">Anzeigen</a></td></tr>');
+            dependantType = 'Verarbeitungstätigkeit';
+            if(dependant['type'] === 2) dependantType = 'IT-Verfahren';
+            if(dependant['type'] === 3) dependantType = 'Fachapplikation';
+            $('#abschluss_vonabhaengig tbody').append('<tr><td>' + htmlDecode(dependant['name']) + '</td><td>' + dependantType + '</td><td><a class="btn" href="?id=' + dependant['id'] + '" target="_blank">Anzeigen</a></td></tr>');
           });
         }).fail((jqXHR, error, errorThrown) => {
           console.error('Fehler beim Abruf von abhängigen Verfahren! HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
@@ -813,7 +830,7 @@ function genHTMLforPDF() {
   */
 
   /* TOM Liste formatieren */
-  toSend.find('#technicaltoms, #organizationaltoms').find('.panel-collapse').each(function() {
+  toSend.find('#tom_accordion').find('.panel-collapse').each(function() {
     if($(this).closest('.panel').hasClass('hidden')) {
       $(this).closest('.panel').prev('h6').remove();
       $(this).remove();
@@ -826,7 +843,7 @@ function genHTMLforPDF() {
 
   /* Nur TOMs in der PDF anzeigen, die dem Risiko entsprechen */
   let currRiskLevel = parseInt($('[name="massnahmen_risiko"]:checked').val());
-  toSend.find('#technicaltoms, #organizationaltoms').find('tr').each(function() {
+  toSend.find('#tom_accordion').find('tr').each(function() {
     if(parseInt($(this).data('risk')) > currRiskLevel) $(this).remove();
   });
 
@@ -836,15 +853,20 @@ function genHTMLforPDF() {
   toSend.append('<div class="text-center"><h5 class="info-text text-ul">Dokumentation online einsehen</h5><p><a href="' + link + '">' + link + '</a></p></div>');
 
   /* Links in Abhängigkeiten anpassen */
-  toSend.find('table#abschluss_vonabhaengig tr').each(function(idx) {
+  toSend.find('table#abschluss_vonabhaengig tr, table#abschluss_abhaengigkeit tr, table#itverfahren_abhaengigkeit tr').each(function(idx) {
     let abhLnk = $(this).find('td:last a');
     abhLnk.attr('href', baseURL + abhLnk.attr('href'));
+  });
+
+  toSend.find('table#abschluss_abhaengigkeit tr, table#itverfahren_abhaengigkeit tr').each(function(idx) {
+    $(this).find('td:last button').remove();
+    $(this).append($(this).find('td:last, th:last').clone());
   });
 
   /* Layout-Anpassungen (Buttons durch Text ersetzen, Typeahead und andere aktive Elemente entschärfen) */
   toSend.find('select[data-tool="selectpicker"], select.selectpicker, [id$="_add"], .typeahead__cancel-button, .typeahead__hint, .typeahead__result').remove();
   toSend.find('table[data-tool="endlessTable"] tr').each(function(idx) {
-    $(this).find('th:last, td:last').remove();
+      $(this).find('th:last, td:last').remove();
   });
   toSend.find('table[data-tool="endlessTable"]').each(function(idx){
     var tbl = $(this);
@@ -1338,14 +1360,14 @@ function generateTOMList() {
  * @return {undefined}
  */
 function filterTOMList(risklevel) {
-  let tomRows = $('#technical_accordion, #organizational_accordion').find('tbody tr');
+  let tomRows = $('#tom_accordion').find('tbody tr');
   tomRows.each(function() {
     let tomRisklevel = parseInt($(this).data('risk'));
     if(tomRisklevel <= risklevel) $(this).removeClass('hidden');
     if(tomRisklevel > risklevel) $(this).addClass('hidden');
   });
 
-  $('#technical_accordion, #organizational_accordion').find('div.panel').each((idx, elem) => {
+  $('#tom_accordion').find('div.panel').each((idx, elem) => {
     $(elem).removeClass('hidden');
 
     if($(elem).find('tbody tr:not(.hidden)').length === 0) $(elem).addClass('hidden');
@@ -1365,7 +1387,7 @@ function toggleTOMList(evt) {
     tomsMapping.forEach(function(row) {
       if(row['Category'] !== toggleCategory || row['Subcategory'] !== toggleSubcategory) return;
 
-      let targetID = row['Type'] == 1 ? 'technical_accordion' : 'organizational_accordion';
+      let targetID = 'tom_accordion';
       let targetElem = $('#' + targetID);
       let category = row['Category'].trim() + (row['Subcategory'] ? ' - ' + row['Subcategory'].trim() : '');
       let targetCategory = 'tom_category_' + category.replace(/\W/g, '_');
@@ -1386,8 +1408,15 @@ function toggleTOMList(evt) {
           targetElem.append('<div class="panel panel-default printHide"><div class="panel-heading" role="tab" id="heading_' + targetCategory + '"><h4 class="panel-title"><a role="button" data-toggle="collapse" data-parent="#' + targetID + '" href="#' + targetCategory + '" aria-expanded="true" aria-controls="' + targetCategory + '">' + category + '</a></h4></div></div>');
         }
 
+        let statusDesc = "Als Antworten bezüglich des Umsetzungsstatus der einzelnen Anforderungen kommen folgende Aussagen in Betracht:" +
+          "<ul style='text-align: left;'>" +
+            "<li><strong>Ja</strong> - Zu der Anforderung wurden geeignete Maßnahmen vollständig, wirksam und angemessen umgesetzt.</li>" +
+            "<li><strong>Teilweise</strong> - Die Anforderung wurde nur teilweise umgesetzt.</li>" +
+            "<li><strong>Nein</strong> - Die Anforderung wurde noch nicht erfüllt, also geeignete Maßnahmen sind größtenteils noch nicht umgesetzt worden.</li>" +
+            "<li><strong>Entbehrlich</strong> - Die Erfüllung der Anforderung ist in der vorgeschlagenen Art nicht notwendig, weil die Anforderung im betrachteten Informationsverbund nicht relevant ist (z. B. weil Dienste nicht aktiviert wurden) oder bereits durch Alternativmaßnahmen erfüllt wurde. Wird der Umsetzungsstatus einer Anforderung auf „entbehrlich“ gesetzt, müssen über die Kreuzreferenztabelle des jeweiligen Bausteins die zugehörigen elementaren Gefährdungen identifiziert werden. Wurden Alternativmaßnahmen ergriffen, muss begründet werden, dass das Risiko, das von allen betreffenden elementaren Gefährdungen ausgeht, angemessen minimiert wurde. Wenn Basisanforderungen nicht erfüllt werden, bleibt grundsätzlich ein erhöhtes Risiko bestehen. Anforderungen dürfen nicht auf „entbehrlich“ gesetzt werden, indem das Risiko für eine im Baustein identifizierte elementare Gefährdung über die Kreuzreferenztabelle pauschal akzeptiert oder ausgeschlossen wird." +
+          "</ul>";
         $('#heading_' + targetCategory).after('<div id="' + targetCategory + '" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading_' + targetCategory + '"><div class="panel-body"></div></div>');
-        $('#' + targetCategory).find('.panel-body').append('<table class="table table-striped table-hover"><thead><tr><th class="col-sm-1">ID</th><th class="col-sm-6">Beschreibung</th><th class="col-sm-2">Umgesetzt?</th><th class="col-sm-3">Erläuterung bzw. Begründung</th></tr></thead><tbody></tbody></table>');
+        $('#' + targetCategory).find('.panel-body').append('<table class="table table-striped table-hover"><thead><tr><th class="col-sm-1">ID</th><th class="col-sm-6">Beschreibung</th><th class="col-sm-2">Umgesetzt? <i data-toggle="tooltip" title="' + statusDesc + '" class="fa fa-question-circle-o fa-lg"></i></th><th class="col-sm-3">Erläuterung bzw. Begründung</th></tr></thead><tbody></tbody></table>');
         $('#heading_' + targetCategory + ', #heading_' + targetCategory + ' a').click((evt) => {
           if(evt.target.nodeName === "A") return;
           $(evt.target).find('a').click();
@@ -1396,25 +1425,25 @@ function toggleTOMList(evt) {
 
       let className = row['Risklevel'] == 1 ? 'success' : row['Risklevel'] == 2 ? 'warning' : 'danger';
       let tomID = row['Identifier'].trim().replace(/ /g, '_');
-      let tomContent = row['Title'] ? row['Title'] + '<i data-toggle="tooltip" title="' + row['Description'] + '" class="fa fa-question-circle-o fa-lg"></i>' : row['Description'];
+      let tomContent = row['Title'] ? row['Title'] + ' <i data-toggle="tooltip" title="' + row['Description'] + '" class="fa fa-question-circle-o fa-lg"></i>' : row['Description'];
       let tableBody = $('#' + targetCategory).find('tbody');
 
       let tomDropdown = $('<select data-tool="selectpicker" name="massnahmen_' + tomID + '"></select>')
-        .append('<option value="0" selected>Nein</option>')
         .append('<option value="1">Ja</option>')
+        .append('<option value="0" selected>Nein</option>')
         .append('<option value="2">Teilweise</option>')
-        .append('<option value="3">Nicht anwendbar</option>')
-        .append('<option value="4">Nicht sinnvoll</option>');
+        .append('<option value="4">Entbehrlich</option>');
       tableBody.append('<tr data-risk="' + row['Risklevel'] + '" class="' + className + '"><td>' + row['Identifier'] + '</td><td>' + tomContent + '</td><td>' + tomDropdown[0].outerHTML + '</td><td><textarea name="massnahmen_' + tomID + '_kommentar" class="form-control"></textarea></td></tr>');
     });
 
     // Tooltips aktivieren
-    $('#technical_accordion, #organizational_accordion').find('[data-toggle="tooltip"]').tooltip({
-      placement: 'auto'
+    $('#tom_accordion').find('[data-toggle="tooltip"]').tooltip({
+      placement: 'auto',
+      html: true
     });
 
     // Selectpicker aktivieren
-    $('#technical_accordion, #organizational_accordion').find('select[data-tool="selectpicker"]').selectpicker();
+    $('#tom_accordion').find('select[data-tool="selectpicker"]').selectpicker();
 
     // Risikofilter anwenden
     filterTOMList(parseInt($('[name=massnahmen_risiko]:checked').val()));
@@ -1529,21 +1558,22 @@ Promise.all(promises).then(function() {
   });
 
   // Zeigt die aktuelle Beschreibung der abhängigen Verfahren an
-  $('#abschluss_abhaengigkeit').on('change', 'input[name="abschluss_abhaengigkeit_id[]"]', function() {
+  $('#abschluss_abhaengigkeit, #itverfahren_abhaengigkeit, #verarbeitung_abhaengigkeit').on('change', 'input[name="abschluss_abhaengigkeit_id[]"], input[name="itverfahren_abhaengigkeit_id[]"], input[name="verarbeitung_abhaengigkeit_id[]"]', function() {
     var idField = $(this);
     var descText = idField.closest('td').next('td').find('textarea');
     if(idField.val() !== '') {
       $.get(backendPath, { 'action': 'get', 'id':  idField.val(), 'debug': debug}).done(function(data) {
         if(!data['success']) {
-          showError('Auslesen der Abhängigkeiten', 'Scheinbar existiert ein Verfahren nicht mehr, von dem dieses Verfahren abhängig ist!');
-          console.error('Fehler beim Abruf von abhängigen Verfahren! Fehler: ' + data['error']);
+          showError('Auslesen der Abhängigkeiten', 'Scheinbar existiert eine Abhängigkeit nicht mehr!');
+          console.error('Fehler beim Abruf von Abhängigkeiten! Fehler: ' + data['error']);
           descText.val('<Das Verfahren existiert nicht!>');
           return;
         }
-        idField.closest('td').find('input[name="abschluss_abhaengigkeit_name[]"]').val(htmlDecode(data['data'][0]['Bezeichnung']) + ' [' + htmlDecode(data['data'][0]['Fachabteilung']) + ']');
+        idField.closest('td').find('input[name="abschluss_abhaengigkeit_name[]"], input[name="itverfahren_abhaengigkeit_name[]"], input[name="verarbeitung_abhaengigkeit_name[]"]').val(htmlDecode(data['data'][0]['Bezeichnung']) + ' [' + htmlDecode(data['data'][0]['Fachabteilung']) + ']');
+        idField.closest('tr').find('a').attr('href', '?id=' + idField.val());
         descText.val(htmlDecode(data['data'][0]['Beschreibung']));
       }).fail((jqXHR, error, errorThrown) => {
-        console.error('Fehler beim Abruf von abhängigen Verfahren! HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
+        console.error('Fehler beim Abruf von Abhängigkeiten! HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
         descText.val('<Fehler beim Abrufen>');
       });
     }
@@ -1654,6 +1684,7 @@ Promise.all(promises).then(function() {
   // Titel anhand Bezeichnung aktualisieren
   $('input[name="allgemein_bezeichnung"]').on('input', (e) => {
     document.title = e.target.value + ' - ' + document.title.split(' - ').slice(-1)[0];
+    $('#title').text('Dokumentation von ' + e.target.value);
   });
 
   // Warnung vor dem Schließen der Webseite, falls ungespeicherte Änderungen vorhanden sind
@@ -1684,6 +1715,11 @@ Promise.all(promises).then(function() {
 
   // Überprüpft, ob Angaben geändert wurden
   $('form').on('change', '[name!=""]', (e) => { changedValues = true; });
+
+  // DSB Elemente anzeigen
+  if(userIsDSB) {
+    $('.dsbOnly').removeClass('dsbOnly');
+  }
 
   debugLog('Setup beendet!');
 

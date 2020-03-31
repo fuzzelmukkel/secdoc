@@ -112,7 +112,7 @@
 
     # MPDF initialisieren
     $mpdf = new \Mpdf\Mpdf(['debug' => false, 'CSSselectMedia' => 'screen', 'mode' => 'utf-8', 'format' => 'A4']);
-    $mpdf->SetTitle('Verfahrensdokumentation - ' . $title . ($isDraft ? ' (ENTWURF)' : ''));
+    $mpdf->SetTitle('SecDoc Dokumentation - ' . $title . ($isDraft ? ' (ENTWURF)' : ''));
     $mpdf->SetAuthor($author);
     $mpdf->SetCreator($prog_name . ' v' . $prog_version);
 
@@ -625,6 +625,48 @@ EOH;
       break;
     }
 
+    # Durchsucht die für den aktuellen Nutzer einsehbaren Fachapplikationen
+    case 'searchfachapp': {
+      if($userIsDSB) {
+        $list = $dbcon->listVerfahrenDSB($search);
+      }
+      else {
+        $list = $dbcon->listVerfahrenOwn($userId, $userGroups, $search);
+        $list = array_merge($list, $dbcon->listVerfahrenShared($userId, $userGroups, $search));
+      }
+
+      $result = array();
+      foreach($list as $entry) {
+        if(intval($entry['Typ']) === 3) array_push($result, array('value' => $entry['ID'], 'label' => $entry['Bezeichnung'] . " [" . $entry['Fachabteilung'] . "]"));
+      }
+
+      $output['data'] = $result;
+      $output['count'] = count($result);
+      $output['success'] = TRUE;
+      break;
+    }
+
+    # Durchsucht die für den aktuellen Nutzer einsehbaren Verarbeitungstätigkeiten
+    case 'searchverarbeitung': {
+      if($userIsDSB) {
+        $list = $dbcon->listVerfahrenDSB($search);
+      }
+      else {
+        $list = $dbcon->listVerfahrenOwn($userId, $userGroups, $search);
+        $list = array_merge($list, $dbcon->listVerfahrenShared($userId, $userGroups, $search));
+      }
+
+      $result = array();
+      foreach($list as $entry) {
+        if(intval($entry['Typ']) === 1) array_push($result, array('value' => $entry['ID'], 'label' => $entry['Bezeichnung'] . " [" . $entry['Fachabteilung'] . "]"));
+      }
+
+      $output['data'] = $result;
+      $output['count'] = count($result);
+      $output['success'] = TRUE;
+      break;
+    }
+
     # Liest ein bestehendes Verfahren aus (sowohl bearbeitbare, wie auch nur einsehbare)
     case 'get': {
       if(empty($verfahrensId)) {
@@ -672,7 +714,7 @@ EOH;
       $data = Utils::encodeHTMLArray($data);
 
       # Verfahren erstellen
-      $id = $dbcon->addVerfahren($userId, $newId, intval($data['allgemein_typ']), $data['allgemein_bezeichnung'], $data['allgemein_datum'], $data['allgemein_beschreibung'], intval($data['massnahmen_risiko']), $data['allgemein_abteilung'], $data['allgemein_ivv'], $data['allgemein_fachlich_kennung'], $data['allgemein_technisch_kennung'], json_encode($data));
+      $id = $dbcon->addVerfahren($userId, $newId, intval($data['allgemein_typ']), $data['allgemein_bezeichnung'], $data['allgemein_datum'], $data['allgemein_beschreibung'], intval($data['massnahmen_risiko']), $data['allgemein_abteilung'], $data['allgemein_ivv'] ?: '', $data['allgemein_fachlich_kennung'] ?: '', $data['allgemein_technisch_kennung'] ?: '', json_encode($data));
 
       # Berechtigungen eintragen (falls schon gegeben)
       $newPermissions = [];
@@ -709,6 +751,20 @@ EOH;
       $newDependencies = [];
       if(isset($data['abschluss_abhaengigkeit_id']) && is_array($data['abschluss_abhaengigkeit_id'])) {
         foreach($data['abschluss_abhaengigkeit_id'] as $dependency) {
+          $dependency = intval($dependency);
+          if($dependency !== 0) array_push($newDependencies, $dependency);
+        }
+      }
+
+      if(isset($data['itverfahren_abhaengigkeit_id']) && is_array($data['itverfahren_abhaengigkeit_id'])) {
+        foreach($data['itverfahren_abhaengigkeit_id'] as $dependency) {
+          $dependency = intval($dependency);
+          if($dependency !== 0) array_push($newDependencies, $dependency);
+        }
+      }
+
+      if(isset($data['verarbeitung_abhaengigkeit_id']) && is_array($data['verarbeitung_abhaengigkeit_id'])) {
+        foreach($data['verarbeitung_abhaengigkeit_id'] as $dependency) {
           $dependency = intval($dependency);
           if($dependency !== 0) array_push($newDependencies, $dependency);
         }
@@ -755,7 +811,7 @@ EOH;
       $data = Utils::encodeHTMLArray($data);
 
       # Verfahren aktualisieren
-      $success = $dbcon->updateVerfahren($verfahrensId, $userId, $userGroups, intval($data['allgemein_typ']), $data['allgemein_bezeichnung'], $data['allgemein_datum'], $data['allgemein_beschreibung'], intval($data['massnahmen_risiko']), $data['allgemein_abteilung'], $data['allgemein_ivv'], $data['allgemein_fachlich_kennung'], $data['allgemein_technisch_kennung'], isset($data['meta_sichtbarkeit']) ? $data['meta_sichtbarkeit'] : 0, json_encode($data), $userIsDSB);
+      $success = $dbcon->updateVerfahren($verfahrensId, $userId, $userGroups, intval($data['allgemein_typ']), $data['allgemein_bezeichnung'], $data['allgemein_datum'], $data['allgemein_beschreibung'], intval($data['massnahmen_risiko']), $data['allgemein_abteilung'], $data['allgemein_ivv'] ?: '', $data['allgemein_fachlich_kennung'] ?: '', $data['allgemein_technisch_kennung'] ?: '', isset($data['meta_sichtbarkeit']) ? $data['meta_sichtbarkeit'] : 0, json_encode($data), $userIsDSB);
 
       # Berechtigungen aktualisieren
       $newPermissions = [];
@@ -792,6 +848,20 @@ EOH;
       $newDependencies = [];
       if(isset($data['abschluss_abhaengigkeit_id']) && is_array($data['abschluss_abhaengigkeit_id'])) {
         foreach($data['abschluss_abhaengigkeit_id'] as $dependency) {
+          $dependency = intval($dependency);
+          if($dependency !== 0) array_push($newDependencies, $dependency);
+        }
+      }
+
+      if(isset($data['itverfahren_abhaengigkeit_id']) && is_array($data['itverfahren_abhaengigkeit_id'])) {
+        foreach($data['itverfahren_abhaengigkeit_id'] as $dependency) {
+          $dependency = intval($dependency);
+          if($dependency !== 0) array_push($newDependencies, $dependency);
+        }
+      }
+
+      if(isset($data['verarbeitung_abhaengigkeit_id']) && is_array($data['verarbeitung_abhaengigkeit_id'])) {
+        foreach($data['verarbeitung_abhaengigkeit_id'] as $dependency) {
           $dependency = intval($dependency);
           if($dependency !== 0) array_push($newDependencies, $dependency);
         }
@@ -1113,7 +1183,12 @@ EOH;
     }
 
     case 'gettoms': {
-      $output['data'] = $dbcon->getTOMs();
+      if(empty($data) || empty($data['tier'])) {
+        $output['data'] = $dbcon->getTOMs();
+      }
+      else {
+        $output['data'] = $dbcon->getTOMs(intval($data['tier']));
+      }
       $output['count'] = count($output['data']);
       break;
     }

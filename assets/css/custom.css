@@ -148,3 +148,8 @@ input.customError {
     overflow-x: hidden;
     max-height: 250px;
 }
+
+/* Klasse zum Verstecken von Elementen für normale Nutzer */
+.dsbOnly {
+  display: none;
+}

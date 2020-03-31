@@ -37,7 +37,7 @@ var version = '';
  * @global
  * @type {String}
  */
-var page = ['dsbview', 'home', 'login', 'wizit', 'wizproc'].includes(GetURLParameter('page')) ? GetURLParameter('page') : 'home';
+var page = ['dsbview', 'home', 'login', 'wizit', 'wizproc', 'wizapp'].includes(GetURLParameter('page')) ? GetURLParameter('page') : 'home';
 
 /**
  * ID der Dokumentation, die geladen werden soll
@@ -281,12 +281,12 @@ function getPDFFromServer(id, draft = false) {
 
     // PDF-Anzeige starten (Unterscheidung, ob Edge genutzt wird)
     if(window.navigator && window.navigator.msSaveOrOpenBlob) {
-      window.navigator.msSaveOrOpenBlob(blob, 'Verfahrensdokumentation_' + id + '_' + lastUpdate.getFullYear() + ('0' + (lastUpdate.getMonth() + 1)).slice(-2) + ('0' + lastUpdate.getDate()).slice(-2) + ('0' + lastUpdate.getHours()).slice(-2) + ('0' + lastUpdate.getMinutes()).slice(-2)  + (draft ? '_DRAFT' : '' ) + '.pdf');
+      window.navigator.msSaveOrOpenBlob(blob, 'SecDoc_Dokumentation_' + id + '_' + lastUpdate.getFullYear() + ('0' + (lastUpdate.getMonth() + 1)).slice(-2) + ('0' + lastUpdate.getDate()).slice(-2) + ('0' + lastUpdate.getHours()).slice(-2) + ('0' + lastUpdate.getMinutes()).slice(-2)  + (draft ? '_DRAFT' : '' ) + '.pdf');
     }
     else {
       let url = window.URL.createObjectURL(blob);
       let download = $('<a></a>');
-      download.attr('href', url).attr('download', 'Verfahrensdokumentation_' + id + '_' + lastUpdate.getFullYear() + ('0' + (lastUpdate.getMonth() + 1)).slice(-2) + ('0' + lastUpdate.getDate()).slice(-2) + ('0' + lastUpdate.getHours()).slice(-2) + ('0' + lastUpdate.getMinutes()).slice(-2)  + (draft ? '_DRAFT' : '' ) + '.pdf').addClass('hidden');;
+      download.attr('href', url).attr('download', 'SecDoc_Dokumentation_' + id + '_' + lastUpdate.getFullYear() + ('0' + (lastUpdate.getMonth() + 1)).slice(-2) + ('0' + lastUpdate.getDate()).slice(-2) + ('0' + lastUpdate.getHours()).slice(-2) + ('0' + lastUpdate.getMinutes()).slice(-2)  + (draft ? '_DRAFT' : '' ) + '.pdf').addClass('hidden');;
       $('body').append(download);
       download[0].click();
       window.URL.revokeObjectURL(url);
@@ -331,7 +331,7 @@ function loadLogin() {
 function loadSubpage() {
   $('#loginLabel').removeClass('hidden');
   $('#logoutLabel').removeClass('hidden');
-  
+
   /*
    * Nutzerkennung holen und anzeigen
    */
@@ -358,7 +358,11 @@ function loadSubpage() {
   if(page === 'home' && (loadIdMain > 0 || copyIdMain > 0)) {
     $.getJSON(backendPath + '?action=get&id=' + (copyIdMain ? copyIdMain : loadIdMain)+ (debug ? '&debug=true' : '')).done((data) => {
       if(data['success']) {
-        page = parseInt(data['data'][0]['Typ']) === 2 ? 'wizit' : 'wizproc';
+        page = 'home';
+        if(parseInt(data['data'][0]['Typ']) === 1) page = 'wizproc';
+        if(parseInt(data['data'][0]['Typ']) === 2) page = 'wizit';
+        if(parseInt(data['data'][0]['Typ']) === 3) page = 'wizapp';
+
         $.get('assets/html/' + page + '.inc.html').done((data) => { $('#content').html(data); }).fail((jqXHR, error, errorThrown) => {
           showError('Laden der Unterseite "' + page + '"', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
           setOverlay(false);
