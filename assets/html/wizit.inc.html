@@ -165,50 +165,6 @@
         <button type="button" id="systeme_software_add" class="btn btn-wd btn-success"><i class="fa fa-plus"></i> Hinzufügen</button>
       </div>
 
-      <!-- Tabelle für beteiligte Klienten -->
-      <div class="col-sm-12">
-        <h5 class="info-text text-ul">Beteiligte Klienten <i data-toggle="tooltip" data-html="true" title="Arbeitsplatzrechner, mobile Rechner, Terminal, Videokamera usw." class="fa fa-question-circle-o fa-lg"></i></h5>
-        <div class="form-check text-center">
-          <label class="form-check-label"><input class="form-check-input" name="systeme_klienten_webanwendung" type="checkbox" value="1"> Es handelt sich um eine Webanwendung, bei der die Klienten nicht näher bestimmbar sind</label>
-        </div>
-      </div>
-      <div class="col-sm-offset-1 col-sm-10">
-        <table data-tool="endlessTable" id="systeme_klienten" class="table table-striped table-hover btn-table">
-          <thead>
-            <tr>
-              <th class="col-sm-2">Anzahl</th>
-              <th class="col-sm-3">Typ</th>
-              <th class="col-sm-3">Betriebssystem</th>
-              <th class="col-sm-3">Anmerkungen</th>
-              <th class="col-sm-1"></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>
-                <input type="number" class="form-control" name="systeme_klienten_anzahl[]" min="1" value="1">
-              </td>
-              <td>
-                <input data-tool="typeahead" data-action="getsuggestions" data-minlength="0" data-dynamic="false" data-cache="true" data-display="entry" data-path="data.systeme_klienten_typ.de" type="text" class="form-control" name="systeme_klienten_typ[]" placeholder="Bsp.: Laptop">
-                <div class="form-group">
-                  <label>Genutzte Software:</label><br>
-                  <select class="nutzt_systeme_software_nummer" data-tool="selectpicker" name="systeme_klienten_software[]" multiple></select>
-                </div>
-              </td>
-              <td>
-                <input type="text" data-tool="typeahead" data-action="searchOS" data-dynamic="true" data-hiddenfield="systeme_klienten_betriebssystemcpe[]" class="form-control" name="systeme_klienten_betriebssystem[]" placeholder="Bsp.: Windows 10">
-                <input type="hidden" name="systeme_klienten_betriebssystemcpe[]">
-              </td>
-              <td>
-                <textarea class="form-control" rows="3" name="systeme_klienten_anmerkung[]" placeholder="Bsp.: Der Klient ist mit einer SSD ausgestattet und permanent mit dem lokalen Netzwerk und dem Internet verbunden. Die normalen Anwender erhalten Zugänge mit eingeschränkten Rechten."></textarea>
-              </td>
-              <td class="text-center"><button type="button" class="systeme_klienten_del btn btn-danger"><i class="fa fa-minus"></i> Löschen</button></td>
-            </tr>
-          </tbody>
-        </table>
-        <button type="button" id="systeme_klienten_add" class="btn btn-wd btn-success"><i class="fa fa-plus"></i> Hinzufügen</button>
-      </div>
-
       <!-- Tabelle für beteiligte Server -->
       <div class="col-sm-12">
         <h5 class="info-text text-ul">Beteiligte Server <i data-toggle="tooltip" title="Bei virtuellen Instanzen sind sowohl bei den Angaben der verwendeten Software der verwendete Hypervisor zu ergänzen, als auch die beteiligten Server, auf denen die Infrastruktur des Hypervisors läuft, im Anmerkungsfeld zu referenzieren. Sollte diese Infrastruktur aus mehr als einem Server oder aus einem Servercluster bestehen, so reicht es aus, stellvertretend einen repräsentativen Server zu beschreiben." class="fa fa-question-circle-o fa-lg"></i></h5>

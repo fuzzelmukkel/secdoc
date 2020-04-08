@@ -539,6 +539,8 @@ function saveAsObject() {
  * @returns {undefined}
  */
 function loadFromJSON(values) {
+  let missingFields = [];
+
   endlessTables.forEach(function(table) {
     removeTableRows(table);
   });
@@ -572,6 +574,7 @@ function loadFromJSON(values) {
 
       if(inputs.length === 0) {
         debugLog('Konnte keine Eingabefelder mit Namen "' + val + '" finden! Überspringe...');
+        missingFields.push(val);
         return true;
       }
 
@@ -609,11 +612,18 @@ function loadFromJSON(values) {
       }
       else {
         debugLog('Keine passenden oder mehrere Eingabefelder mit Namen "' + val + '" gefunden! Überspringe...');
+        missingFields.push(val);
       }
     }
   });
   $('select.selectpicker, select[data-tool=selectpicker]').selectpicker('refresh');
   $('select.selectpicker, select[data-tool=selectpicker]').selectpicker('render');
+
+  // Meldung über gespeicherte Eingabefelder, die nicht mehr vorhanden sind anzeigen (nur DSB)
+  if(userIsDSB && missingFields.length > 0) {
+    let missingFieldsHTML = '<li>' + missingFields.join('</li><li>') + '</li>';
+    showError('Zuordnen gespeicherter Felder', 'Folgende gespeicherte Felder existieren nicht mehr und die eingegebenen Daten gehen beim Speichern verloren: <ul>' + missingFieldsHTML + '</ul>');
+  }
 }
 
 /**
