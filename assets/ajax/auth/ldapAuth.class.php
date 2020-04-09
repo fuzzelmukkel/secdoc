@@ -223,7 +223,7 @@ class ldapAuth extends Auth {
     # Check if login exists
     if(!$this->checkSession()) return FALSE;
 
-    if(empty($adminGroups)) return TRUE;
+    if(empty($adminGroups)) return FALSE;
 
     $userGroups = $this->getUserGroups();
 
@@ -246,7 +246,7 @@ class ldapAuth extends Auth {
     # Check if login exists
     if(!$this->checkSession()) return FALSE;
 
-    if(empty($dpoGroups)) return TRUE;
+    if(empty($dpoGroups)) return FALSE;
 
     $userGroups = $this->getUserGroups();
 
