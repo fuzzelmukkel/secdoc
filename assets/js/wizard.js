@@ -536,7 +536,7 @@ function saveAsObject() {
 /**
  * Liest ein JSON-String ein und stellt die Eingaben wieder her (wenn keine passenden Felder gefunden werden, werden diese ignoriert)
  * @param {String} values JSON-String mit Namen der Eingabefelder als Schlüssel
- * @returns {undefined}
+ * @returns {Boolean}
  */
 function loadFromJSON(values) {
   let missingFields = [];
@@ -544,7 +544,13 @@ function loadFromJSON(values) {
   endlessTables.forEach(function(table) {
     removeTableRows(table);
   });
-  values = JSON.parse(values);
+
+  try {
+    values = JSON.parse(values);
+  } catch(e) {
+    showError('Laden der Dokumentation', 'Kein gültiges JSON - ' + e);
+    return false;
+  }
 
   // Fallback für fehlende TOM Kategorie Auswahlfelder
   if(Object.keys(values).filter((elem) => (elem.search('tom_toggle_') >= 0)).length === 0) {
@@ -624,6 +630,8 @@ function loadFromJSON(values) {
     let missingFieldsHTML = '<li>' + missingFields.join('</li><li>') + '</li>';
     showError('Zuordnen gespeicherter Felder', 'Folgende gespeicherte Felder existieren nicht mehr und die eingegebenen Daten gehen beim Speichern verloren: <ul>' + missingFieldsHTML + '</ul>');
   }
+
+  return true;
 }
 
 /**
@@ -936,6 +944,115 @@ function genHTMLforPDF() {
 
   console.timeEnd('HTML-Code-Generierung für PDF');
   return htmlCode;
+}
+
+/**
+ * Exportiert die aktuell geladene Dokumentation als JSON-Datei
+ * @return {undefined}
+ */
+function exportJSON() {
+  setOverlay(true);
+
+  // Aktuelle Dokumentation in JSON umwandeln
+  let currObj  = saveAsObject();
+  let fieldsToRemove = [
+    'meta_id',
+    'meta_lastupdate',
+    'allgemein_typ',
+    'abschluss_abhaengigkeit_id',
+    'itverfahren_abhaengigkeit_id',
+    'verarbeitung_abhaengigkeit_id',
+    'meta_gruppen_kennung',
+    'meta_gruppen_name',
+    'meta_gruppen_schreiben',
+    'meta_nutzer_kennung',
+    'meta_nutzer_name',
+    'meta_nutzer_schreiben',
+    'allgemein_fachlich_kennung',
+    'allgemein_technisch_kennung'
+  ];
+  let fieldsToReassign = [
+    'abschluss_abhaengigkeit_name',
+    'itverfahren_abhaengigkeit_name',
+    'verarbeitung_abhaengigkeit_name',
+    'allgemein_fachlich_name',
+    'allgemein_technisch_name'
+  ];
+
+  // Unnötige Felder entfernen
+  fieldsToRemove.forEach((field) => { delete currObj[field]; });
+
+  // Anmerkung für Abhängigkeiten
+  fieldsToReassign.forEach((field) => {
+    if(currObj[field] !== undefined) {
+      if(Array.isArray(currObj[field])) {
+        currObj[field].forEach((entry, idx) => { currObj[field][idx] = "(ERSETZEN) " + entry; });
+      }
+      else {
+        currObj[field] = "(ERSETZEN) " + currObj[field];
+      }
+    }
+  });
+
+  try {
+    let currJSON = JSON.stringify(currObj);
+    let dataStr  = "data:text/json;charset=utf-8," + encodeURIComponent(currJSON);
+
+    // Download-Dialog für JSON-Date
+    let download = $('<a></a>');
+    download.attr('href', dataStr).attr('download', 'SecDoc_' + modeName[0] + '_' + currObj.allgemein_bezeichnung.replace(/\W/g, '_') + '_' + loadId + '.json').addClass('hidden');
+    $('body').append(download);
+    download[0].click();
+    download.remove();
+  } catch(e) {
+    showError('Exportieren', e);
+  }
+  setOverlay(false);
+}
+
+/**
+ * Importiert eine JSON-Datei in die aktuelle Dokumentation
+ * @param {Object} file Verweis auf Datei vom Dateidialog
+ * @return {undefined}
+ */
+function importJSON(file) {
+  setOverlay(true);
+
+  let fileReader = new FileReader();
+  fileReader.onload = (evt) => {
+    if(loadFromJSON(evt.target.result)) {
+      modal.find('.modal-title').text('Import erfolgreich');
+      modal.find('.modal-body').html('<div class="alert alert-success">Der Import wurde erfolgreich durchgeführt. Die Änderungen müssen zum Übernehmen abgespeichert werden.</div>');
+      modal.modal();
+    }
+    else {
+      showError('Importieren', 'Dokumentation konnte nicht importiert werden. Eventuell ist die Datei beschädigt oder im falschen Format!');
+    }
+  };
+  fileReader.readAsText(file);
+
+  setOverlay(false);
+}
+
+/**
+ * Zeigt einen Dialog zum JSON-Import an
+ * @return {undefined}
+ */
+function showImportDialog() {
+  setOverlay(true);
+
+  modal.find('.modal-title').text('Import einer Dokumentation');
+  let modalBody = modal.find('.modal-body');
+  modalBody.html('<div class="alert alert-danger"><p><strong>Achtung:</strong> Das Importieren überschreibt die aktuellen Inhalte der geladenen Dokumentation! Die Änderungen werden beim nächsten Speichern übernommen.<p></div>');
+  modalBody.append('<div class="text-center form-group"><label for="importFile">JSON Datei zum Importieren auswählen</label><input type="file" id="importFile" accept=".json,application/json" class="btn center-block" /></div>');
+
+  modalBody.find('#importFile').change((evt) => {
+    importJSON(evt.target.files[0]);
+  });
+
+  modal.modal();
+
+  setOverlay(false);
 }
 
 /*
@@ -1706,6 +1823,10 @@ Promise.all(promises).then(function() {
     e.returnValue = msg; // For Chrome
     return msg;
   });
+
+  // Ex-/Import Handler
+  $('#exportBtn').click((evt) => {exportJSON()});
+  $('#importBtn').click((evt) => {showImportDialog()});
 
   console.timeEnd('Spezielle Handler initialisieren');
 
