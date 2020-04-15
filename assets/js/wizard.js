@@ -1020,15 +1020,43 @@ function importJSON(file) {
 
   let fileReader = new FileReader();
   fileReader.onload = (evt) => {
+    let nameToLoad = '';
+    // Format prüfen + Bestätigung mit Name erfragen
+    try {
+      let jsonObj = JSON.parse(evt.target.result);
+
+      if(jsonObj['allgemein_bezeichnung'] === undefined) throw new Error('Keine gültige SecDoc Dokumentation');
+
+      nameToLoad = jsonObj['allgemein_bezeichnung'];
+    } catch(e) {
+      showError('Importieren', 'Die gewählte Datei kann nicht verarbeitet werden! - ' + e);
+      return;
+    }
+
+    let confirmFinish = confirm('Wollen Sie die SecDoc Dokumentation "' + nameToLoad + '" wirklich importieren?');
+
+    if(!confirmFinish) {
+      return;
+    }
+
+    modal.modal('hide');
+    setOverlay(true);
+    loadEmpty();
     if(loadFromJSON(evt.target.result)) {
       modal.find('.modal-title').text('Import erfolgreich');
       modal.find('.modal-body').html('<div class="alert alert-success">Der Import wurde erfolgreich durchgeführt. Die Änderungen müssen zum Übernehmen abgespeichert werden.</div>');
       modal.modal();
     }
     else {
-      showError('Importieren', 'Dokumentation konnte nicht importiert werden. Eventuell ist die Datei beschädigt oder im falschen Format!');
+      showError('Importieren', 'Eventuell ist die Datei beschädigt oder im falschen Format!');
     }
+    setOverlay(false);
   };
+
+  fileReader.onerror = (e) => {
+    showError('Importieren', 'Die gewählte Datei konnte nicht gelesen werden! - ' + e);
+  };
+
   fileReader.readAsText(file);
 
   setOverlay(false);
@@ -1044,7 +1072,29 @@ function showImportDialog() {
   modal.find('.modal-title').text('Import einer Dokumentation');
   let modalBody = modal.find('.modal-body');
   modalBody.html('<div class="alert alert-danger"><p><strong>Achtung:</strong> Das Importieren überschreibt die aktuellen Inhalte der geladenen Dokumentation! Die Änderungen werden beim nächsten Speichern übernommen.<p></div>');
-  modalBody.append('<div class="text-center form-group"><label for="importFile">JSON Datei zum Importieren auswählen</label><input type="file" id="importFile" accept=".json,application/json" class="btn center-block" /></div>');
+  modalBody.append('<div class="text-center form-group"><label for="importFile">JSON Datei zum Importieren auswählen</label><input type="file" id="importFile" accept=".json,application/json" class="btn center-block hidden" /><div id="dropFile" class="text-center alert alert-info"></div></div>');
+  modalBody.find('#dropFile').append('<p class="text-center"><i class="fa fa-file fa-2x"></i></p><p class="text-center">Klicken für Auswahldialog oder Datei hineinziehen...</p>');
+
+  modalBody.find('#dropFile').on('dragover', (evt) => {
+    evt.preventDefault();
+    evt.stopPropagation();
+    modalBody.find('#dropFile').removeClass('alert-info').addClass('alert-success');
+  });
+  modalBody.find('#dropFile').on('dragleave', (evt) => {
+    evt.preventDefault();
+    evt.stopPropagation();
+    modalBody.find('#dropFile').removeClass('alert-success').addClass('alert-info');
+  });
+  modalBody.find('#dropFile').on('drop', (evt) => {
+    evt.preventDefault();
+    evt.stopPropagation();
+
+    if(evt.originalEvent.dataTransfer.files.length > 0) {
+      importJSON(evt.originalEvent.dataTransfer.files[0]);
+    }
+
+  });
+  modalBody.find('#dropFile').click(() => { modalBody.find('#importFile').click(); });
 
   modalBody.find('#importFile').change((evt) => {
     importJSON(evt.target.files[0]);
