@@ -1021,7 +1021,7 @@ function importJSON(file) {
   let fileReader = new FileReader();
   fileReader.onload = (evt) => {
     let nameToLoad = '';
-    // Format prüfen + Bestätigung mit Name erfragen
+
     try {
       let jsonObj = JSON.parse(evt.target.result);
 
@@ -1092,6 +1092,8 @@ function showImportDialog() {
     if(evt.originalEvent.dataTransfer.files.length > 0) {
       importJSON(evt.originalEvent.dataTransfer.files[0]);
     }
+
+    modalBody.find('#dropFile').removeClass('alert-success').addClass('alert-info');
 
   });
   modalBody.find('#dropFile').click(() => { modalBody.find('#importFile').click(); });
