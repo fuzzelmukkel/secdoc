@@ -538,10 +538,11 @@ function saveAsObject() {
  * @param {String} values JSON-String mit Namen der Eingabefelder als Schlüssel
  * @returns {Boolean}
  */
-function loadFromJSON(values) {
+function loadFromJSON(values, keepAccess = false) {
   let missingFields = [];
 
   endlessTables.forEach(function(table) {
+    if(keepAccess && ['meta_gruppen', 'meta_nutzer'].includes(table)) return;
     removeTableRows(table);
   });
 
@@ -1033,24 +1034,40 @@ function importJSON(file) {
       return;
     }
 
-    let confirmFinish = confirm('Wollen Sie die SecDoc Dokumentation "' + nameToLoad + '" wirklich importieren?');
-
-    if(!confirmFinish) {
-      return;
-    }
-
-    modal.modal('hide');
-    setOverlay(true);
-    loadEmpty();
-    if(loadFromJSON(evt.target.result)) {
-      modal.find('.modal-title').text('Import erfolgreich');
-      modal.find('.modal-body').html('<div class="alert alert-success">Der Import wurde erfolgreich durchgeführt. Die Änderungen müssen zum Übernehmen abgespeichert werden.</div>');
+    if(loadId !== 0) {
+      modal.find('.modal-title').text('Import einer Dokumentation');
+      modal.find('.modal-body').html('<div class="alert alert-warning">Sie haben bereits eine Dokumentation geladen. Soll eine neue Dokumentation angelegt oder die aktuell geladene Dokumentation überschrieben werden? Gesetzte Zugriffsberechtigungen auf der letzten Seite werden beim Überschreiben beibehalten.</div>');
+      modal.find('.modal-body').append('<div class="text-center"><button id="importEmptyBtn" class="btn btn-success">Neue Dokumentation</button><button id="importCurrBtn" class="btn btn-danger">Vorhandene überschreiben</button></div>');
       modal.modal();
+
+      modal.find('#importEmptyBtn').click(() => { triggerLoadJSON(true); });
+      modal.find('#importCurrBtn').click(() => { triggerLoadJSON(false); });
     }
     else {
-      showError('Importieren', 'Eventuell ist die Datei beschädigt oder im falschen Format!');
+      triggerLoadJSON(true);
     }
-    setOverlay(false);
+
+    function triggerLoadJSON(createNew) {
+      modal.modal('hide');
+      setOverlay(true);
+
+      if(createNew) {
+        loadEmpty();
+      }
+      else {
+        $('#toggletoms').find('input[name^="tom_toggle"]').prop('checked', false).trigger('change');
+      }
+
+      if(loadFromJSON(evt.target.result, true)) {
+        modal.find('.modal-title').text('Import erfolgreich');
+        modal.find('.modal-body').html('<div class="alert alert-success">Der Import wurde erfolgreich durchgeführt. Die Änderungen müssen zum Übernehmen abgespeichert werden.</div>');
+        modal.modal();
+      }
+      else {
+        showError('Importieren', 'Eventuell ist die Datei beschädigt oder im falschen Format!');
+      }
+      setOverlay(false);
+    }
   };
 
   fileReader.onerror = (e) => {
@@ -1071,8 +1088,7 @@ function showImportDialog() {
 
   modal.find('.modal-title').text('Import einer Dokumentation');
   let modalBody = modal.find('.modal-body');
-  modalBody.html('<div class="alert alert-danger"><p><strong>Achtung:</strong> Das Importieren überschreibt die aktuellen Inhalte der geladenen Dokumentation! Die Änderungen werden beim nächsten Speichern übernommen.<p></div>');
-  modalBody.append('<div class="text-center form-group"><label for="importFile">JSON Datei zum Importieren auswählen</label><input type="file" id="importFile" accept=".json,application/json" class="btn center-block hidden" /><div id="dropFile" class="text-center alert alert-info"></div></div>');
+  modalBody.html('<div class="text-center form-group"><label for="importFile">JSON Datei zum Importieren auswählen</label><input type="file" id="importFile" accept=".json,application/json" class="btn center-block hidden" /><div id="dropFile" class="text-center alert alert-info"></div></div>');
   modalBody.find('#dropFile').append('<p class="text-center"><i class="fa fa-file fa-2x"></i></p><p class="text-center">Klicken für Auswahldialog oder Datei hineinziehen...</p>');
 
   modalBody.find('#dropFile').on('dragover', (evt) => {
