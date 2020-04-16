@@ -337,8 +337,8 @@ function loadSubpage() {
    */
   getUserPromise = $.getJSON(backendPath + '?action=searchperson' + (debug ? '&debug=true' : '')).done((data) => {
     if(data.length !== 0 && data['data'].length !== 0) {
-      $('#userLabel').text(data['data'][0]['name']);
-      $('#userLabel').attr('title', 'SSO-Kennung: ' + data['data'][0]['value']);
+      $('#userLabel').text(data['data'][0]['name'] + (data['data'][0]['userIsDSB'] ? ' (Rolle: DSB)' : ' (Rolle: Nutzer)'));
+      $('#userLabel').attr('title', 'Kennung: ' + data['data'][0]['value']);
       version = data['version'];
       userIsDSB = data['data'][0]['userIsDSB'];
     }

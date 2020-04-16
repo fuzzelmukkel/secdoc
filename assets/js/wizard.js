@@ -536,15 +536,22 @@ function saveAsObject() {
 /**
  * Liest ein JSON-String ein und stellt die Eingaben wieder her (wenn keine passenden Felder gefunden werden, werden diese ignoriert)
  * @param {String} values JSON-String mit Namen der Eingabefelder als Schlüssel
- * @returns {undefined}
+ * @returns {Boolean}
  */
-function loadFromJSON(values) {
+function loadFromJSON(values, keepAccess = false) {
   let missingFields = [];
 
   endlessTables.forEach(function(table) {
+    if(keepAccess && ['meta_gruppen', 'meta_nutzer'].includes(table)) return;
     removeTableRows(table);
   });
-  values = JSON.parse(values);
+
+  try {
+    values = JSON.parse(values);
+  } catch(e) {
+    showError('Laden der Dokumentation', 'Kein gültiges JSON - ' + e);
+    return false;
+  }
 
   // Fallback für fehlende TOM Kategorie Auswahlfelder
   if(Object.keys(values).filter((elem) => (elem.search('tom_toggle_') >= 0)).length === 0) {
@@ -624,6 +631,8 @@ function loadFromJSON(values) {
     let missingFieldsHTML = '<li>' + missingFields.join('</li><li>') + '</li>';
     showError('Zuordnen gespeicherter Felder', 'Folgende gespeicherte Felder existieren nicht mehr und die eingegebenen Daten gehen beim Speichern verloren: <ul>' + missingFieldsHTML + '</ul>');
   }
+
+  return true;
 }
 
 /**
@@ -936,6 +945,182 @@ function genHTMLforPDF() {
 
   console.timeEnd('HTML-Code-Generierung für PDF');
   return htmlCode;
+}
+
+/**
+ * Exportiert die aktuell geladene Dokumentation als JSON-Datei
+ * @return {undefined}
+ */
+function exportJSON() {
+  setOverlay(true);
+
+  // Aktuelle Dokumentation in JSON umwandeln
+  let currObj  = saveAsObject();
+  let fieldsToRemove = [
+    'meta_id',
+    'meta_lastupdate',
+    'allgemein_typ',
+    'abschluss_abhaengigkeit_id',
+    'itverfahren_abhaengigkeit_id',
+    'verarbeitung_abhaengigkeit_id',
+    'meta_gruppen_kennung',
+    'meta_gruppen_name',
+    'meta_gruppen_schreiben',
+    'meta_nutzer_kennung',
+    'meta_nutzer_name',
+    'meta_nutzer_schreiben',
+    'allgemein_fachlich_kennung',
+    'allgemein_technisch_kennung'
+  ];
+  let fieldsToReassign = [
+    'abschluss_abhaengigkeit_name',
+    'itverfahren_abhaengigkeit_name',
+    'verarbeitung_abhaengigkeit_name',
+    'allgemein_fachlich_name',
+    'allgemein_technisch_name'
+  ];
+
+  // Unnötige Felder entfernen
+  fieldsToRemove.forEach((field) => { delete currObj[field]; });
+
+  // Anmerkung für Abhängigkeiten
+  fieldsToReassign.forEach((field) => {
+    if(currObj[field] !== undefined) {
+      if(Array.isArray(currObj[field])) {
+        currObj[field].forEach((entry, idx) => { currObj[field][idx] = "(ERSETZEN) " + entry; });
+      }
+      else {
+        currObj[field] = "(ERSETZEN) " + currObj[field];
+      }
+    }
+  });
+
+  try {
+    let currJSON = JSON.stringify(currObj);
+    let dataStr  = "data:text/json;charset=utf-8," + encodeURIComponent(currJSON);
+
+    // Download-Dialog für JSON-Date
+    let download = $('<a></a>');
+    download.attr('href', dataStr).attr('download', 'SecDoc_' + modeName[0] + '_' + currObj.allgemein_bezeichnung.replace(/\W/g, '_') + '_' + loadId + '.json').addClass('hidden');
+    $('body').append(download);
+    download[0].click();
+    download.remove();
+  } catch(e) {
+    showError('Exportieren', e);
+  }
+  setOverlay(false);
+}
+
+/**
+ * Importiert eine JSON-Datei in die aktuelle Dokumentation
+ * @param {Object} file Verweis auf Datei vom Dateidialog
+ * @return {undefined}
+ */
+function importJSON(file) {
+  setOverlay(true);
+
+  let fileReader = new FileReader();
+  fileReader.onload = (evt) => {
+    let nameToLoad = '';
+
+    try {
+      let jsonObj = JSON.parse(evt.target.result);
+
+      if(jsonObj['allgemein_bezeichnung'] === undefined) throw new Error('Keine gültige SecDoc Dokumentation');
+
+      nameToLoad = jsonObj['allgemein_bezeichnung'];
+    } catch(e) {
+      showError('Importieren', 'Die gewählte Datei kann nicht verarbeitet werden! - ' + e);
+      return;
+    }
+
+    if(loadId !== 0) {
+      modal.find('.modal-title').text('Import einer Dokumentation');
+      modal.find('.modal-body').html('<div class="alert alert-warning">Sie haben bereits eine Dokumentation geladen. Soll eine neue Dokumentation angelegt oder die aktuell geladene Dokumentation überschrieben werden? Gesetzte Zugriffsberechtigungen auf der letzten Seite werden beim Überschreiben beibehalten.</div>');
+      modal.find('.modal-body').append('<div class="text-center"><button id="importEmptyBtn" class="btn btn-success">Neue Dokumentation</button><button id="importCurrBtn" class="btn btn-danger ml">Vorhandene überschreiben</button></div>');
+      modal.modal();
+
+      modal.find('#importEmptyBtn').click(() => { triggerLoadJSON(true); });
+      modal.find('#importCurrBtn').click(() => { triggerLoadJSON(false); });
+    }
+    else {
+      triggerLoadJSON(true);
+    }
+
+    function triggerLoadJSON(createNew) {
+      modal.modal('hide');
+      setOverlay(true);
+
+      if(createNew) {
+        loadEmpty();
+      }
+      else {
+        $('#toggletoms').find('input[name^="tom_toggle"]').prop('checked', false).trigger('change');
+      }
+
+      if(loadFromJSON(evt.target.result, true)) {
+        modal.find('.modal-title').text('Import erfolgreich');
+        modal.find('.modal-body').html('<div class="alert alert-success">Der Import wurde erfolgreich durchgeführt. Die Änderungen müssen zum Übernehmen abgespeichert werden.</div>');
+        modal.modal();
+      }
+      else {
+        showError('Importieren', 'Eventuell ist die Datei beschädigt oder im falschen Format!');
+      }
+      setOverlay(false);
+    }
+  };
+
+  fileReader.onerror = (e) => {
+    showError('Importieren', 'Die gewählte Datei konnte nicht gelesen werden! - ' + e);
+  };
+
+  fileReader.readAsText(file);
+
+  setOverlay(false);
+}
+
+/**
+ * Zeigt einen Dialog zum JSON-Import an
+ * @return {undefined}
+ */
+function showImportDialog() {
+  setOverlay(true);
+
+  modal.find('.modal-title').text('Import einer Dokumentation');
+  let modalBody = modal.find('.modal-body');
+  modalBody.html('<div class="text-center form-group"><label for="importFile">JSON Datei zum Importieren auswählen</label><input type="file" id="importFile" accept=".json,application/json" class="btn center-block hidden" /><div id="dropFile" class="text-center alert alert-info"></div></div>');
+  modalBody.find('#dropFile').append('<p class="text-center"><i class="fa fa-file fa-2x"></i></p><p class="text-center">Klicken für Auswahldialog oder Datei hineinziehen...</p>');
+
+  modalBody.find('#dropFile').on('dragover', (evt) => {
+    evt.preventDefault();
+    evt.stopPropagation();
+    modalBody.find('#dropFile').removeClass('alert-info').addClass('alert-success');
+  });
+  modalBody.find('#dropFile').on('dragleave', (evt) => {
+    evt.preventDefault();
+    evt.stopPropagation();
+    modalBody.find('#dropFile').removeClass('alert-success').addClass('alert-info');
+  });
+  modalBody.find('#dropFile').on('drop', (evt) => {
+    evt.preventDefault();
+    evt.stopPropagation();
+
+    if(evt.originalEvent.dataTransfer.files.length > 0) {
+      importJSON(evt.originalEvent.dataTransfer.files[0]);
+    }
+
+    modalBody.find('#dropFile').removeClass('alert-success').addClass('alert-info');
+
+  });
+  modalBody.find('#dropFile').click(() => { modalBody.find('#importFile').click(); });
+
+  modalBody.find('#importFile').change((evt) => {
+    importJSON(evt.target.files[0]);
+  });
+
+  modal.modal();
+
+  setOverlay(false);
 }
 
 /*
@@ -1706,6 +1891,10 @@ Promise.all(promises).then(function() {
     e.returnValue = msg; // For Chrome
     return msg;
   });
+
+  // Ex-/Import Handler
+  $('#exportBtn').removeClass('hidden').click((evt) => {exportJSON()});
+  $('#importBtn').removeClass('hidden').click((evt) => {showImportDialog()});
 
   console.timeEnd('Spezielle Handler initialisieren');
 
