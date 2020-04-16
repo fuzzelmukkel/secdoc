@@ -12,7 +12,6 @@
 
   # Allgemeine Einstellungen
   require_once('../ajax/config.inc.php');
-  require_once('../ajax/func.inc.php');
 
   # Skript-Einstellungen
   set_time_limit(0);
