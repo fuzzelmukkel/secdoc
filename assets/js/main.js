@@ -59,6 +59,13 @@ var copyIdMain = GetURLParameter('copy') === false ? 0 : parseInt(GetURLParamete
 var userIsDSB = false;
 
 /**
+ * Gibt an, ob der Nutzer die Rolle eines Datenschutzbeauftragten annehmen kann
+ * @global
+ * @type {Boolean}
+ */
+var userCanDSB = false;
+
+/**
  * Relativer Pfad zur verwaltung.php
  * @global
  * @type {String}
@@ -337,10 +344,20 @@ function loadSubpage() {
    */
   getUserPromise = $.getJSON(backendPath + '?action=searchperson' + (debug ? '&debug=true' : '')).done((data) => {
     if(data.length !== 0 && data['data'].length !== 0) {
-      $('#userLabel').text(data['data'][0]['name'] + (data['data'][0]['userIsDSB'] ? ' (Rolle: DSB)' : ' (Rolle: Nutzer)'));
-      $('#userLabel').attr('title', 'Kennung: ' + data['data'][0]['value']);
       version = data['version'];
       userIsDSB = data['data'][0]['userIsDSB'];
+      userCanDSB = data['data'][0]['userCanDSB'];
+
+      $('#userLabel').text(data['data'][0]['name'] + (userIsDSB ? ' (Rolle: DSB)' : ' (Rolle: Nutzer)'));
+      $('#userLabel').attr('title', 'Kennung: ' + data['data'][0]['value']);
+
+      if(userCanDSB) {
+        $('#roleLabel').find('span').text(userIsDSB ? 'Nutzer' : 'DSB');
+        $('#roleLabel').removeClass('hidden').click(() => {
+          document.cookie = version.replace(/\W/g, '_') + '_dsb=' + (userIsDSB ? '0' : '1');
+          location.reload(true);
+        });
+      }
     }
     else {
       console.error('Fehler beim Abruf der Nutzerkennung! Antwort: ' + data);
@@ -391,7 +408,7 @@ function loadSubpage() {
 /*
  * Logout Button
  */
-$('#logoutLabel').css({'cursor': 'pointer', 'margin-left': '5px'}).click(() => {
+$('#logoutLabel').click(() => {
   setOverlay(true);
   $.getJSON(backendPath + '?action=logout' + (debug ? '&debug=true' : '')).done((data) => {
     if(data['success']) {

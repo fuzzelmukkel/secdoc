@@ -38,6 +38,13 @@ var loadId = GetURLParameter('id') === false ? 0 : parseInt(GetURLParameter('id'
 var copyId = GetURLParameter('copy') === false ? false : parseInt(GetURLParameter('copy'));
 
 /**
+ * Gibt an, ob das geladene Verfahren bearbeitet werden kann
+ * @global
+ * @type {Boolean}
+ */
+var canEdit = true;
+
+/**
  * Speichert den aktuellen Bearbeitungs-Modus (entweder IT-Verfahren, Fachapplikation Verarbeitungstätigkeit)
  * @global
  * @type {String}
@@ -469,8 +476,16 @@ function showVerfahrensliste(startup = false) {
 function loadEmpty() {
   console.time('Leeres Verfahren laden');
   setOverlay();
+
+  // ID leeren
   loadId = 0;
   $('input[name=meta_id]').val(loadId);
+
+  // Felder wieder bearbeitbar machen
+  $('#content').find('input, textarea, select, button[id!="showVerfahrensliste"]').prop('disabled', false);
+  canEdit = true;
+
+  // Tabellen, Eingabefelder und Checkboxen zurücksetzen
   endlessTables.forEach(function(table) {
     removeTableRows(table);
   });
@@ -745,7 +760,8 @@ function loadFromServer(id) {
       $('input[name="meta_id"]').val(loadId);
 
       if(!data['data'][0]['Editierbar']) {
-        $('input, textarea, select, button[id!="showVerfahrensliste"]').prop('disabled', true);
+        canEdit = false;
+        $('#content').find('input, textarea, select, button[id!="showVerfahrensliste"]').prop('disabled', true);
       }
 
       lastSaveDate = data['data'][0]['Aktualisierung'];
@@ -762,7 +778,7 @@ function loadFromServer(id) {
       changedValues = false;
 
       // Abhängigkeiten bei IT-Verfahren anzeigen
-      if(mode === 'wizit' || mode === 'wizapp' || mode === 'wizproc') {
+      if(userIsDSB) {
         $('#abschluss_vonabhaengig tbody tr').remove();
         $.get(backendPath, { 'action': 'dependencies', 'id':  loadId, 'debug': debug}).done(function(data) {
           if(!data['success']) {
@@ -1041,7 +1057,12 @@ function importJSON(file) {
       modal.modal();
 
       modal.find('#importEmptyBtn').click(() => { triggerLoadJSON(true); });
-      modal.find('#importCurrBtn').click(() => { triggerLoadJSON(false); });
+      if(canEdit) {
+        modal.find('#importCurrBtn').click(() => { triggerLoadJSON(false); });
+      }
+      else {
+        modal.find('#importCurrBtn').prop('disabled', true);
+      }
     }
     else {
       triggerLoadJSON(true);
