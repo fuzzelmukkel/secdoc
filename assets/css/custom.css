@@ -158,3 +158,11 @@ input.customError {
 .mt {
   margin-top: 5px !important;
 }
+
+.ml {
+  margin-left: 5px !important;
+}
+
+.pointer {
+  cursor: pointer !important;
+}

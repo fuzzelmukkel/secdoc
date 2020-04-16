@@ -1037,7 +1037,7 @@ function importJSON(file) {
     if(loadId !== 0) {
       modal.find('.modal-title').text('Import einer Dokumentation');
       modal.find('.modal-body').html('<div class="alert alert-warning">Sie haben bereits eine Dokumentation geladen. Soll eine neue Dokumentation angelegt oder die aktuell geladene Dokumentation überschrieben werden? Gesetzte Zugriffsberechtigungen auf der letzten Seite werden beim Überschreiben beibehalten.</div>');
-      modal.find('.modal-body').append('<div class="text-center"><button id="importEmptyBtn" class="btn btn-success">Neue Dokumentation</button><button id="importCurrBtn" class="btn btn-danger">Vorhandene überschreiben</button></div>');
+      modal.find('.modal-body').append('<div class="text-center"><button id="importEmptyBtn" class="btn btn-success">Neue Dokumentation</button><button id="importCurrBtn" class="btn btn-danger ml">Vorhandene überschreiben</button></div>');
       modal.modal();
 
       modal.find('#importEmptyBtn').click(() => { triggerLoadJSON(true); });
@@ -1893,8 +1893,8 @@ Promise.all(promises).then(function() {
   });
 
   // Ex-/Import Handler
-  $('#exportBtn').click((evt) => {exportJSON()});
-  $('#importBtn').click((evt) => {showImportDialog()});
+  $('#exportBtn').removeClass('hidden').click((evt) => {exportJSON()});
+  $('#importBtn').removeClass('hidden').click((evt) => {showImportDialog()});
 
   console.timeEnd('Spezielle Handler initialisieren');
 
