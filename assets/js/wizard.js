@@ -482,7 +482,7 @@ function loadEmpty() {
   $('input[name=meta_id]').val(loadId);
 
   // Felder wieder bearbeitbar machen
-  $('input, textarea, select, button[id!="showVerfahrensliste"]').prop('disabled', false);
+  $('#content').find('input, textarea, select, button[id!="showVerfahrensliste"]').prop('disabled', false);
   canEdit = true;
 
   // Tabellen, Eingabefelder und Checkboxen zurücksetzen
@@ -761,7 +761,7 @@ function loadFromServer(id) {
 
       if(!data['data'][0]['Editierbar']) {
         canEdit = false;
-        $('input, textarea, select, button[id!="showVerfahrensliste"]').prop('disabled', true);
+        $('#content').find('input, textarea, select, button[id!="showVerfahrensliste"]').prop('disabled', true);
       }
 
       lastSaveDate = data['data'][0]['Aktualisierung'];
@@ -778,7 +778,7 @@ function loadFromServer(id) {
       changedValues = false;
 
       // Abhängigkeiten bei IT-Verfahren anzeigen
-      if(mode === 'wizit' || mode === 'wizapp' || mode === 'wizproc') {
+      if(userIsDSB) {
         $('#abschluss_vonabhaengig tbody tr').remove();
         $.get(backendPath, { 'action': 'dependencies', 'id':  loadId, 'debug': debug}).done(function(data) {
           if(!data['success']) {
