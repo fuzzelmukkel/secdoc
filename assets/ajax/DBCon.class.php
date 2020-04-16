@@ -401,7 +401,7 @@
           error_log("[SecDoc] DBCon.class.php -> Aktualisiere Datenbank von Version $db_version zu " . self::DBVERSION . "!");
 
           $this->pdo->beginTransaction();
-          $this->pdo->exec(self::TABLES[11]);          
+          $this->pdo->exec(self::TABLES[11]);
           $this->pdo->exec("PRAGMA user_version = 8;");
           $this->pdo->commit();
         }
@@ -655,8 +655,8 @@
     public function listVerfahrenDSB($search = '') {
       if($this->isConnected()) {
         $result = array();
-        $sth = $this->pdo->prepare('SELECT ID, Typ, Bezeichnung, Beschreibung, Erstelldatum, Fachabteilung, IFNULL(person1.Anzeigename, verfahren.FachKontakt) AS FachKontakt, IFNULL(person2.Anzeigename, verfahren.TechKontakt) AS TechKontakt, Status, Sichtbarkeit, DSBKommentar, MAX(Datum) AS Aktualisierung '
-                . 'FROM verfahren LEFT JOIN verfahren_historie ON verfahren.ID = verfahren_historie.Verfahrens_Id LEFT JOIN personen AS person1 ON verfahren.FachKontakt = person1.Kennung LEFT JOIN personen AS person2 ON verfahren.TechKontakt = person2.Kennung '
+        $sth = $this->pdo->prepare('SELECT ID, Typ, Bezeichnung, Beschreibung, Erstelldatum, Fachabteilung, IFNULL(person1.Anzeigename, verfahren.FachKontakt) AS FachKontakt, IFNULL(person2.Anzeigename, verfahren.TechKontakt) AS TechKontakt, Status, Sichtbarkeit, DSBKommentar, IFNULL(person3.Name, verfahren_historie.Kennung) AS LetzterBearbeiter, IFNULL(person3.Anzeigename, "") AS BearbeiterDetails, MAX(Datum) AS Aktualisierung '
+                . 'FROM verfahren LEFT JOIN verfahren_historie ON verfahren.ID = verfahren_historie.Verfahrens_Id LEFT JOIN personen AS person1 ON verfahren.FachKontakt = person1.Kennung LEFT JOIN personen AS person2 ON verfahren.TechKontakt = person2.Kennung  LEFT JOIN personen AS person3 ON verfahren_historie.Kennung = person3.Kennung '
                 . 'WHERE NOT Status = 3' . (!empty($search) ? ' AND Bezeichnung LIKE ?' : '') . ' GROUP BY ID ORDER BY Bezeichnung COLLATE NOCASE;');
         $sth->execute(!empty($search) ? ['%' . $search . '%'] : []);
 
@@ -665,7 +665,12 @@
         $sqlDump = ob_get_clean();
         print "DBCon.class.php -> listVerfahrenDSB() Execute: $sqlDump";
 
-        $result = $sth->fetchAll();
+        $result = array();
+        foreach($sth->fetchAll() as $entry) {
+          $entry['Editierbar'] = TRUE;
+          $entry['Löschbar'] = TRUE;
+          array_push($result, $entry);
+        }
 
         return $result;
       }

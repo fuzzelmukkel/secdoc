@@ -559,8 +559,14 @@ EOH;
   switch($action) {
     # Liest alle Verfahren aus, auf die $userId Zugriff hat
     case 'list': {
-      $list = $dbcon->listVerfahrenOwn($userId, $userGroups);
-      $list = array_merge($list, $dbcon->listVerfahrenShared($userId, $userGroups));
+      if($userIsDSB) {
+        $list = $dbcon->listVerfahrenDSB();
+      }
+      else {
+        $list = $dbcon->listVerfahrenOwn($userId, $userGroups);
+        $list = array_merge($list, $dbcon->listVerfahrenShared($userId, $userGroups));
+      }
+      
       $count = count($list);
 
       # Prüft, welche PDFs bereits existieren
