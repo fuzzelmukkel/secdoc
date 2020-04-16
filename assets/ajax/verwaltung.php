@@ -474,6 +474,7 @@ EOH;
   $data = NULL;
   $userId = NULL;
   $userGroups = [];
+  $userCanDSB = FALSE;
   $userIsDSB = FALSE;
   $fachabteilung = '-- keine --';
   $ivv = '-- keine --';
@@ -541,8 +542,13 @@ EOH;
   $userGroups = $authClass->getUserGroups();
 
   # Prüfen, ob der Nutzer ein DSB oder Admin ist
-  $userIsDSB   = in_array($userId, $dsbIDs) || $authClass->checkDPOPerm();
+  $userCanDSB  = in_array($userId, $dsbIDs) || $authClass->checkDPOPerm();
   $userIsAdmin = $authClass->checkAdminPerm();
+
+  $dsbCookie = preg_replace("/\W/", '_', $prog_name . ' ' . $prog_version) . '_dsb';
+  if(isset($_COOKIE[$dsbCookie]) && $_COOKIE[$dsbCookie] === '1' && $userCanDSB) {
+    $userIsDSB = TRUE;
+  }
 
   # DB Verbindung überprüfen
   if(!$dbcon->isConnected()) {
@@ -1070,7 +1076,8 @@ EOH;
       }
 
       if($search == $userId) {
-        $result[0]['userIsDSB'] = $userIsDSB;
+        $result[0]['userIsDSB']  = $userIsDSB;
+        $result[0]['userCanDSB'] = $userCanDSB;
       }
       $output['data'] = $result;
       $output['count'] = count($result);

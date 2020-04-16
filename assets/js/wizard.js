@@ -470,6 +470,7 @@ function loadEmpty() {
   console.time('Leeres Verfahren laden');
   setOverlay();
   loadId = 0;
+  $('input, textarea, select, button[id!="showVerfahrensliste"]').prop('disabled', false);
   $('input[name=meta_id]').val(loadId);
   endlessTables.forEach(function(table) {
     removeTableRows(table);

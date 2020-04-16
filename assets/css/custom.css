@@ -166,3 +166,7 @@ input.customError {
 .pointer {
   cursor: pointer !important;
 }
+
+.strong {
+    font-weight: 700 !important;
+}
