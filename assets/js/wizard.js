@@ -1612,7 +1612,7 @@ function toggleTOMList(evt) {
         let inserted = false;
         targetElem.find('.panel-heading').each(function(idx, elem) {
           if(elem.id.localeCompare('heading_' + targetCategory) === 1) {
-            $(elem).parent('div').prev('h6').before('<h6 class="info-text text-ul-dot printOnly hidden">' + category + '</h6>');
+            $(elem).parent('div').prev('h6').before('<span class="snip"></span><h6 class="info-text text-ul-dot printOnly hidden">' + category + '</h6>');
             $(elem).parent('div').prev('h6').before('<div class="panel panel-default printHide"><div class="panel-heading" role="tab" id="heading_' + targetCategory + '"><h4 class="panel-title"><a role="button" data-toggle="collapse" data-parent="#' + targetID + '" href="#' + targetCategory + '" aria-expanded="true" aria-controls="' + targetCategory + '">' + category + '</a></h4></div></div>');
             inserted = true;
             return false;
@@ -1620,7 +1620,7 @@ function toggleTOMList(evt) {
         });
 
         if(!inserted) {
-          targetElem.append('<h6 class="info-text text-ul-dot printOnly hidden">' + category + '</h6>');
+          targetElem.append('<span class="snip"></span><h6 class="info-text text-ul-dot printOnly hidden">' + category + '</h6>');
           targetElem.append('<div class="panel panel-default printHide"><div class="panel-heading" role="tab" id="heading_' + targetCategory + '"><h4 class="panel-title"><a role="button" data-toggle="collapse" data-parent="#' + targetID + '" href="#' + targetCategory + '" aria-expanded="true" aria-controls="' + targetCategory + '">' + category + '</a></h4></div></div>');
         }
 
@@ -1877,6 +1877,8 @@ Promise.all(promises).then(function() {
 
     $(this).prop('disabled', true);
     setOverlay();
+
+    if(canEdit) saveOnServer();
 
     let htmlForPDF = genHTMLforPDF();
 
