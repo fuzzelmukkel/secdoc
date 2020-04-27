@@ -60,6 +60,27 @@
    * +-------------+------+-------------+-------------+
    * </pre>
    *
+   * Tabelle: Groups
+   * <pre>
+   * +-------------+-------------+
+   * | ID          | Description |
+   * +-------------+-------------+
+   * | TEXT        | TEXT        |
+   * | PRIMARY KEY |             |
+   * +-------------+-------------+
+   * </pre>
+   *
+   * Tabelle: Usergroups
+   * <pre>
+   * +------------------------------------------+--------------------------------------+
+   * | User_ID                                  | Group_ID                             |
+   * +------------------------------------------+--------------------------------------+
+   * | TEXT                                     | TEXT                                 |
+   * | PRIMARY KEY                              | PRIMARY KEY                          |
+   * | FOREIGN KEY REFERENCES Personen(Kennung) | FOREIGN KEY REFERENCES Groups(ID)    |
+   * +------------------------------------------+--------------------------------------+
+   * </pre>
+   *
    * Tabelle: Organisationseinheit
    * <pre>
    * +-------------+---------+
@@ -140,7 +161,7 @@
     protected $path = '/secdoc/';
 
     /** @var int Aktuelle DB-Version */
-    const DBVERSION = 11; # Version für eine DB-Struktur; zur Überprüfung beim Laden genutzt
+    const DBVERSION = 12; # Version für eine DB-Struktur; zur Überprüfung beim Laden genutzt
 
     /** @var int Maximale Anzahl an Historien-Einträgen */
     const MAXHISTORY = 15; # Nur diese Anzahl an Historien-Einträgen wird behalten
@@ -266,6 +287,17 @@
             Editor TEXT NOT NULL,                                                  -- Name des Bearbeiters
             Date DATE NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')), -- Änderungsdatum
             FOREIGN KEY (ProcessID) REFERENCES verfahren(ID) ON UPDATE CASCADE ON DELETE CASCADE
+        );",
+        "CREATE TABLE groups (
+          ID TEXT PRIMARY KEY, -- Group idenifier
+          Description TEXT     -- Group description or name
+        );",
+        "CREATE TABLE usergroups (
+          User_ID TEXT,
+          Group_ID TEXT,
+          PRIMARY KEY (User_ID, Group_ID),
+          FOREIGN KEY (User_ID) REFERENCES personen(Kennung) ON UPDATE CASCADE ON DELETE CASCADE,
+          FOREIGN KEY (Group_ID) REFERENCES groups(ID) ON UPDATE CASCADE ON DELETE CASCADE
         );"
     ];
 
@@ -420,6 +452,19 @@
             Editor TEXT NOT NULL,                                                  -- Name des Bearbeiters
             Date DATE NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')), -- Änderungsdatum
             FOREIGN KEY (ProcessID) REFERENCES verfahren(ID) ON UPDATE CASCADE ON DELETE CASCADE
+        );",
+        # 19
+        "CREATE TABLE groups (
+          ID TEXT PRIMARY KEY, -- Group idenifier
+          Description TEXT     -- Group description or name
+        );",
+        # 20
+        "CREATE TABLE usergroups (
+          User_ID TEXT,
+          Group_ID TEXT,
+          PRIMARY KEY (User_ID, Group_ID),
+          FOREIGN KEY (User_ID) REFERENCES personen(Kennung) ON UPDATE CASCADE ON DELETE CASCADE,
+          FOREIGN KEY (Group_ID) REFERENCES groups(ID) ON UPDATE CASCADE ON DELETE CASCADE
         );"
     ];
 
@@ -652,6 +697,16 @@
           }
 
           $this->pdo->exec("PRAGMA user_version = 11;");
+          $this->pdo->commit();
+        }
+        else if($db_version == 11) {
+          trigger_error("[SecDoc] DBCon.class.php -> Aktualisiere Datenbank von Version $db_version zu " . self::DBVERSION . "!");
+          error_log("[SecDoc] DBCon.class.php -> Aktualisiere Datenbank von Version $db_version zu " . self::DBVERSION . "!");
+
+          $this->pdo->beginTransaction();
+          $this->pdo->exec(self::TABLES[19]);
+          $this->pdo->exec(self::TABLES[20]);
+          $this->pdo->exec("PRAGMA user_version = 12;");
           $this->pdo->commit();
         }
         else {
@@ -1436,6 +1491,83 @@
         print "DBCon.class.php -> searchPerson() Execute: $sqlDump";
         return $sth->fetchAll();
       }
+    }
+
+    /**
+     * Durchsucht die vorhandenen Nutzergruppen (nach Kennung oder Beschreibung).
+     *
+     * @param  string $term Suchbegriff
+     * @param  bool   $isID (optional) Wenn TRUE, dann wird $term als exakte Gruppenkennung gesucht
+     * @return array  Liste der gefundenen Gruppen
+     */
+    public function searchGroups($term = NULL, $isID = TRUE) {
+      if(!$this->isConnected()) {
+        throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
+      }
+
+      if($term === NULL || empty($term)) {
+        $sth = $this->pdo->prepare('SELECT * FROM groups;');
+        $sth->execute();
+        return $sth->fetchAll();
+      }
+
+      $terms = explode(' ', trim($term));
+      foreach($terms as $key => $value) {
+        $terms[$key] = '%' . $value . '%';
+      }
+
+      $sql = 'SELECT * FROM groups WHERE';
+
+      if(count($terms) === 1) {
+        $sql .= ' ID LIKE ? OR Description LIKE ?';
+        array_push($terms, $terms[0]);
+      }
+      else {
+        foreach($terms as $key => $value) {
+          if($key > 0) $sql .= ' AND';
+          $sql .= ' LIKE ?';
+        }
+      }
+
+      if($isID) {
+        $sql = 'SELECT * FROM groups WHERE ID = ? LIMIT 1';
+        $terms = [trim($term)];
+      }
+
+      $sql .= ';';
+      $sth = $this->pdo->prepare($sql);
+      $sth->execute($terms);
+      ob_start();
+      $sth->debugDumpParams();
+      $sqlDump = ob_get_clean();
+      print "DBCon.class.php -> searchGroups() Execute: $sqlDump";
+      return $sth->fetchAll();
+    }
+
+    /**
+     * Gibt die Nutzergruppen für einen Benutzer zurück.
+     *
+     * @param  string $user Nutzerkennung
+     * @return array  Liste der zugehörigenn Gruppen
+     */
+    public function searchUsergroups($user = NULL) {
+      if(!$this->isConnected()) {
+        throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
+      }
+
+      if($term === NULL || empty($term)) {
+        return [];
+      }
+
+      $sql = 'SELECT groups.ID AS ID, groups.Description AS Description FROM usergroups LEFT JOIN groups ON usergroups.Group_ID = groups.ID WHERE User_ID = ?;';
+
+      $sth = $this->pdo->prepare($sql);
+      $sth->execute($user);
+      ob_start();
+      $sth->debugDumpParams();
+      $sqlDump = ob_get_clean();
+      print "DBCon.class.php -> searchUsergroups() Execute: $sqlDump";
+      return $sth->fetchAll();
     }
 
     /**

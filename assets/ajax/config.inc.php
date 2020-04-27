@@ -143,7 +143,20 @@
   #$oci_handle  = ocidb_connect();
 
   # ----------------------------------------
-  # LDAP Datenquelle Konfiguration (anstelle von lokaler SQLite DB)
+  # Datenquellen
+  # ----------------------------------------
+  # Welche Quellenn sollen für Nutzer und Gruppen genutzt werden?
+  # db      - DB Tabellen; müssen selbst befüllt und gepflegt werden (siehe DBCon.class.php)
+  # ldap    - Abfrage direkt aus dem LDAP; LDAP Konfiguration muss vorgenommen werden (siehe unten)
+  # ldap+db - Erst Abfrage im LDAP, sonst DB-Abfrage bei keinem Fund
+  $dataSources = [
+    'users'      => 'db',
+    'groups'     => 'db',
+    'usergroups' => 'db'
+  ];
+
+  # ----------------------------------------
+  # LDAP Verbindung
   # ----------------------------------------
   $ldap_use      = FALSE;       # Für Demo-Modus auf FALSE setzen
   $ldap_host     = '';          # Utils::getDomainController('xyz.de') oder Servername/-adresse direkt angeben
