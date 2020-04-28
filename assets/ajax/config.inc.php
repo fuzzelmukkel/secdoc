@@ -98,7 +98,7 @@
   # ----------------------------------------
   # Security Konfiguration
   # ----------------------------------------
-  $auth_method      = 'demo'; # Aktuell werden die Werte 'ldap', 'sso' und 'demo' unterstützt
+  $auth_method      = 'demo'; # Aktuell werden die Werte 'ldap', 'sso', 'openid' und 'demo' unterstützt
   $auth_class       = $auth_method . 'Auth';
   $auth_ldap_config = [
     'host' => '',
