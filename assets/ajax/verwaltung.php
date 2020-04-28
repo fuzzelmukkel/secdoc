@@ -3,8 +3,9 @@
    * verwaltung.php - REST-API zur Speicherung und Bearbeitung von Verfahren und Bereitstellung von Ausfüllhinweisen
    *
    * Die Schnittstelle stellt verschiedene Funktionen bereit, die über einfache HTTP-Anfragen genutzt werden können.
-   * Die Anfragen können als GET- oder POST-Requests gestellt werden und müssen auf jeden Fall den Paramter `action`
-   * enthalten, der die gewünschte Funktion repräsentiert. Für einige Aufrufe sind weitere Parameter notwendig.
+   * Die Anfragen können als GET- oder POST-Requests gestellt werden und müssen auf jeden Fall den Parameter `action`
+   * enthalten, der die gewünschte Funktion angibt. Für einige Aufrufe sind weitere Parameter notwendig.
+   * 
    * Beispiel: `verwaltung.php?action=get&id=13`
    *
    * @author Thorsten Küfer <thorsten.kuefer@uni-muenster.de>
@@ -23,7 +24,6 @@
   use PHPMailer\PHPMailer\PHPMailer;
   use PHPMailer\PHPMailer\SMTP;
   use PHPMailer\PHPMailer\Exception;
-
 
   # Ausgabe Array vorbereiten
   $output = [];
