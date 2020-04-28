@@ -10,7 +10,7 @@
    * @author Thorsten Küfer <thorsten.kuefer@uni-muenster.de>
    * @author Dustin Gawron <dustin.gawron@uni-muenster.de>
    * @author Marius Timmer <marius.timmer@uni-muenster.de>
-   * @copyright (c) 2018 Westfälische Wilhelms-Universität Münster
+   * @copyright (c) 2018-2020 Westfälische Wilhelms-Universität Münster
    * @license AGPL-3.0-or-later <https://www.gnu.org/licenses/agpl.html>
    *
    */
@@ -321,7 +321,7 @@ EOH;
    * @author Victor Nellißen <vinellis@uni-mainz.de>
    *
    * @global string $pdf_dir Verzeichnis für die PDF-Speicherung
-   * @global array  $eMailconfig Konfiguration für den E-Mail Versand
+   * @global array  $eMail_config Konfiguration für den E-Mail Versand
    * @param DBCon  $dbcon        Datenbank-Verbindung als PDO Objekt
    * @param string $userId       Nutzerkennung
    * @param array  $userGroups   Nutzergruppen
@@ -331,7 +331,7 @@ EOH;
    */
   function generateEmail(DBCon $dbcon, string $userId, array $userGroups, bool $userIsDSB, int $verfahrensId): bool
   {
-    global $pdf_dir, $eMailconfig;
+    global $pdf_dir, $eMail_config;
 
     $ersteller = $userId;
     $techkontakt = $dbcon->getTechKontakt($verfahrensId);
@@ -357,39 +357,38 @@ EOH;
 
     require_once '../vendor/autoload.php';
 
-
-    $mail = new PHPMailer; //Create a new PHPMailer instance
+    # Create a new PHPMailer instance
+    $mail = new PHPMailer;
     $mail->isSendmail();
     $mail->CharSet = "UTF-8";
-    $mail->setFrom($eMailconfig['fromEmail'], $eMailconfig['fromName']);
-    $mail->addReplyTo($eMailconfig['replyEmail'], $eMailconfig['replyName']);
+    $mail->setFrom($eMail_config['fromEmail'], $eMail_config['fromName']);
+    $mail->addReplyTo($eMail_config['replyEmail'], $eMail_config['replyName']);
     $mail->Subject = "Secdoc Dokumentation Nr. $verfahrensId abgeschlossen";
     $mail->addAttachment($pdf_dir.DIRECTORY_SEPARATOR."$verfahrensId.pdf", "Dokumentation_{$verfahrensId}_{$lastUpdate}.pdf");
 
-    #Überprüft ob smtp genutzt werden soll und holt entsprechend die Einstellungen
-    if ($eMailconfig['smtp'] === true){
+    # Überprüft ob smtp genutzt werden soll und holt entsprechend die Einstellungen
+    if ($eMail_config['smtp'] === true) {
         $mail->isSMTP();
-        $mail->Host = $eMailconfig['host'];
-        $mail->SMTPAuth = $eMailconfig['SMTPAuth'];
-        $mail->SMTPSecure =$eMailconfig['SMTPSecure'];
-        $mail->Username = $eMailconfig['Username'];
-        $mail->Password = $eMailconfig['Password'];
-        $mail->Port = $eMailconfig['Port'];
+        $mail->Host = $eMail_config['host'];
+        $mail->SMTPAuth = $eMail_config['SMTPAuth'];
+        $mail->SMTPSecure =$eMail_config['SMTPSecure'];
+        $mail->Username = $eMail_config['Username'];
+        $mail->Password = $eMail_config['Password'];
+        $mail->Port = $eMail_config['Port'];
      }
 
-     if ($eMailconfig['signed'] === true) {
+     if ($eMail_config['signed'] === true) {
      $mail->sign(
-       $eMailconfig['CRT'], //The location of your certificate file
-       $eMailconfig['KEY'], //The location of your private key file
+       $eMail_config['CRT'], //The location of your certificate file
+       $eMail_config['KEY'], //The location of your private key file
        //The password you protected your private key with (not the Import Password!)
        //May be empty but the parameter must not be omitted!
-       $eMailconfig['PKP'],
-       $eMailconfig['PEM'] //The location of your chain file
+       $eMail_config['PKP'],
+       $eMail_config['PEM'] //The location of your chain file
       );
     }
 
-
-    #Überprüft ob ein Kontakt merhmals eingetragen worden ist
+    # Überprüft ob ein Kontakt merhmals eingetragen worden ist
     if ($personen['Ersteller']['uid'] == $personen['Technischer Ansprechpartner']['uid'] && $personen['Ersteller']['uid'] == $personen['Fachlicher Ansprechpartner']['uid'] ) {
       $personen['Ersteller, Technischer Ansprechpartner, Fachlicher Ansprechpartner'] = $personen['Ersteller'];
       unset($personen['Ersteller']);
@@ -413,7 +412,7 @@ EOH;
     $mailSuccess = TRUE;
 
     foreach($personen as $key => $value) {
-      $emailText = str_replace('$role', $key, $eMailconfig['text']);
+      $emailText = str_replace('$role', $key, $eMail_config['text']);
       $emailText = str_replace('$verfahrensId', $verfahrensId, $emailText);
       $emailText = str_replace('$title', $verfahrensInfo['Bezeichnung'], $emailText);
       $emailText = str_replace('\n', "\n", $emailText);

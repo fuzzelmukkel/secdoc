@@ -4,7 +4,7 @@
    *
    * @author Thorsten Küfer <thorsten.kuefer@uni-muenster.de>
    * @author Dustin Gawron <dustin.gawron@uni-muenster.de>
-   * @copyright (c) 2018 Westfälische Wilhelms-Universität Münster
+   * @copyright (c) 2018-2020 Westfälische Wilhelms-Universität Münster
    * @license AGPL-3.0-or-later <https://www.gnu.org/licenses/agpl.html>
    *
    */
@@ -32,8 +32,8 @@
     * Überprüft, ob der Nutzer eine der berechtigten Nutzergruppen hat.
     *
     * @param array $ownedGroups  Nutzergruppen eines eingeloggten Nutzers
-    * @param array $searchGroups Liste von Gruppen, die berechtigt sind
-    * @return bool Gibt TRUE zurück, falls der Nutzer eine der notwendigen Berechtigungen hat, sonst FALSE
+    * @param array $searchGroups  Liste von Gruppen, die berechtigt sind
+    * @return bool  Gibt TRUE zurück, falls der Nutzer eine der notwendigen Berechtigungen hat, sonst FALSE
     */
     public static function checkUserGroups($ownedGroups, $searchGroups): bool {
      $access = FALSE;
@@ -43,6 +43,74 @@
      }
      return $access;
    }
+
+   /**
+    *
+    * Überprüfen, ob Dienst auf $host und $port erreichbar ist
+    *
+    * @param string $host  IP oder DNS des Hosts
+    * @param number $port  Portnummer des Dienstes
+    */
+
+    public static function checkHostPort($host, $port)
+    {
+      $check = @fsockopen($host, $port, $errno, $errstr, 1); # 1 Sekunde Timeout!
+      if (!$check)
+      {
+        # warn("Der Port <em>$port</em> auf <em>$host</em> ist nicht erreichbar ($errno: $errstr).");
+        return FALSE;
+      }
+      fclose($check);
+      return TRUE;
+    }
+
+   /**
+    * Ersten aktiven Domänencontroller aus DNS zurück liefern
+    *
+    * @param string $domain  Domänenname
+    */
+
+    # Liste der Domänencontroller für Domäne holen
+    public static function getDomainController($domain)
+    {
+      $arr = dns_get_record($domain);
+
+      # DNS-Abfrage filtern
+      if (is_array($arr))
+      {
+        foreach($arr as $val)
+        {
+          if(@$val['class'] == 'IN')
+          {
+            switch(@$val['type'])
+            {
+              case 'A': # IPv4
+                if (@$val['ip'] != '')
+                {
+                  $result[$val['ip']] = $val['ip'];
+                }
+                break;
+              case 'AAAA': # IPv6
+                if(@$val['ipv6'] != '')
+                {
+                  $result[$val['ipv6']] = $val['ipv6'];
+                }
+                break;
+            }
+          }
+        }
+      }
+
+      # Ersten erreichbaren Domänencontroller zurück geben
+      foreach ($result as $res)
+      {
+        if (self::checkHostPort($res, 389))
+        {
+          return gethostbyaddr($res);
+        }
+      }
+      return FALSE;
+    }
 
    /**
     * Maskiert alle HTML-Symbole im Eingabearray (mehrdimensional möglich).
