@@ -1,0 +1,169 @@
+<?php
+/**
+ * Enthält Authentifizierung mittels OpenId-connect über den Webserver.
+ * Jeder der die Möglichkeit hat die Webseite aufzurufen wird als legitimer Nutzer betrachtet.
+ *
+ * @author Victor Nellißen <vinellis@uni-mainz.de>
+ * @copyright (c) 2020 Johannes Gutenberg Universität Mainz
+ * @license AGPL-3.0-or-later <https://www.gnu.org/licenses/agpl.html>
+ */
+
+/**
+ * Klasse zur Implementierung der openid-Authentifizierung.
+ * Erweitert die Grundklasse {@link Auth}.
+ */
+class openidAuth extends Auth {
+
+  /** @var string Nutzerkennung */
+  protected $userID = '';
+  /** @var array Nutzergruppen */
+  protected $userGroups = [];
+
+
+  /**
+   * Konstruktor, liest die Userkennung aus
+   */
+  function __construct() {
+    $userIdfull = $_SERVER['OIDC_CLAIM_unique_name'];
+    list($Domain, $userkennung) = explode('\\', $userIdfull);
+    $this->userID = $userkennung;
+  }
+
+
+  /**
+   * Dummy-Funktion; Der Login erfolgt extern
+   *
+   * @param string $user Nutzerkennung
+   * @param string $pass Nutzerpasswort
+   * @return bool FALSE
+   */
+  public function loginUser($user, $pass) {
+    return FALSE;
+  }
+
+  /**
+   * Dummy-Funktion; Logout erfolg extern
+   *
+   * @return bool FALSE
+   */
+  public function logoutUser() {
+    return FALSE;
+  }
+
+  /**
+   * Stellt immer eine gültige Session bereit wenn ein Benutzername existiert
+   *
+   * @return bool TRUE
+   */
+  public function checkSession() {
+    $validsession = FALSE;
+
+    if(!empty($this->userID)) {
+      $validsession = TRUE;
+      return $validsession;
+    }
+  }
+
+  /**
+   * Holt die Gruppen aus dem LDAP
+   *
+   * @return array String-Array der Nutzergruppen
+   */
+  public function getUserGroups() {
+
+    if(!$this->checkSession()) return [];
+
+    if(empty($this->userGroups)) {
+      require_once 'Utils.class.php';
+
+      $this->userGroups = Utils::getUserGroups($this->userID);
+    }
+
+    if(is_array($this->userGroups)) {
+      return $this->userGroups;
+    }
+
+    return [];
+  }
+
+  /**
+   * Überprüft, ob Nutzer Berechtigung zur Verwendung des Tools besitzt.
+   *
+   * @global array Nutzergruppen berechtigt zur Verwendung des Tools
+   * @return bool TRUE falls der Nutzer zur Verwendung berechtigt ist, sonst FALSE
+   */
+  public function checkUsePerm() {
+    global $useGroups;
+
+    # Check if login exists
+    if(!$this->checkSession()) return FALSE;
+
+    if(empty($useGroups)) return TRUE;
+
+    $userGroups = $this->getUserGroups();
+
+    if(empty($userGroups)) return FALSE;
+
+    require_once 'Utils.class.php';
+
+    return Utils::checkUserGroups($userGroups, $useGroups);
+  }
+
+  /**
+   * Überprüft Admin-Berechtigungen.
+   *
+   * @global array Nutzergruppen berechtigt zur Verwendung der Admin-Oberfläche
+   * @return bool TRUE falls der Nutzer zur Administration berechtigt ist, sonst FALSE
+   */
+  public function checkAdminPerm() {
+    global $adminGroups;
+
+    # Check if login exists
+    if(!$this->checkSession()) return FALSE;
+
+    if(empty($adminGroups)) return FALSE;
+
+    $userGroups = $this->getUserGroups();
+
+    if(empty($userGroups)) return FALSE;
+
+    require_once 'Utils.class.php';
+
+    return Utils::checkUserGroups($userGroups, $adminGroups);
+  }
+
+  /**
+   * Überprüft Datenschutzbeauftragten-Berechtigung.
+   *
+   * @global array Nutzergruppen berechtigt zur Verwendung der Datenschutzbeauftragten-Oberfläche
+   * @return bool TRUE fallse der Nutzer ein Datenschutzbeauftragter ist, sonst FALSE
+   */
+  public function checkDPOPerm() {
+    global $dpoGroups;
+
+    # Check if login exists
+    if(!$this->checkSession()) return FALSE;
+
+    if(empty($dpoGroups)) return FALSE;
+
+    $userGroups = $this->getUserGroups();
+
+    if(empty($userGroups)) return FALSE;
+
+    require_once 'Utils.class.php';
+
+    return Utils::checkUserGroups($userGroups, $dpoGroups);
+  }
+
+  /**
+   * Gibt die Nutzerkennung der eingeloggten Person zurück.
+   *
+   * @return string Nutzerkennung
+   */
+  public function getUserID() {
+    return $this->userID;
+
+  }
+}
+?>
+

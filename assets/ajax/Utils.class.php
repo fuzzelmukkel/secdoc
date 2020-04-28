@@ -70,8 +70,6 @@
     * @param string $domain  Domänenname
     * @return mixed Hostname des Domänencontrollers, FALSE falls keiner erreichbar
     */
-
-    # Liste der Domänencontroller für Domäne holen
     public static function getDomainController($domain)
     {
       $arr = dns_get_record($domain);

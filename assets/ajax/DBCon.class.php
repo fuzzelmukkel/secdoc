@@ -252,6 +252,7 @@
      * Erstellt eine neue leere Datenbank, falls die Datenbank nicht existiert.
      *
      * @param string $directory (optional) Speicherpfad für die Datenbank-Datei
+     * @param string $dbname    (optional) Name der Datenbank-Datei
      * @return DBCon Neue DBCon Instanz
      * @throws PDOException
      * @throws Exception

@@ -1,0 +1,83 @@
+<?php
+/**
+ * Enthält eine abstrakte Implementierung der Authentifizierung.
+ *
+ * @author Dustin Gawron <dustin.gawron@uni-muenster.de>
+ * @copyright (c) 2020 Westfälische Wilhelms-Universität Münster
+ * @license AGPL-3.0-or-later <https://www.gnu.org/licenses/agpl.html>
+ */
+
+/**
+ * Abstrakte Klasse als Vorlage für Authentifizierungsmethoden.
+ *
+ * @abstract
+ */
+abstract class Auth {
+  /**
+   * Überprüft die Zugangsdaten eines Nutzers und erstellt eine neue Session.
+   *
+   * @abstract
+   * @param string $user Nutzerkennung
+   * @param string $pass Nutzerpasswort
+   * @return bool TRUE bei erfolgreicher Anmeldung, sonst FALSE
+   */
+  abstract public function loginUser($user, $pass);
+
+  /**
+   * Beendet die Session eines Nutzers.
+   *
+   * @abstract
+   * @return bool TRUE bei erfolgreicher Abmeldung, sonst FALSE
+   */
+  abstract public function logoutUser();
+
+  /**
+   * Überprüft, ob der Nutzer eine aktive Sitzung besitzt.
+   *
+   * @abstract
+   * @return bool TRUE falls der Nutzer eingeloggt ist, sonst FALSE
+   */
+  abstract public function checkSession();
+
+  /**
+   * Überprüft, ob Nutzer Berechtigung zur Verwendung des Tools besitzt.
+   *
+   * @abstract
+   * @return bool TRUE falls der Nutzer zur Verwendung berechtigt ist, sonst FALSE
+   */
+  abstract public function checkUsePerm();
+
+  /**
+   * Überprüft Admin-Berechtigungen.
+   *
+   * @abstract
+   * @return bool TRUE falls der Nutzer zur Administration berechtigt ist, sonst FALSE
+   */
+  abstract public function checkAdminPerm();
+
+  /**
+   * Überprüft Datenschutzbeauftragten-Berechtigung.
+   *
+   * @abstract
+   * @return bool TRUE fallse der Nutzer ein Datenschutzbeauftragter ist, sonst FALSE
+   */
+  abstract public function checkDPOPerm();
+
+  /**
+   * Gibt die Nutzergruppen der eingeloggten Person zurück.
+   *
+   * @abstract
+   * @return array String-Array der Nutzergruppen
+   */
+  abstract public function getUserGroups();
+
+  /**
+   * Gibt die Nutzerkennung der eingeloggten Person zurück.
+   *
+   * @abstract
+   * @return string Nutzerkennung
+   */
+  abstract public function getUserID();
+}
+?>
+

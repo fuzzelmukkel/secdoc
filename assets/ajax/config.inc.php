@@ -31,6 +31,15 @@
 
   # Debugging
   set_error_handler('php_error_handler');
+  /**
+   * Eigene Fehlerbehandlung
+   *
+   * @param  number $errno   Fehlernummer
+   * @param  string $errstr  Fehlerbeschreibung
+   * @param  string $errfile Skript in dem der Fehler auftrat
+   * @param  number $errline Zeile in welcher der Fehler auftrat
+   * @return bool
+   */
   function php_error_handler($errno, $errstr, $errfile, $errline)
   {
     $errfile = basename($errfile);

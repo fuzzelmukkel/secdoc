@@ -70,6 +70,7 @@ Es stehen aktuell drei Methoden zur Authentifizierung zur Verfügung, welche mit
 
 1. `demo` - Bietet **keine** Überprüfung des Zugriffs. Nur für öffentliche Testsysteme nutzen!
 2. `ldap` - Stellt eine eigene Session-Verwaltung bereit. Zugangsdaten werden an einem AD/LDAP-Server überprüft. Einstellungen der Variable `$auth_ldap_config` beachten.
+3. `openid` - Authentifizierung mittels OpenID über Apache Variablen.
 3. `sso` - Bietet Authentifizierung über SSO-Systeme an (beispielsweise mittles `.htaccess` bei Apache).
 
 Neue Methoden zur Authentifizierung können als neue Klassen von [Auth.class.php](/assets/ajax/auth/Auth.class.php) implementiert werden.

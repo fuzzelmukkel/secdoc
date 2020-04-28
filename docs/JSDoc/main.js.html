@@ -31,11 +31,11 @@
  *
  * @file Kapselt die zentralen Funktionen und steuert das Laden der Unterseiten
  *
- * @requires assets/js/jquery-3.3.1.min.js
+ * @requires assets/js/jquery-3.4.1.min.js
  *
  * @author Thorsten Küfer &lt;thorsten.kuefer@uni-muenster.de>
  * @author Dustin Gawron &lt;dustin.gawron@uni-muenster.de>
- * @copyright (c) 2018 Westfälische Wilhelms-Universität Münster
+ * @copyright (c) 2018-2020 Westfälische Wilhelms-Universität Münster
  * @license AGPL-3.0-or-later &lt;https://www.gnu.org/licenses/agpl.html>
  */
 
@@ -52,30 +52,54 @@ console.time('Gesamte Vorbereitungszeit');
  * @type {Boolean}
  */
 var debug = (GetURLParameter('debug') === 'true' || GetURLParameter('debug') == 1) ? true : false;
+
 /**
  * Aktuelle Versions-Nummer
  * @global
  * @type {String}
  */
 var version = '';
+
 /**
  * Angabe der Ziel-Unterseite
  * @global
  * @type {String}
  */
-var page = ['dsbview'].includes(GetURLParameter('page')) ? GetURLParameter('page') : 'wizard';
+var page = ['dsbview', 'home', 'login', 'wizit', 'wizproc', 'wizapp'].includes(GetURLParameter('page')) ? GetURLParameter('page') : 'home';
+
+/**
+ * ID der Dokumentation, die geladen werden soll
+ * @type {Number}
+ */
+var loadIdMain = GetURLParameter('id') === false ? 0 : parseInt(GetURLParameter('id'));
+
+/**
+ * ID der Dokumentation, die kopiert werden soll
+ * @type {Number}
+ */
+var copyIdMain = GetURLParameter('copy') === false ? 0 : parseInt(GetURLParameter('copy'));
+
 /**
  * Gibt an, ob der Nutzer ein Datenschutzbeauftragter ist
  * @global
  * @type {Boolean}
  */
 var userIsDSB = false;
+
+/**
+ * Gibt an, ob der Nutzer die Rolle eines Datenschutzbeauftragten annehmen kann
+ * @global
+ * @type {Boolean}
+ */
+var userCanDSB = false;
+
 /**
  * Relativer Pfad zur verwaltung.php
  * @global
  * @type {String}
  */
 var backendPath = 'assets/ajax/verwaltung.php';
+
 /**
  * JQuery Object des Modal-Elements
  * @global
@@ -83,6 +107,12 @@ var backendPath = 'assets/ajax/verwaltung.php';
  */
 var modal = $('#modalWindow'); // Modal-Fenster für Meldungen/Fehler
 
+/**
+ * Promise für die Abfrage des eingeloggten Nutzers
+ * @global
+ * @type {Promise}
+ */
+var getUserPromise = Promise.resolve();
 
 // Mappings
 /**
@@ -225,38 +255,51 @@ function setOverlay(active = true) {
 
 /**
  * Zeigt dem Nutzer eine Fehlermeldung an
- * @param {String} action  Aktion, bei der der Fehler aufgetreten ist
- * @param {String} message (optional) Fehlermeldung
+ * @param {String} action    Aktion, bei der der Fehler aufgetreten ist
+ * @param {String} message   (optional) Fehlermeldung
+ * @param {Object} httperror (optional) Objekt der Form {'jqXHR':..., 'error':..., 'errorThrown':...} für HTTP Fehlermeldungen
  * @returns {undefined}
  */
-function showError(action, message = false) {
-  console.error('Fehler beim ' + action + ' - Fehlermeldung: ' + message);
+function showError(action, message = false, httperror = false) {
+  console.error('Fehler beim ' + action + ' - Fehlermeldung: ' + message + (httperror ? (' - HTTP Error: ' + httperror) : ''));
   modal.find('.modal-title').text('Fehler');
   if(message) {
-    modal.find('.modal-body').html('&lt;div class="alert alert-danger">&lt;p>Beim ' + action + ' ist ein Fehler aufgetreten!&lt;/p> &lt;p>&lt;strong>Fehlermeldung:&lt;/strong> ' + message + '&lt;/p>&lt;/div>');
+    modal.find('.modal-body').html('&lt;div class="alert alert-danger">&lt;h3>Beim ' + action + ' ist ein Fehler aufgetreten!&lt;/h3>&lt;p>&lt;strong>Fehlermeldung:&lt;/strong> ' + message + '&lt;/p>&lt;/div>');
   }
   else {
-    modal.find('.modal-body').html('&lt;div class="alert alert-danger">&lt;p>Beim ' + action + ' ist ein unbekannter Fehler aufgetreten! Bitte versuchen Sie es in Kürze erneut!&lt;/p>&lt;/div>');
+    if(httperror !== false) {
+      if(httperror.jqXHR.status === 401) {
+        modal.find('.modal-body').html('&lt;div class="alert alert-danger">&lt;h3>Beim ' + action + ' ist ein Fehler aufgetreten!&lt;/h3>&lt;p>&lt;strong>Fehlermeldung:&lt;/strong> Sie sind nicht angemeldet! Bitte erneut anmelden: &lt;a class="btn btn-success btn-fill" href="index.html" target="_blank">Anmelden&lt;/a>&lt;/p>&lt;/div>');
+      }
+      else {
+        modal.find('.modal-body').html('&lt;div class="alert alert-danger">&lt;h3>Beim ' + action + ' ist ein Fehler aufgetreten!&lt;/h3>&lt;p>&lt;strong>Fehlermeldung:&lt;/strong> HTTP Code: ' + httperror.jqXHR.status + ' Fehler: ' + httperror.error + ' - ' + httperror.errorThrown + '&lt;/p>&lt;/div>');
+      }
+    }
+    else {
+      modal.find('.modal-body').html('&lt;div class="alert alert-danger">&lt;h3>Beim ' + action + ' ist ein unbekannter Fehler aufgetreten! Bitte versuchen Sie es in Kürze erneut!&lt;/h3>&lt;/div>');
+    }
   }
   modal.find('.modal-body').append('&lt;p>&lt;button type="button" class="center-block btn btn-primary" data-dismiss="modal" aria-label="Close">Schließen&lt;/button>&lt;/p>');
   modal.modal();
+  modal.find('button[aria-label=Close]').focus();
 }
 
 /**
  * Fragt die PDF für das Verfahren mit der übergebenen ID an und öffnet einen "Öffnen/Speichern"-Dialog
- * @param {Number} id ID für die gewünschte PDF
+ * @param {Number}  id    ID für die gewünschte PDF
+ * @param {Boolean} draft (optional) Wenn true wird die letzte Draft-Version der PDF zurückgegeben
  * @return {undefined}
  */
-function getPDFFromServer(id) {
+function getPDFFromServer(id, draft = false) {
   setOverlay();
 
-  $.post(backendPath, JSON.stringify({'action':'getpdf', 'id': id, 'debug': debug})).done((data) => {
+  $.post(backendPath, JSON.stringify({'action':'getpdf', 'id': id, 'data': {'draft': draft}, 'debug': debug})).done((data) => {
     if(!data['success']) {
       showError('Laden der PDF', data['error']);
       return;
     }
 
-    if(data['data']['status'] === 0) {
+    if(!draft &amp;&amp; data['data']['status'] === 0) {
       modal.find('.modal-title').text('Hinweis');
       modal.find('.modal-body').html('&lt;div class="alert alert-warning">&lt;p>Da sich das Verfahren wieder im Zustand "In Bearbeitung" befindet, stimmen die Angaben in der PDF unter Umständen nicht mehr mit der aktualisierten Version überein! Die PDF wird nur bei einem erneuten Abschluss des Verfahrens aktualisiert.&lt;/p>&lt;/div>');
       modal.find('.modal-body').append('&lt;p>&lt;button type="button" class="center-block btn btn-primary" data-dismiss="modal" aria-label="Close">Schließen&lt;/button>&lt;/p>');
@@ -270,54 +313,156 @@ function getPDFFromServer(id) {
       pdfBuffer[i] = pdfData.charCodeAt(i);
     }
     let blob = new Blob([pdfBuffer], {type: "application/pdf"});
-    let lastUpdate = new Date(data['data']['lastupdate'].replace(' ', 'T'));  // Safari benötigt das Format YYYY-MM-DDTHH:MM:SS (mit T)
+    let lastUpdate = data['data']['lastupdate'] ? new Date(data['data']['lastupdate'].replace(' ', 'T')) : new Date();  // Safari benötigt das Format YYYY-MM-DDTHH:MM:SS (mit T)
 
     // PDF-Anzeige starten (Unterscheidung, ob Edge genutzt wird)
     if(window.navigator &amp;&amp; window.navigator.msSaveOrOpenBlob) {
-      window.navigator.msSaveOrOpenBlob(blob, 'Verfahrensdokumentation_' + id + '_' + lastUpdate.getFullYear() + ('0' + (lastUpdate.getMonth() + 1)).slice(-2) + ('0' + lastUpdate.getDate()).slice(-2) + ('0' + lastUpdate.getHours()).slice(-2) + ('0' + lastUpdate.getMinutes()).slice(-2)  + '.pdf');
+      window.navigator.msSaveOrOpenBlob(blob, 'SecDoc_Dokumentation_' + id + '_' + lastUpdate.getFullYear() + ('0' + (lastUpdate.getMonth() + 1)).slice(-2) + ('0' + lastUpdate.getDate()).slice(-2) + ('0' + lastUpdate.getHours()).slice(-2) + ('0' + lastUpdate.getMinutes()).slice(-2)  + (draft ? '_DRAFT' : '' ) + '.pdf');
     }
     else {
       let url = window.URL.createObjectURL(blob);
       let download = $('&lt;a>&lt;/a>');
-      download.attr('href', url).attr('download', 'Verfahrensdokumentation_' + id + '_' + lastUpdate.getFullYear() + ('0' + (lastUpdate.getMonth() + 1)).slice(-2) + ('0' + lastUpdate.getDate()).slice(-2) + ('0' + lastUpdate.getHours()).slice(-2) + ('0' + lastUpdate.getMinutes()).slice(-2)  + '.pdf').addClass('hidden');;
+      download.attr('href', url).attr('download', 'SecDoc_Dokumentation_' + id + '_' + lastUpdate.getFullYear() + ('0' + (lastUpdate.getMonth() + 1)).slice(-2) + ('0' + lastUpdate.getDate()).slice(-2) + ('0' + lastUpdate.getHours()).slice(-2) + ('0' + lastUpdate.getMinutes()).slice(-2)  + (draft ? '_DRAFT' : '' ) + '.pdf').addClass('hidden');;
       $('body').append(download);
       download[0].click();
       window.URL.revokeObjectURL(url);
       download.remove();
     }
   }).fail((jqXHR, error, errorThrown) => {
-    showError('Laden der PDF', 'HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
+    showError('Laden der PDF', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
   }).always(() => {
     setOverlay(false);
   });
 }
 
-/*
- * Nutzerkennung holen und anzeigen
+/**
+ * Löscht ein Verfahren vom Server
+ * @param {type} id Eindeutige ID des Verfahrens
+ * @returns {undefined}
  */
-$.getJSON(backendPath + '?action=searchperson' + (debug ? '&amp;debug=true' : '')).done((data) => {
-  if(data.length !== 0 &amp;&amp; data['data'].length !== 0) {
-    $('#userLabel').text(data['data'][0]['name']);
-    $('#userLabel').attr('title', 'SSO-Kennung: ' + data['data'][0]['value']);
-    version = data['version'];
-    userIsDSB = data['data'][0]['userIsDSB'];
+function deleteFromServer(id) {
+  $.get(backendPath, { 'action': 'delete', 'id': id, 'debug': debug }).done(function(data) {
+    if(!data['success']) {
+      showError('Löschen der Dokumentation', data['error']);
+    }
+  }).fail((jqXHR, error, errorThrown) => {
+    showError('Löschen der Dokumentation', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+  });
+}
+
+/*
+ * Login-Unterseite laden
+ */
+function loadLogin() {
+  $.get('assets/html/login.inc.html').done((data) => { $('#content').html(data); }).fail((jqXHR, error, errorThrown) => {
+    showError('Laden der Unterseite "' + page + '"', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+    setOverlay(false);
+  });
+}
+
+/**
+ * Läd die angefragte Unterseite und Informationen über den aktuell eingeloggten Nutzer
+ * @return {undefined}
+ */
+function loadSubpage() {
+  $('#loginLabel').removeClass('hidden');
+  $('#logoutLabel').removeClass('hidden');
+
+  /*
+   * Nutzerkennung holen und anzeigen
+   */
+  getUserPromise = $.getJSON(backendPath + '?action=searchperson' + (debug ? '&amp;debug=true' : '')).done((data) => {
+    if(data.length !== 0 &amp;&amp; data['data'].length !== 0) {
+      version = data['version'];
+      userIsDSB = data['data'][0]['userIsDSB'];
+      userCanDSB = data['data'][0]['userCanDSB'];
+
+      $('#userLabel').text(data['data'][0]['name'] + (userIsDSB ? ' (Rolle: DSB)' : ' (Rolle: Nutzer)'));
+      $('#userLabel').attr('title', 'Kennung: ' + data['data'][0]['value']);
+
+      if(userCanDSB) {
+        $('#roleLabel').find('span').text(userIsDSB ? 'Nutzer' : 'DSB');
+        $('#roleLabel').removeClass('hidden').click(() => {
+          document.cookie = version.replace(/\W/g, '_') + '_dsb=' + (userIsDSB ? '0' : '1');
+          location.reload(true);
+        });
+      }
+    }
+    else {
+      console.error('Fehler beim Abruf der Nutzerkennung! Antwort: ' + data);
+      $('#userLabel').text('Unbekannt');
+    }
+    console.info(version);
+  }).fail((jqXHR, error, errorThrown) => {
+    console.error('Fehler beim Abruf der Nutzerkennung! HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
+    $('#userLabel').text('Unbekannt');
+  });
+
+  /*
+   * Angefragte Unterseite laden
+   */
+  if(page === 'home' &amp;&amp; (loadIdMain > 0 || copyIdMain > 0)) {
+    $.getJSON(backendPath + '?action=get&amp;id=' + (copyIdMain ? copyIdMain : loadIdMain)+ (debug ? '&amp;debug=true' : '')).done((data) => {
+      if(data['success']) {
+        page = 'home';
+        if(parseInt(data['data'][0]['Typ']) === 1) page = 'wizproc';
+        if(parseInt(data['data'][0]['Typ']) === 2) page = 'wizit';
+        if(parseInt(data['data'][0]['Typ']) === 3) page = 'wizapp';
+
+        $.get('assets/html/' + page + '.inc.html?' + Date.now()).done((data) => { $('#content').html(data); }).fail((jqXHR, error, errorThrown) => {
+          showError('Laden der Unterseite "' + page + '"', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+          setOverlay(false);
+        });
+      }
+      else {
+        showError('Laden der Dokumentation', data['error']);
+        $.get('assets/html/' + page + '.inc.html?' + Date.now()).done((data) => { $('#content').html(data); }).fail((jqXHR, error, errorThrown) => {
+          showError('Laden der Unterseite "' + page + '"', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+          setOverlay(false);
+        });
+      }
+    }).fail((jqXHR, error, errorThrown) => {
+      showError('Laden der Dokumentation', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+      setOverlay(false);
+    });
   }
   else {
-    console.error('Fehler beim Abruf der Nutzerkennung! Antwort: ' + data);
-    $('#userLabel').text('Unbekannt');
+    $.get('assets/html/' + page + '.inc.html?' + Date.now()).done((data) => { $('#content').html(data); }).fail((jqXHR, error, errorThrown) => {
+      showError('Laden der Unterseite "' + page + '"', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+      setOverlay(false);
+    });
   }
-  console.info(version);
-}).fail((jqXHR, error, errorThrown) => {
-  console.error('Fehler beim Abruf der Nutzerkennung! HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
-  $('#userLabel').text('Unbekannt');
+}
+
+/*
+ * Logout Button
+ */
+$('#logoutLabel').click(() => {
+  setOverlay(true);
+  $.getJSON(backendPath + '?action=logout' + (debug ? '&amp;debug=true' : '')).done((data) => {
+    if(data['success']) {
+      $(window).off('beforeunload'); // Meldung vor dem Verlassen der Seite abschalten
+      window.location.replace('index.html');
+    }
+    else {
+      showError('Abmelden', 'Funktion nicht verfügbar bei externer Anmeldung!');
+      setOverlay(false);
+    }
+  }).fail((jqXHR, error, errorThrown) => {
+    showError('Abmelden', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+    setOverlay(false);
+  });
 });
 
 /*
- * Angefragte Unterseite laden
+ * Überprüfen ob der Nutzer eingeloggt ist
  */
-$.get('assets/html/' + page + '.inc.html').done((data) => { $('#content').html(data); }).fail((jqXHR, error, errorThrown) => {
-  console.error('Fehler beim Laden der Unterseite "' + page + '"! HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
-  showError('Laden der Unterseite "' + page + '"');
+$.getJSON(backendPath + '?action=loggedin' + (debug ? '&amp;debug=true' : '')).done((data) => {
+  if(data.length !== 0 &amp;&amp; data['success']) {
+    loadSubpage();
+  }
+}).fail((jqXHR, error, errorThrown) => {
+  loadLogin();
 });
 </code></pre>
         </article>
@@ -329,13 +474,13 @@ $.get('assets/html/' + page + '.inc.html').done((data) => { $('#content').html(d
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#addTableRow">addTableRow</a></li><li><a href="global.html#backendPath">backendPath</a></li><li><a href="global.html#changedValues">changedValues</a></li><li><a href="global.html#copyFromServer">copyFromServer</a></li><li><a href="global.html#copyId">copyId</a></li><li><a href="global.html#debug">debug</a></li><li><a href="global.html#debugLog">debugLog</a></li><li><a href="global.html#deleteFromServer">deleteFromServer</a></li><li><a href="global.html#endlessCounts">endlessCounts</a></li><li><a href="global.html#endlessTables">endlessTables</a></li><li><a href="global.html#endlessTemplates">endlessTemplates</a></li><li><a href="global.html#genHTMLforPDF">genHTMLforPDF</a></li><li><a href="global.html#getPDFFromServer">getPDFFromServer</a></li><li><a href="global.html#GetURLParameter">GetURLParameter</a></li><li><a href="global.html#htmlDecode">htmlDecode</a></li><li><a href="global.html#htmlEncode">htmlEncode</a></li><li><a href="global.html#initEndlessTables">initEndlessTables</a></li><li><a href="global.html#initTypeahead">initTypeahead</a></li><li><a href="global.html#lawsMapping">lawsMapping</a></li><li><a href="global.html#loadEmpty">loadEmpty</a></li><li><a href="global.html#loadFromJSON">loadFromJSON</a></li><li><a href="global.html#loadFromServer">loadFromServer</a></li><li><a href="global.html#loadId">loadId</a></li><li><a href="global.html#markedAsFinished">markedAsFinished</a></li><li><a href="global.html#modal">modal</a></li><li><a href="global.html#myFinish">myFinish</a></li><li><a href="global.html#myInit">myInit</a></li><li><a href="global.html#myNext">myNext</a></li><li><a href="global.html#myPrevious">myPrevious</a></li><li><a href="global.html#myTabChange">myTabChange</a></li><li><a href="global.html#myTabClick">myTabClick</a></li><li><a href="global.html#page">page</a></li><li><a href="global.html#promises">promises</a></li><li><a href="global.html#removeTableRows">removeTableRows</a></li><li><a href="global.html#saveAsObject">saveAsObject</a></li><li><a href="global.html#saveOnServer">saveOnServer</a></li><li><a href="global.html#setOverlay">setOverlay</a></li><li><a href="global.html#setSaveLabel">setSaveLabel</a></li><li><a href="global.html#showError">showError</a></li><li><a href="global.html#showVerfahrensliste">showVerfahrensliste</a></li><li><a href="global.html#statusMapping">statusMapping</a></li><li><a href="global.html#typeaheadCache">typeaheadCache</a></li><li><a href="global.html#userIsDSB">userIsDSB</a></li><li><a href="global.html#version">version</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#addTableRow">addTableRow</a></li><li><a href="global.html#backendPath">backendPath</a></li><li><a href="global.html#canEdit">canEdit</a></li><li><a href="global.html#changedValues">changedValues</a></li><li><a href="global.html#copyFromServer">copyFromServer</a></li><li><a href="global.html#copyId">copyId</a></li><li><a href="global.html#copyIdMain">copyIdMain</a></li><li><a href="global.html#debug">debug</a></li><li><a href="global.html#debugLog">debugLog</a></li><li><a href="global.html#deleteFromServer">deleteFromServer</a></li><li><a href="global.html#endlessCounts">endlessCounts</a></li><li><a href="global.html#endlessTables">endlessTables</a></li><li><a href="global.html#endlessTemplates">endlessTemplates</a></li><li><a href="global.html#exportJSON">exportJSON</a></li><li><a href="global.html#filterTOMList">filterTOMList</a></li><li><a href="global.html#generateTOMList">generateTOMList</a></li><li><a href="global.html#genHTMLforPDF">genHTMLforPDF</a></li><li><a href="global.html#getCombinedPDF">getCombinedPDF</a></li><li><a href="global.html#getPDFFromServer">getPDFFromServer</a></li><li><a href="global.html#GetURLParameter">GetURLParameter</a></li><li><a href="global.html#getUserPromise">getUserPromise</a></li><li><a href="global.html#htmlDecode">htmlDecode</a></li><li><a href="global.html#htmlEncode">htmlEncode</a></li><li><a href="global.html#importJSON">importJSON</a></li><li><a href="global.html#initEndlessTables">initEndlessTables</a></li><li><a href="global.html#initTypeahead">initTypeahead</a></li><li><a href="global.html#loadEmpty">loadEmpty</a></li><li><a href="global.html#loadFromJSON">loadFromJSON</a></li><li><a href="global.html#loadFromServer">loadFromServer</a></li><li><a href="global.html#loadId">loadId</a></li><li><a href="global.html#loadIdMain">loadIdMain</a></li><li><a href="global.html#loadSubpage">loadSubpage</a></li><li><a href="global.html#markedAsFinished">markedAsFinished</a></li><li><a href="global.html#modal">modal</a></li><li><a href="global.html#mode">mode</a></li><li><a href="global.html#modeName">modeName</a></li><li><a href="global.html#modeNum">modeNum</a></li><li><a href="global.html#myFinish">myFinish</a></li><li><a href="global.html#myInit">myInit</a></li><li><a href="global.html#myNext">myNext</a></li><li><a href="global.html#myPrevious">myPrevious</a></li><li><a href="global.html#myTabChange">myTabChange</a></li><li><a href="global.html#myTabClick">myTabClick</a></li><li><a href="global.html#page">page</a></li><li><a href="global.html#promises">promises</a></li><li><a href="global.html#removeTableRows">removeTableRows</a></li><li><a href="global.html#saveAsObject">saveAsObject</a></li><li><a href="global.html#saveOnServer">saveOnServer</a></li><li><a href="global.html#setOverlay">setOverlay</a></li><li><a href="global.html#setSaveLabel">setSaveLabel</a></li><li><a href="global.html#showError">showError</a></li><li><a href="global.html#showImportDialog">showImportDialog</a></li><li><a href="global.html#showVerfahrensliste">showVerfahrensliste</a></li><li><a href="global.html#statusMapping">statusMapping</a></li><li><a href="global.html#toggleTOMList">toggleTOMList</a></li><li><a href="global.html#tomsMapping">tomsMapping</a></li><li><a href="global.html#typeaheadCache">typeaheadCache</a></li><li><a href="global.html#userCanDSB">userCanDSB</a></li><li><a href="global.html#userIsDSB">userIsDSB</a></li><li><a href="global.html#version">version</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Wed Mar 13 2019 15:51:24 GMT+0100 (Mitteleuropäische Normalzeit)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.4</a> on Tue Apr 28 2020 13:02:48 GMT+0200 (Mitteleuropäische Sommerzeit)
 </footer>
 
 <script> prettyPrint(); </script>

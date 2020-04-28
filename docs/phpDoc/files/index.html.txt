@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+  <meta content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0' name='viewport' />
+  <meta name="author" content="Thorsten Küfer <thorsten.kuefer@uni-muenster.de>" />
+  <meta name="author" content="Dustin Gawron <dustin.gawron@uni-muenster.de>" />
+  <meta name="publisher" content="Westfälische Wilhelms-Universität Münster" />
+  <meta name="copyright" content="2018-2020 Universität Münster" />
+  <meta name="viewport" content="width=device-width" />
+
+  <title>SecDoc Dokumentationstool</title>
+
+  <!-- Fonts and icons -->
+  <link href="assets/css/font-awesome.min.css" rel="stylesheet">
+
+  <!-- CSS Files -->
+  <link href="assets/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="assets/css/paper-bootstrap-wizard.css" rel="stylesheet" title="paper" />
+  <link href="assets/css/jquery.typeahead.css" rel="stylesheet" />
+  <link href="assets/css/bootstrap-select.min.css" rel="stylesheet" />
+  <link href="assets/css/datatables.min.css" rel="stylesheet" />
+  <link href="assets/css/dataTables.fontAwesome.css" rel="stylesheet" />
+
+  <!-- Custom WWU CSS -->
+  <link href="assets/css/custom.css" rel="stylesheet" />
+</head>
+
+<body>
+  <!-- Kreisel beim Laden der Seite -->
+  <div class="loadingOverlay">
+    <div class="loadingOverlayContent"><i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i></div>
+  </div>
+  <!-- Popup-Fenster für Verfahrensliste und Fehlermeldungen -->
+  <div class="modal" id="modalWindow" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"></h5>
+          <button style="margin-top:-30px" type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="image-container set-full-height" style="background-image: linear-gradient(lightgray, darkgray); background-color: lightgray;">
+    <!-- Branding -->
+    <!-- WWU-Logo links oben -->
+    <a href="https://www.uni-muenster.de/">
+      <div class="logo-container-left">
+        <div class="logo">
+          <img src="assets/img/logo1.png" width="200" alt="WWU logo" title="Westfälische Wilhelms-Universität">
+        </div>
+        <div class="brand">
+          <!-- evtl. Inhalt für Brand -->
+        </div>
+      </div>
+    </a>
+
+    <!-- ZIV-Logo rechts oben -->
+    <a href="https://zivgitlab.uni-muenster.de/secdoc/secdoc">
+      <div class="logo-container-right">
+        <div class="logo">
+          <img src="assets/img/logo2.png" width="200" alt="SecDoc logo" title="SecDoc">
+        </div>
+        <div class="brand">
+          <!-- evtl. Inhalt für Brand -->
+        </div>
+      </div>
+    </a>
+
+    <!--  Main container   -->
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-sm-10 col-sm-offset-1">
+
+          <!--  Wizard container  -->
+          <div class="wizard-container">
+            <div class="card wizard-card" data-color="blue" id="wizard">
+              <form action="/" method="post">
+                <!-- You can switch " data-color="green" "  with one of the next bright colors: "blue", "azure", "orange", "red" -->
+
+                <!-- Wizard header -->
+                <div class="wizard-header">
+                  <span id="loginLabel" class="pull-left label label-info hidden"><i class="fa fa-user"></i> Angemeldet als: <span id="userLabel" class="text-success"><i class="fa fa-spinner fa-pulse fa-fw"></i></span></span>
+                  <span id="roleLabel" class="pull-left label label-warning hidden pointer ml"><i class="fa fa-refresh"></i> Zur Rolle <span class="strong">DSB</span> wechseln</span>
+                  <span id="logoutLabel" class="pull-left label label-warning hidden pointer ml"><i class="fa fa-sign-out"></i> Ausloggen</span>
+                  <span id="importBtn" class="pull-right label label-success hidden ml pointer" title="Dokumentation importieren"><i class="fa fa-upload"></i> Import</span>
+                  <span id="exportBtn" class="pull-right label label-success hidden ml pointer" title="Dokumentation exportieren"><i class="fa fa-download"></i> Export</span>
+                  <span id="successLabel" class="pull-right label label-success hidden" title="Klicken zum Speichern"><i class="fa fa-save"></i> Gespeichert am <span id="saveTime" class="text-success"></span> <i class="fa fa-check"></i></span>
+                  <span id="savingLabel" class="pull-right label label-warning hidden" title="Klicken zum Speichern"><i class="fa fa-save"></i> Speichert... <i class="fa fa-spinner fa-pulse fa-fw"></i></span>
+                  <span id="failedLabel" class="pull-right label label-danger hidden" title="Klicken zum Speichern"><i class="fa fa-save"></i> Nicht gespeichert <i class="fa fa-close"></i></span>
+                  <span id="refreshedLabel" class="pull-right label label-success hidden">Aktualisiert am <span id="loadTime" class="text-success"></span></span>
+                </div>
+                <div class="text-center">
+                  <h3>SecDoc Dokumentationstool</h3>
+                </div>
+                <div id="content">
+                </div>
+                <div class="text-center">
+                  <a class="btn btn-fill btn-default btn-wd" id="homeButton" href="?page=home">Zurück zur Startseite</a>
+                </div>
+              </form>
+            </div>
+            <div id="debug" class="well hidden">
+              <h5>Debug Ausgaben des PHP-Backends</h5>
+              <pre class="pre-scrollable"></pre>
+            </div>
+          </div>
+          <!-- end wizard container -->
+        </div>
+        <!-- end col-sm-10 col-sm-offset-1 -->
+      </div>
+      <!-- end row -->
+    </div>
+    <!-- end main container -->
+
+    <div class="footer">
+      <div class="container-fluid text-center">
+        <!-- evtl. Inhalt für Footer -->
+        <div class="col-sm-1 col-sm-offset-5">
+          <a class="btn btn-info" href="/IT/impressum" role="button">Impressum</a>
+        </div>
+        <div class="col-sm-1">
+          <a class="btn btn-info" href="/de/datenschutzerklaerung.html" role="button">Datenschutz</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!--  Core JS Files  -->
+  <script src="assets/js/jquery-3.4.1.min.js" type="text/javascript"></script>
+  <script src="assets/js/bootstrap.min.js" type="text/javascript"></script>
+
+  <!--  Custom WWU JS Files  -->
+  <script src="assets/js/main.js?20200428" type="text/javascript"></script>
+</body>
+</html>
+

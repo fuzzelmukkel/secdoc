@@ -5,3 +5,4 @@ bower_components
 .htssoaccess
 .svn
 assets/vendor
+phpdoc-cache-*
