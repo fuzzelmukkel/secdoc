@@ -13,8 +13,8 @@ RUN curl -o /tmp/composer-setup.php https://getcomposer.org/installer \
 # Copy SecDoc files and prepare folders
 COPY / /var/www/html/
 WORKDIR /var/www/
-RUN rm html/install.php && mkdir secdoc && mv html/assets/demo.db secdoc/demo.db
-RUN mkdir secdoc/PDF secdoc/temp secdoc/inc secdoc/sessions
+RUN rm html/install.php && mkdir secdoc && mv html/assets/demo.db secdoc/demo.db && mv html/assets/ajax/secdoc.conf.php secdoc/secdoc.conf.php
+RUN mkdir secdoc/PDF secdoc/inc secdoc/sessions
 RUN chmod -R 755 secdoc & chown -R www-data secdoc
 # Install dependencies with composer
 WORKDIR /var/www/html/assets

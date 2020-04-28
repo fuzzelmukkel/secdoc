@@ -4,7 +4,7 @@
    *
    * @author Thorsten Küfer <thorsten.kuefer@uni-muenster.de>
    * @author Dustin Gawron <dustin.gawron@uni-muenster.de>
-   * @copyright (c) 2018 Westfälische Wilhelms-Universität Münster
+   * @copyright (c) 2018-2020 Westfälische Wilhelms-Universität Münster
    * @license AGPL-3.0-or-later <https://www.gnu.org/licenses/agpl.html>
    *
    */
@@ -43,6 +43,75 @@
      }
      return $access;
    }
+
+   /**
+    *
+    * Überprüfen, ob Dienst auf $host und $port erreichbar ist
+    *
+    * @param string $host  IP oder DNS des Hosts
+    * @param number $port  Portnummer des Dienstes
+    * @return bool TRUE falls Dienst erreichbar, sonst FALSE
+    */
+
+    public static function checkHostPort($host, $port)
+    {
+      $check = @fsockopen($host, $port, $errno, $errstr, 1); # 1 Sekunde Timeout!
+      if (!$check)
+      {
+        return FALSE;
+      }
+      fclose($check);
+      return TRUE;
+    }
+
+   /**
+    * Ersten aktiven Domänencontroller aus DNS zurück liefern
+    *
+    * @param string $domain  Domänenname
+    * @return mixed Hostname des Domänencontrollers, FALSE falls keiner erreichbar
+    */
+
+    # Liste der Domänencontroller für Domäne holen
+    public static function getDomainController($domain)
+    {
+      $arr = dns_get_record($domain);
+
+      # DNS-Abfrage filtern
+      if (is_array($arr))
+      {
+        foreach($arr as $val)
+        {
+          if(@$val['class'] == 'IN')
+          {
+            switch(@$val['type'])
+            {
+              case 'A': # IPv4
+                if (@$val['ip'] != '')
+                {
+                  $result[$val['ip']] = $val['ip'];
+                }
+                break;
+              case 'AAAA': # IPv6
+                if(@$val['ipv6'] != '')
+                {
+                  $result[$val['ipv6']] = $val['ipv6'];
+                }
+                break;
+            }
+          }
+        }
+      }
+
+      # Ersten erreichbaren Domänencontroller zurück geben
+      foreach ($result as $res)
+      {
+        if (self::checkHostPort($res, 389))
+        {
+          return gethostbyaddr($res);
+        }
+      }
+      return FALSE;
+    }
 
    /**
     * Maskiert alle HTML-Symbole im Eingabearray (mehrdimensional möglich).

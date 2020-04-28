@@ -7,7 +7,7 @@
  *
  * @author Thorsten Küfer <thorsten.kuefer@uni-muenster.de>
  * @author Dustin Gawron <dustin.gawron@uni-muenster.de>
- * @copyright (c) 2018 Westfälische Wilhelms-Universität Münster
+ * @copyright (c) 2018-2020 Westfälische Wilhelms-Universität Münster
  * @license AGPL-3.0-or-later <https://www.gnu.org/licenses/agpl.html>
  */
 
@@ -236,23 +236,24 @@ function showError(action, message = false, httperror = false) {
   console.error('Fehler beim ' + action + ' - Fehlermeldung: ' + message + (httperror ? (' - HTTP Error: ' + httperror) : ''));
   modal.find('.modal-title').text('Fehler');
   if(message) {
-    modal.find('.modal-body').html('<div class="alert alert-danger"><p>Beim ' + action + ' ist ein Fehler aufgetreten!</p> <p><strong>Fehlermeldung:</strong> ' + message + '</p></div>');
+    modal.find('.modal-body').html('<div class="alert alert-danger"><h3>Beim ' + action + ' ist ein Fehler aufgetreten!</h3><p><strong>Fehlermeldung:</strong> ' + message + '</p></div>');
   }
   else {
     if(httperror !== false) {
       if(httperror.jqXHR.status === 401) {
-        modal.find('.modal-body').html('<div class="alert alert-danger"><p>Beim ' + action + ' ist ein Fehler aufgetreten!</p> <p><strong>Fehlermeldung:</strong> Sie sind nicht angemeldet! Bitte erneut anmelden: <a class="btn btn-success btn-fill" href="index.html" target="_blank">Anmelden</a></p></div>');
+        modal.find('.modal-body').html('<div class="alert alert-danger"><h3>Beim ' + action + ' ist ein Fehler aufgetreten!</h3><p><strong>Fehlermeldung:</strong> Sie sind nicht angemeldet! Bitte erneut anmelden: <a class="btn btn-success btn-fill" href="index.html" target="_blank">Anmelden</a></p></div>');
       }
       else {
-        modal.find('.modal-body').html('<div class="alert alert-danger"><p>Beim ' + action + ' ist ein Fehler aufgetreten!</p> <p><strong>Fehlermeldung:</strong> HTTP Code: ' + httperror.jqXHR.status + ' Fehler: ' + httperror.error + ' - ' + httperror.errorThrown + '</p></div>');
+        modal.find('.modal-body').html('<div class="alert alert-danger"><h3>Beim ' + action + ' ist ein Fehler aufgetreten!</h3><p><strong>Fehlermeldung:</strong> HTTP Code: ' + httperror.jqXHR.status + ' Fehler: ' + httperror.error + ' - ' + httperror.errorThrown + '</p></div>');
       }
     }
     else {
-      modal.find('.modal-body').html('<div class="alert alert-danger"><p>Beim ' + action + ' ist ein unbekannter Fehler aufgetreten! Bitte versuchen Sie es in Kürze erneut!</p></div>');
+      modal.find('.modal-body').html('<div class="alert alert-danger"><h3>Beim ' + action + ' ist ein unbekannter Fehler aufgetreten! Bitte versuchen Sie es in Kürze erneut!</h3></div>');
     }
   }
   modal.find('.modal-body').append('<p><button type="button" class="center-block btn btn-primary" data-dismiss="modal" aria-label="Close">Schließen</button></p>');
   modal.modal();
+  modal.find('button[aria-label=Close]').focus();
 }
 
 /**
