@@ -160,7 +160,10 @@ EOH;
 EOH;
 
     # HTML in PDF schreiben
-    $mpdf->WriteHTML($finalHTML,2);
+    $htmlParts = explode('<span class="snip"></span>', $finalHTML);
+    foreach($htmlParts as $part) {
+      $mpdf->WriteHTML($part,2);
+    }
 
     # PDF generieren und zurückgeben
     #$title = preg_replace('/\W/', '_', $title);  # Alle Nicht-Wort-Zeichen in Unterstriche umwandeln
@@ -566,7 +569,7 @@ EOH;
         $list = $dbcon->listVerfahrenOwn($userId, $userGroups);
         $list = array_merge($list, $dbcon->listVerfahrenShared($userId, $userGroups));
       }
-      
+
       $count = count($list);
 
       # Prüft, welche PDFs bereits existieren
