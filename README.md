@@ -21,6 +21,10 @@ Webinterface zur Erfassung von Verarbeitungstätigkeiten und IT-Verfahren an der
 - Bietet eine Übersicht aller gemeldeten Verarbeitungstätigkeiten für Datenschutzbeauftragte (Einsicht, Kommentare und Bearbeitung möglich) sowie IT-Verfahren für IT-Sicherheitsbeauftragte
 - Erzeugt das Verzeichnis von Verarbeitungstätigkeiten (VVT)
 
+## SecDoc Wiki
+
+Weiterführende Informationen zur Installation und Verwendung von SecDoc können im [SecDoc Wiki](https://zivgitlab.uni-muenster.de/secdoc/secdoc/-/wikis/home) gefunden werden. Das Wiki ist noch im Aufbau, enthält aber aktuellere Informationen bezüglich der Installation und Konfiguration als diese README-Datei.
+
 ## Abhängigkeiten
 
 ### Enthalten
@@ -39,6 +43,7 @@ Webinterface zur Erfassung von Verarbeitungstätigkeiten und IT-Verfahren an der
 ### Benötigt
 
 - [MPDF 7](https://github.com/mpdf/mpdf) (Für die PDF-Erstellung genutzt)
+- [PHPMailer](https://github.com/PHPMailer/PHPMailer)
 
 ## Verwendung - Docker
 
@@ -46,7 +51,7 @@ Eine Demo-Version kann einfach mittels [Docker](https://de.wikipedia.org/wiki/Do
 
 Bis auf den E-Mail Versand können alle Funktionen in der Docker-Version ausprobiert werden (ein allgemein nutzbares Skript für den E-Mail Versand wurde noch nicht eingebaut). Die eingegebenen Daten bleiben bestehen, bis der Container gelöscht wird. Die Datenbank-Datei ist im Container zu finden unter `/var/www/secdoc/demo.db`.
 
-## Verwendung - Normale Installation
+## Verwendung - Normale Installation (veraltete Anleitung, siehe [SecDoc Wiki](https://zivgitlab.uni-muenster.de/secdoc/secdoc/-/wikis/installation/Installation))
 
 ### Voraussetzungen
 
