@@ -1300,13 +1300,23 @@
         throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
       }
 
+      $tomRows = [];
+
       if($tier !== 0) {
         $sth = $this->pdo->prepare("SELECT * FROM tomassignment LEFT JOIN toms ON tomassignment.TOMID = toms.Identifier WHERE Tier = ? ORDER BY Identifier ASC;");
         $sth->execute([$tier]);
+        $tomRows = $sth->fetchAll();
+
+        if(count($tomRows) === 0) {
+          $sth = $this->pdo->prepare("SELECT * FROM toms ORDER BY Identifier ASC;");
+          $sth->execute();
+          $tomRows = $sth->fetchAll();
+        }
       }
       else {
         $sth = $this->pdo->prepare("SELECT * FROM toms ORDER BY Identifier ASC;");
         $sth->execute();
+        $tomRows = $sth->fetchAll();
       }
 
       ob_start();
@@ -1314,7 +1324,7 @@
       $sqlDump = ob_get_clean();
       print "DBCon.class.php -> getTOMs() Execute: $sqlDump";
 
-      return $sth->fetchAll();
+      return $tomRows;
     }
 
     /**
