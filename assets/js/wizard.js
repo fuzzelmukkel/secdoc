@@ -1052,7 +1052,7 @@ function importJSON(file) {
 
     if(loadId !== 0) {
       modal.find('.modal-title').text('Import einer Dokumentation');
-      modal.find('.modal-body').html('<div class="alert alert-warning">Sie haben bereits eine Dokumentation geladen. Soll eine neue Dokumentation angelegt oder die aktuell geladene Dokumentation überschrieben werden? Gesetzte Zugriffsberechtigungen auf der letzten Seite werden beim Überschreiben beibehalten.</div>');
+      modal.find('.modal-body').html('<div class="alert alert-warning">Sie haben bereits eine Dokumentation geladen. Soll eine neue Dokumentation angelegt oder die aktuell geladene Dokumentation überschrieben werden? (Hinweis: Evtl. gesetzte Zugriffsberechtigungen auf der letzten Seite werden nicht überschrieben.)</div>');
       modal.find('.modal-body').append('<div class="text-center"><button id="importEmptyBtn" class="btn btn-success">Neue Dokumentation</button><button id="importCurrBtn" class="btn btn-danger ml">Vorhandene überschreiben</button></div>');
       modal.modal();
 
@@ -1110,7 +1110,7 @@ function showImportDialog() {
   modal.find('.modal-title').text('Import einer Dokumentation');
   let modalBody = modal.find('.modal-body');
   modalBody.html('<div class="text-center form-group"><label for="importFile">JSON Datei zum Importieren auswählen</label><input type="file" id="importFile" accept=".json,application/json" class="btn center-block hidden" /><div id="dropFile" class="text-center alert alert-info"></div></div>');
-  modalBody.find('#dropFile').append('<p class="text-center"><i class="fa fa-file fa-2x"></i></p><p class="text-center">Klicken für Auswahldialog oder Datei hineinziehen...</p>');
+  modalBody.find('#dropFile').append('<p class="text-center"><i class="fa fa-file fa-2x"></i></p><p class="text-center">Klicken für Auswahldialog oder Datei per Drag&Drop hineinziehen...</p>');
 
   modalBody.find('#dropFile').on('dragover', (evt) => {
     evt.preventDefault();
@@ -1605,34 +1605,32 @@ function toggleTOMList(evt) {
 
       let targetID = 'tom_accordion';
       let targetElem = $('#' + targetID);
-      let category = row['Category'].trim() + (row['Subcategory'] ? ' - ' + row['Subcategory'].trim() : '');
-      let targetCategory = 'tom_category_' + category.replace(/\W/g, '_');
+      let tomCategory = row['Category'].trim() + (row['Subcategory'] ? ' - ' + row['Subcategory'].trim() : '');
+      let targetCategory = 'tom_category_' + tomCategory.replace(/\W/g, '_');
+      let tomUrl = row['URL'];
 
       if($('#' + targetCategory).length !== 1) {
         let inserted = false;
         targetElem.find('.panel-heading').each(function(idx, elem) {
           if(elem.id.localeCompare('heading_' + targetCategory) === 1) {
-            $(elem).parent('div').prev('h6').before('<span class="snip"></span><h6 class="info-text text-ul-dot printOnly hidden">' + category + '</h6>');
-            $(elem).parent('div').prev('h6').before('<div class="panel panel-default printHide"><div class="panel-heading" role="tab" id="heading_' + targetCategory + '"><h4 class="panel-title"><a role="button" data-toggle="collapse" data-parent="#' + targetID + '" href="#' + targetCategory + '" aria-expanded="true" aria-controls="' + targetCategory + '">' + category + '</a></h4></div></div>');
+            $(elem).parent('div').prev('h6').before('<span class="snip"></span><h6 class="info-text text-ul-dot printOnly hidden">' + tomCategory + '</h6>');
+            $(elem).parent('div').prev('h6').before('<div class="panel panel-default printHide"><div class="panel-heading" role="tab" id="heading_' + targetCategory + '"><h4 class="panel-title"><a role="button" data-toggle="collapse" data-parent="#' + targetID + '" href="#' + targetCategory + '" aria-expanded="true" aria-controls="' + targetCategory + '">' + tomCategory + '</a></h4></div></div>');
             inserted = true;
             return false;
           }
         });
 
         if(!inserted) {
-          targetElem.append('<span class="snip"></span><h6 class="info-text text-ul-dot printOnly hidden">' + category + '</h6>');
-          targetElem.append('<div class="panel panel-default printHide"><div class="panel-heading" role="tab" id="heading_' + targetCategory + '"><h4 class="panel-title"><a role="button" data-toggle="collapse" data-parent="#' + targetID + '" href="#' + targetCategory + '" aria-expanded="true" aria-controls="' + targetCategory + '">' + category + '</a></h4></div></div>');
+          targetElem.append('<span class="snip"></span><h6 class="info-text text-ul-dot printOnly hidden"><a href="' + tomUrl + '">' + tomCategory + '</h6>');
+          targetElem.append('<div class="panel panel-default printHide"><div class="panel-heading" role="tab" id="heading_' + targetCategory + '"><h4 class="panel-title"><a role="button" data-toggle="collapse" data-parent="#' + targetID + '" href="#' + targetCategory + '" aria-expanded="true" aria-controls="' + targetCategory + '">' + tomCategory + '</a></h4></div></div>');
         }
 
-        let statusDesc = "Als Antworten bezüglich des Umsetzungsstatus der einzelnen Anforderungen kommen folgende Aussagen in Betracht:" +
-          "<ul style='text-align: left;'>" +
-            "<li><strong>Ja</strong> - Zu der Anforderung wurden geeignete Maßnahmen vollständig, wirksam und angemessen umgesetzt.</li>" +
-            "<li><strong>Teilweise</strong> - Die Anforderung wurde nur teilweise umgesetzt.</li>" +
-            "<li><strong>Nein</strong> - Die Anforderung wurde noch nicht erfüllt, also geeignete Maßnahmen sind größtenteils noch nicht umgesetzt worden.</li>" +
-            "<li><strong>Entbehrlich</strong> - Die Erfüllung der Anforderung ist in der vorgeschlagenen Art nicht notwendig, weil die Anforderung im betrachteten Informationsverbund nicht relevant ist (z. B. weil Dienste nicht aktiviert wurden) oder bereits durch Alternativmaßnahmen erfüllt wurde. Wird der Umsetzungsstatus einer Anforderung auf „entbehrlich“ gesetzt, müssen über die Kreuzreferenztabelle des jeweiligen Bausteins die zugehörigen elementaren Gefährdungen identifiziert werden. Wurden Alternativmaßnahmen ergriffen, muss begründet werden, dass das Risiko, das von allen betreffenden elementaren Gefährdungen ausgeht, angemessen minimiert wurde. Wenn Basisanforderungen nicht erfüllt werden, bleibt grundsätzlich ein erhöhtes Risiko bestehen. Anforderungen dürfen nicht auf „entbehrlich“ gesetzt werden, indem das Risiko für eine im Baustein identifizierte elementare Gefährdung über die Kreuzreferenztabelle pauschal akzeptiert oder ausgeschlossen wird." +
-          "</ul>";
+        let anforderungDesc = 'Als <em>Sicherheitsanforderung</em> werden Anforderungen für den organisatorischen, personellen, infrastrukturellen und technischen Bereich bezeichnet, deren Erfüllung zur Erhöhung der Informationssicherheit notwendig ist bzw. dazu beiträgt. Eine Sicherheitsanforderung beschreibt also, was getan werden muss, um ein bestimmtes Niveau bezüglich der Informationssicherheit zu erreichen. Wie die Anforderungen im konkreten Fall erfüllt werden, muss in der entsprechenden Sicherheitsmaßnahme beschrieben werden. (<em>Im englischen Sprachraum wird für Sicherheitsanforderungen häufig der Begriff „control“ verwendet.</em>)<br>Der IT-Grundschutz unterscheidet zwischen Basis-Anforderungen, Standard-Anforderungen und Anforderungen bei erhöhtem Schutzbedarf. <em>Basis-Anforderungen</em> (grün) sind fundamental und stets umzusetzen, sofern nicht gravierende Gründe dagegen sprechen. <em>Standard-Anforderungen</em> (gelb) sind für den normalen Schutzbedarf grundsätzlich umzusetzen, sofern sie nicht durch mindestens gleichwertige Alternativen oder die bewusste Akzeptanz des Restrisikos ersetzt werden. <em>Anforderungen bei erhöhtem Schutzbedarf</em> (rot) sind exemplarische Vorschläge, was bei entsprechendem Schutzbedarf zur Absicherung sinnvoll umzusetzen ist.';
+        let statusDesc = 'Als Antworten bezüglich des <em>Umsetzungsstatus</em> der einzelnen Anforderungen kommen folgende Aussagen in Betracht:<ul><li><strong>Ja</strong> - Zu der Anforderung wurden geeignete Maßnahmen vollständig, wirksam und angemessen umgesetzt.</li><li><strong>Teilweise</strong> - Die Anforderung wurde nur teilweise umgesetzt.</li><li><strong>Nein</strong> - Die Anforderung wurde noch nicht erfüllt, also geeignete Maßnahmen sind größtenteils noch nicht umgesetzt worden.</li><li><strong>Entbehrlich</strong> - Die Erfüllung der Anforderung ist in der vorgeschlagenen Art nicht notwendig, weil die Anforderung im betrachteten Informationsverbund nicht relevant ist (z. B. weil Dienste nicht aktiviert wurden) oder bereits durch Alternativmaßnahmen erfüllt wurde. Wenn Basisanforderungen nicht erfüllt werden, bleibt grundsätzlich ein erhöhtes Risiko bestehen.</ul>';
+        let massnahmeDesc = 'Als <em>Sicherheitsmaßnahme</em> (kurz Maßnahme) werden alle Aktionen bezeichnet, die dazu dienen, um Sicherheitsrisiken zu steuern und um diesen entgegenzuwirken. Dies schließt sowohl organisatorische, als auch personelle, technische oder infrastrukturelle Sicherheitsmaßnahmen ein. Sicherheitsmaßnahmen dienen zur Erfüllung von Sicherheitsanforderungen. Synonym werden auch die Begriffe Sicherheitsvorkehrung oder Schutzmaßnahme benutzt. (<em>Im englischen Sprachraum werden die Begriffe „safeguard“, „security measure“ oder „measure“ verwendet.</em>)';
+
         $('#heading_' + targetCategory).after('<div id="' + targetCategory + '" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading_' + targetCategory + '"><div class="panel-body"></div></div>');
-        $('#' + targetCategory).find('.panel-body').append('<table class="table table-striped table-hover"><thead><tr><th class="col-sm-1">ID</th><th class="col-sm-6">Beschreibung</th><th class="col-sm-2">Umgesetzt? <i data-toggle="tooltip" title="' + statusDesc + '" class="fa fa-question-circle-o fa-lg"></i></th><th class="col-sm-3">Erläuterung bzw. Begründung</th></tr></thead><tbody></tbody></table>');
+        $('#' + targetCategory).find('.panel-body').append('<table class="table table-striped table-hover"><thead><tr class="text-nowrap"><th class="col-sm-auto">Anforderung <i data-toggle="tooltip" data-html="true" title="' + anforderungDesc + '" class="fa fa-question-circle-o fa-lg"></i></th><th class="col-sm-5">Beschreibung</th><th class="col-sm-auto">Umsetzungsstatus <i data-toggle="tooltip" title="' + statusDesc + '" class="fa fa-question-circle-o fa-lg"></i></th><th class="col-sm-4">Maßnahme <i data-toggle="tooltip" data-html="true" title="' + massnahmeDesc + '" class="fa fa-question-circle-o fa-lg"></i></th></tr></thead><tbody></tbody></table>');
         $('#heading_' + targetCategory + ', #heading_' + targetCategory + ' a').click((evt) => {
           if(evt.target.nodeName === "A") return;
           $(evt.target).find('a').click();
@@ -1641,7 +1639,8 @@ function toggleTOMList(evt) {
 
       let className = row['Risklevel'] == 1 ? 'success' : row['Risklevel'] == 2 ? 'warning' : 'danger';
       let tomID = row['Identifier'].trim().replace(/ /g, '_');
-      let tomContent = row['Title'] ? row['Title'] + ' <i data-toggle="tooltip" title="' + row['Description'] + '" class="fa fa-question-circle-o fa-lg"></i>' : row['Description'];
+      // Titel einblenden, falls vorhanden (bei ENISA gibt es nur die Beschreibung)
+      let tomContent = row['Title'] ? '<p class="strong">' + row['Title'] + ' </p><p>' + row['Description'] + '</p>' : row['Description'];
       let tableBody = $('#' + targetCategory).find('tbody');
 
       let tomDropdown = $('<select data-tool="selectpicker" name="massnahmen_' + tomID + '"></select>')
@@ -1649,7 +1648,7 @@ function toggleTOMList(evt) {
         .append('<option value="0" selected>Nein</option>')
         .append('<option value="2">Teilweise</option>')
         .append('<option value="4">Entbehrlich</option>');
-      tableBody.append('<tr data-risk="' + row['Risklevel'] + '" class="' + className + '"><td>' + row['Identifier'] + '</td><td>' + tomContent + '</td><td>' + tomDropdown[0].outerHTML + '</td><td><textarea name="massnahmen_' + tomID + '_kommentar" class="form-control"></textarea></td></tr>');
+      tableBody.append('<tr data-risk="' + row['Risklevel'] + '" class="' + className + '"><td>' + row['Identifier'] + '</td><td>' + tomContent + '</td><td>' + tomDropdown[0].outerHTML + '</td><td><textarea rows="5" name="massnahmen_' + tomID + '_kommentar" class="form-control" placeholder="Beschreibung der Sicherheitsmaßnahme, Erläuterung bzw. Begründung"></textarea></td></tr>');
     });
 
     // Tooltips aktivieren

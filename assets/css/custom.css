@@ -60,6 +60,7 @@
 /* Tooltip Anpassungen */
 .tooltip-inner {
     max-width: 600px;
+    text-align: left;
 }
 
 i[data-toggle="tooltip"] {

@@ -1,8 +1,7 @@
 #!/usr/local/bin/php
 <?php
   /**
-   * cve-update.php - CVE-Feed von NIST holen
-   * 
+   * cpe-update.php - CPE-Feed von NIST holen
    * 
    * https://nvd.nist.gov/products/cpe
    * wget -O- https://nvd.nist.gov/feeds/xml/cpe/dictionary/official-cpe-dictionary_v2.3.xml.gz | gunzip > cpe.xml

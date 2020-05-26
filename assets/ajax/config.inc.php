@@ -26,7 +26,7 @@
   # Globale Konfiguration setzen
   # ----------------------------------------
   $prog_name    = "SecDoc Demosystem";
-  $prog_version = "1.4.1 (2020.04.28)";
+  $prog_version = "1.4.2 (2020.05.18)";
   $prog_url     = 'http://localhost/';
 
   # Debugging
@@ -85,7 +85,7 @@
     "replyEmail" => '',                       # E-Mail-Addresse, die als Reply to angezeigt werden soll
     "replyName" => '',                        # Name, der als Reply to angezeigt werden soll
     # Text der E-Mail - $verfahrensId wird durch die Verfahrensnummer ersetzt. $role wird durch die Rolle der Person ersetzt (Ersteller, Techkontakt, Fachkontakt). \n wird zu linebreak
-    "text" => "Das SecDoc Verfahren \"\$title\" mit der Nummer \$verfahrensId wurde abgeschlossen.\nBei diesem Verfahren wurden Sie als \$role eingetragen.\n\nIm Anhang dieser E-Mail finden Sie eine PDF mit allen Details über das erstellte Verfahren.\n\nDarüber hinaus ist das Verfahren online unter $prog_url?id=\$verfahrensId einsehbar.\n\nMit freundlichen Grüßen\nIhr SecDoc-Team\n",
+    "text" => "Die Dokumentation \$verfahrensTyp \"\$title\" mit der Nummer \$verfahrensId wurde in SecDoc abgeschlossen.\nBei diesem Verfahren sind Sie als \$role eingetragen.\n\nIm Anhang dieser E-Mail finden Sie eine PDF-Datei mit allen Details zur erstellten Dokumentation.\n\nDarüber hinaus ist die Dokumentation online unter der URL $prog_url?id=\$verfahrensId einsehbar.\n\nMit freundlichen Grüßen\nIhr SecDoc-Team\n",
     "smtp" => false,                          # Ob SMTP verwendet werden soll
     "host" => '',                             # SMTP Server Adresse
     "SMTPAuth" => true,                       # Ob eine Authentifizierung verwendet werden soll
