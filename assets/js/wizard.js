@@ -1621,7 +1621,7 @@ function toggleTOMList(evt) {
         });
 
         if(!inserted) {
-          targetElem.append('<span class="snip"></span><h6 class="info-text text-ul-dot printOnly hidden"><a href="' + tomUrl + '">' + tomCategory + '</h6>');
+          targetElem.append('<span class="snip"></span><h6 class="info-text text-ul-dot printOnly hidden"><a href="' + tomUrl + '" target="_blank" rel="noopener noreferrer">' + tomCategory + '</h6>');
           targetElem.append('<div class="panel panel-default printHide"><div class="panel-heading" role="tab" id="heading_' + targetCategory + '"><h4 class="panel-title"><a role="button" data-toggle="collapse" data-parent="#' + targetID + '" href="#' + targetCategory + '" aria-expanded="true" aria-controls="' + targetCategory + '">' + tomCategory + '</a></h4></div></div>');
         }
 
