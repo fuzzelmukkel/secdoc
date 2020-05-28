@@ -1,7 +1,7 @@
 #!/usr/local/bin/php
 <?php
   /**
-   * db-update.php - SQLite-DB (secdoc.db) mit Personen- und Organisationseinheitdaten zur schnelleren AJAX-Abfrage befüllen
+   * db-update-wwu.php - Zur Befüllung der SQLite-DB (secdoc.db) mit Personen- und Organisationseinheitdaten aus WWU Datenbanken.
    * 
    * TK, 18.07.2018 - Erste Version
    * 

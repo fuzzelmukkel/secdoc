@@ -5,7 +5,7 @@
    * Die Schnittstelle stellt verschiedene Funktionen bereit, die über einfache HTTP-Anfragen genutzt werden können.
    * Die Anfragen können als GET- oder POST-Requests gestellt werden und müssen auf jeden Fall den Parameter `action`
    * enthalten, der die gewünschte Funktion angibt. Für einige Aufrufe sind weitere Parameter notwendig.
-   * 
+   *
    * Beispiel: `verwaltung.php?action=get&id=13`
    *
    * @author Thorsten Küfer <thorsten.kuefer@uni-muenster.de>
@@ -339,6 +339,18 @@ EOH;
 
     $verfahrensInfo = $dbcon->getVerfahrenInfo($verfahrensId);
     $lastUpdate = date('YmdHi', strtotime($verfahrensInfo['Aktualisierung']));
+    if ($verfahrensInfo['Typ'] == 1)
+    {
+      $verfahrensTyp = "der Verarbeitungstätigkeit";
+    }
+    elseif ($verfahrensInfo['Typ'] == 3)
+    {
+      $verfahrensTyp = "der Fachapplikation";
+    }
+    elseif ($verfahrensInfo['Typ'] == 2)
+    {
+      $verfahrensTyp = "des IT-Verfahrens";
+    }
 
     $personen = array(
       "Ersteller" => array(
@@ -363,7 +375,7 @@ EOH;
     $mail->CharSet = "UTF-8";
     $mail->setFrom($eMail_config['fromEmail'], $eMail_config['fromName']);
     $mail->addReplyTo($eMail_config['replyEmail'], $eMail_config['replyName']);
-    $mail->Subject = "Secdoc Dokumentation Nr. $verfahrensId abgeschlossen";
+    $mail->Subject = "[SecDoc] Dokumentation $verfahrensTyp abgeschlossen (Nr. $verfahrensId)";
     $mail->addAttachment($pdf_dir.DIRECTORY_SEPARATOR."$verfahrensId.pdf", "Dokumentation_{$verfahrensId}_{$lastUpdate}.pdf");
 
     # Überprüft ob smtp genutzt werden soll und holt entsprechend die Einstellungen
@@ -414,6 +426,7 @@ EOH;
     foreach($personen as $key => $value) {
       $emailText = str_replace('$role', $key, $eMail_config['text']);
       $emailText = str_replace('$verfahrensId', $verfahrensId, $emailText);
+      $emailText = str_replace('$verfahrensTyp', $verfahrensTyp, $emailText);
       $emailText = str_replace('$title', $verfahrensInfo['Bezeichnung'], $emailText);
       $emailText = str_replace('\n', "\n", $emailText);
       $emailText = strip_tags($emailText);
@@ -424,8 +437,8 @@ EOH;
         $currSuccess = $mail->send();
         $mailSuccess = $mailSuccess && $currSuccess;
         if (!$currSuccess) {
-          trigger_error("[SecDoc] Verwaltung.php -> Fehler beim Senden der eMail. $mail->ErrorInfo");
-          error_log("[SecDoc] Verwaltung.php -> Fehler beim Senden der e-mail. $mail->ErrorInfo ");
+          trigger_error("[SecDoc] Verwaltung.php -> Fehler beim Senden der E-Mail. $mail->ErrorInfo");
+          error_log("[SecDoc] Verwaltung.php -> Fehler beim Senden der E-Mail. $mail->ErrorInfo ");
           break;
         }
       }

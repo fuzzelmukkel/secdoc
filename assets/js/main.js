@@ -433,6 +433,10 @@ $.getJSON(backendPath + '?action=loggedin' + (debug ? '&debug=true' : '')).done(
   if(data.length !== 0 && data['success']) {
     loadSubpage();
   }
+  else {
+    showError('Laden', 'Ein interner Fehler ist aufgetreten! Bitte wenden Sie sich an den Administrator.');
+    setOverlay(false);
+  }
 }).fail((jqXHR, error, errorThrown) => {
   loadLogin();
 });

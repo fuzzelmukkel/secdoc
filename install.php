@@ -71,11 +71,13 @@
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_PERSISTENT => TRUE,
-            PDO::ATTR_EMULATE_PREPARES => FALSE
+            PDO::ATTR_EMULATE_PREPARES => FALSE,
+            PDO::ATTR_TIMEOUT => 120
         ];
         $pdo = new PDO('sqlite:' . $db_dir . DIRECTORY_SEPARATOR . $db_name, '', '', $opt);
+        $pdo->exec("PRAGMA foreign_keys = ON;");
 
-        if(!file_exists(__DIR__ . DIRECTORY_SEPARATOR . 'assets/php/BSI_TOM_List.sql') || !file_exists(__DIR__ . DIRECTORY_SEPARATOR . 'assets/php/ENISA_TOM_List.sql') || !file_exists(__DIR__ . DIRECTORY_SEPARATOR . 'assets/php/BSI+ENISA_TOM_List.sql')) {
+        if(!file_exists(__DIR__ . DIRECTORY_SEPARATOR . 'assets/php/BSI_TOM_List.sql') || !file_exists(__DIR__ . DIRECTORY_SEPARATOR . 'assets/php/ENISA_TOM_List.sql')) {
           $error = 'Konnte TOM Listen in <code>' . __DIR__ . DIRECTORY_SEPARATOR . 'assets/php/</code> nicht finden!';
         }
         else {
@@ -86,10 +88,6 @@
 
             case 'bsi':
               $pdo->exec(file_get_contents(__DIR__ . DIRECTORY_SEPARATOR . 'assets/php/BSI_TOM_List.sql'));
-              break;
-
-            case 'bsienisa':
-              $pdo->exec(file_get_contents(__DIR__ . DIRECTORY_SEPARATOR . 'assets/php/BSI+ENISA_TOM_List.sql'));
               break;
 
             default:
@@ -197,25 +195,20 @@
             <div class="panel-body">
               <p>
                 Es stehen aktuell TOM-Listen des BSI und der ENISA zur Verfügung. Sie benötigen mindestens eine Liste, damit SecDoc funktionieren kann.
+                Es sollte die BSI Liste verwendet werden, da diese bei der weiteren Entwicklung bevorzugt wird.
                 <strong>Achtung:</strong> Es findet kein Mapping zwischen den verschiedenen Listen statt! Sollte die TOM-Liste gewechselt werden, müssen die TOMs neu eingetragen werden.
                 <form method="post">
                   <input type="hidden" name="do" value="load_toms" />
                   <div class="radio">
                     <label>
-                      <input type="radio" name="tomlist" value="enisa" checked>
-                      ENISA TOMs für IT-Verfahren und Verarbeitungstätigkeiten verwenden
+                      <input type="radio" name="tomlist" value="bsi" checked>
+                      BSI TOMs auf alle Ebenen verteilt verwenden
                     </label>
                   </div>
                   <div class="radio">
                     <label>
-                      <input type="radio" name="tomlist" value="bsi">
-                      BSI TOMs für IT-Verfahren und Verarbeitungstätigkeiten verwenden
-                    </label>
-                  </div>
-                  <div class="radio">
-                    <label>
-                      <input type="radio" name="tomlist" value="bsienisa">
-                      BSI TOMs für IT-Verfahren und ENISA TOMs für Verarbeitungstätigkeiten verwenden
+                      <input type="radio" name="tomlist" value="enisa">
+                      ENISA TOMs auf allen Ebenen verwenden
                     </label>
                   </div>
                   <input class="btn btn-default" type="submit" value="TOM Liste(n) laden" />

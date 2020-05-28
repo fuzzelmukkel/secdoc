@@ -1,6 +1,6 @@
 <?php
   /**
-   * DBCon.class.php - Enthält die DBCon-Klasse zur Verbindung mit der Datenbank
+   * DBCon.class.php - Enthält die DBCon-Klasse zur Verbindung mit einer Datenbank via PDO (Standardmäßig SQLite)
    *
    * @author Thorsten Küfer <thorsten.kuefer@uni-muenster.de>
    * @author Dustin Gawron <dustin.gawron@uni-muenster.de>
@@ -11,7 +11,6 @@
 
   /**
    * SQLite Datenbank Schnittstelle für die Verfahrensverwaltung und zur Abfrage von Ausfüllhinweisen
-   *
    *
    * Tabelle: Verfahren
    * <pre>
@@ -49,7 +48,7 @@
    * +--------------------------------------+--------------------------------------+
    * </pre>
    * * Dependent: Das abhängige Verfahren
-   * *Dependency: Die Abhängigkeit
+   * * Dependency: Die Abhängigkeit
    *
    * Tabelle: Personen
    * <pre>
@@ -130,39 +129,139 @@
 
     /** @var PDO|null PDO-Objekt */
     protected $pdo = NULL;
+
     /** @var bool Zeigt an, ob eine Datenbank-Verbindung aktiv ist */
     protected $connected = FALSE;
+
     /** @var string Enthält den Dateinamen für die DB */
     protected $filename = 'demo.db';
+
     /** @var string Enthält einen Standardpfad zur DB-Datei, falls keiner übergeben wurde */
     protected $path = '/secdoc/';
 
     /** @var int Aktuelle DB-Version */
-    const DBVERSION = 8; # Version für eine DB-Struktur; zur Überprüfung beim Laden genutzt
+    const DBVERSION = 9; # Version für eine DB-Struktur; zur Überprüfung beim Laden genutzt
 
     /** @var int Maximale Anzahl an Historien-Einträgen */
     const MAXHISTORY = 15; # Nur diese Anzahl an Historien-Einträgen wird behalten
 
     # Aktuelle Tabellen-Definitionen
     /** @var string[] Tabellendefinitionen */
+    const CURRENT_TABLES = [
+        "CREATE TABLE verfahren (
+            ID INTEGER PRIMARY KEY,                               -- Eindeutige ID für ein Verfahren (kann automatisch inkrementiert werden oder manuell gesetzt werden)
+            Typ INT NOT NULL DEFAULT 1,                           -- Typ des Eintrags (1 = Verarbeitungstätigkeit, 2 = IT-Verfahren)
+            Erstelldatum DATE DEFAULT '',                         -- Einführungsdatum des Verfahrens
+            Bezeichnung VARCHAR(100) NOT NULL DEFAULT  '',        -- Bezeichnung des Verfahren
+            Beschreibung TEXT NOT NULL DEFAULT  '',               -- Ausführlichere Beschreibung des Verfahrens
+            Risikolevel INT NOT NULL DEFAULT 2,                   -- Ergebnis der Risikoanalyse (1 = Niedrig, 2 = Mittel, 3 = Hoch)
+            Fachabteilung VARCHAR(100) NOT NULL DEFAULT  '',      -- Name der betreuenden Fachabteilung
+            IVV VARCHAR(100) NOT NULL DEFAULT  '',                -- Name der betreuenden IVV
+            FachKontakt VARCHAR(8) NOT NULL DEFAULT  '',          -- Nutzerkennung des fachlichen Ansprechpartners
+            TechKontakt VARCHAR(8) NOT NULL DEFAULT  '',          -- Nutzerkennung des technischen Ansprechpartners
+            Ersteller VARCHAR(8) NOT NULL,                        -- Nutzerkennung des Erstellers
+            Bearbeitergruppe VARCHAR(8) NOT NULL DEFAULT  '',     -- Nutzergruppe, die das Verfahren bearbeiten darf
+            Status INT NOT NULL DEFAULT 0,                        -- Aktueller Status des Verfahren (0 = In Bearbeitung, 2 = In Betrieb, 3 = Gelöscht)
+            Sichtbarkeit INT NOT NULL DEFAULT 0,                  -- Sichtbarkeit des Verfahrens für andere Personen
+            JSON BLOB NOT NULL DEFAULT '{}',                      -- Verfahrensinhalt als JSON kodiert
+            DSBKommentar TEXT DEFAULT ''                          -- Kommentarfeld für DSBs
+        );",
+        "CREATE TABLE verfahren_historie (
+            Verfahrens_Id INTEGER,                                         -- Die eindeutige ID eines Verfahrens
+            Kennung VARCHAR(8) NOT NULL,                                   -- Nutzerkennung des bearbeitenden Nutzers
+            Datum DATE DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')), -- Aktuelles Datum
+            PRIMARY KEY (Verfahrens_Id, Kennung, Datum),
+            FOREIGN KEY (Verfahrens_Id) REFERENCES verfahren(ID) ON UPDATE CASCADE ON DELETE CASCADE
+          );",
+        "CREATE TABLE personen (
+            Kennung VARCHAR(8) PRIMARY KEY ON CONFLICT IGNORE, -- Eindeutige Nutzerkennung
+            Name TEXT,                                         -- Name der Person
+            Anzeigename TEXT,                                  -- Anzeigename mit Name, Anschrift, Telefon, E-Mail
+            Datenquelle VARCHAR(50) DEFAULT ''                 -- Hinweis auf die genutzte Quelle für die Daten
+        );",
+        "CREATE TABLE organisationseinheiten (
+            Org_Id TEXT PRIMARY KEY ON CONFLICT IGNORE, -- ID der Organisationseinheit
+            Name TEXT                                   -- Name der Organisationseinheit
+        );",
+        "CREATE TABLE ivven (
+            Name TEXT PRIMARY KEY ON CONFLICT IGNORE  -- Name der IVV
+        );",
+        "CREATE TABLE cpe (
+            CPE TEXT PRIMARY KEY ON CONFLICT REPLACE, -- CPE-Nummer
+            Name TEXT,                                -- Name des CPE Eintrags
+            Typ TEXT                                  -- Typ des Eintrags (a für Applikation, o für Betriebssystem, h für Hardware)
+        );",
+        "CREATE TABLE permissions (
+            Process_ID INT,                 -- Process identifier
+            ID TEXT NOT NULL,               -- User or group ID
+            IsGroup INT NOT NULL DEFAULT 0, -- Is given ID a group? (0 = user ID, 1 = group ID)
+            CanEdit INT NOT NULL DEFAULT 0, -- Can user/group edit? (0 = read only, 1 = full access)
+            PRIMARY KEY (Process_ID, ID),
+            FOREIGN KEY (Process_ID) REFERENCES verfahren(ID) ON UPDATE CASCADE ON DELETE CASCADE
+        );",
+        "CREATE TABLE suggestions (
+            Field TEXT NOT NULL,                       -- Input field using this suggestion
+            Lang VARCHAR(2) DEFAULT 'de',              -- Language
+            Entry TEXT NOT NULL,                       -- Suggestion
+            AdditionalInfo TEXT NOT NULL DEFAULT '{}', -- Additional space for informations (e.g. JSON-String)
+            PRIMARY KEY (Field, Lang, Entry)
+        );",
+        "CREATE TABLE dependency (
+            Dependent INT,                             -- Process identifier of dependent process
+            Dependency INT,                            -- Process identifier of process the dependent depends on
+            PRIMARY KEY (Dependent, Dependency),
+            FOREIGN KEY (Dependent) REFERENCES verfahren(ID) ON UPDATE CASCADE ON DELETE CASCADE,
+            FOREIGN KEY (Dependency) REFERENCES verfahren(ID) ON UPDATE CASCADE ON DELETE CASCADE
+        );",
+        "CREATE TABLE toms (
+            Identifier VARCHAR(10),            -- Unique identifier across one language, e.g. APP.1.1.A1
+            Category TEXT NOT NULL,            -- Grouping for multiple TOMs, e.g. APP - Anwendungen
+            Subcategory TEXT DEFAULT '',       -- Secondary level grouping, e.g. APP.1.1 Office-Produkte
+            Title TEXT DEFAULT '',             -- Short title for TOM, e.g. Sicherstellen der Integrität von Office-Produkten
+            Description TEXT NOT NULL,         -- Full description
+            URL TEXT DEFAULT '',               -- URL, e.g. for BSI web site
+            Risklevel  INT NOT NULL DEFAULT 1, -- Risklevel where this is needed (1 = Low, 2 = Medium, 3 = High)
+            PRIMARY KEY (Identifier)
+        );",
+        "CREATE TABLE rollen (                 -- Rollen aus dem BSI IT-Grundschutz-Kompendium
+            RoleID INT NOT NULL DEFAULT 0,     -- ID der Rolle
+            Rolle VARCHAR(128),                -- Name der Rolle
+            PRIMARY KEY (RoleID)
+        );",
+        "CREATE TABLE ebene_rollen (           -- Zuweisung von Rollen zu Ebenen
+            EbeneID INT NOT NULL DEFAULT 0,    -- ID der Ebene (1 - Verarbeitungstätigkeit, 2 - Fachapplikation, 3 - IT-Verfahren)
+            RoleID INT NOT NULL DEFAULT 0,     -- ID der Rolle (siehe Tabelle rollen)
+            PRIMARY KEY (EbeneID, RoleID),
+            FOREIGN KEY (RoleID) REFERENCES rollen(RoleID) ON UPDATE CASCADE ON DELETE CASCADE
+        );",
+        "CREATE TABLE tom_rollen (             -- Zuweisung von TOMs zu Rollen
+            TOMID VARCHAR(10),                 -- ID der TOM (siehe Tabelle toms)
+            RoleID INT NOT NULL DEFAULT 0,     -- ID der Rolle (siehe Tabelle rollen)
+            PRIMARY KEY (TOMID, RoleID),
+            FOREIGN KEY (TOMID) REFERENCES toms(Identifier) ON UPDATE CASCADE ON DELETE CASCADE,
+            FOREIGN KEY (RoleID) REFERENCES rollen(RoleID) ON UPDATE CASCADE ON DELETE CASCADE
+        );"
+    ];
+
+    /** @var string[] Tabellendefinitionen */
     const TABLES = [
         "CREATE TABLE verfahren (
-            ID INTEGER PRIMARY KEY,                                               -- Eindeutige ID für ein Verfahren (kann automatisch inkrementiert werden oder manuell gesetzt werden)
-            Typ INT NOT NULL DEFAULT 1,                                           -- Typ des Eintrags (1 = Verarbeitungstätigkeit, 2 = IT-Verfahren)
-            Erstelldatum DATE DEFAULT '',                                         -- Einführungsdatum des Verfahrens
-            Bezeichnung VARCHAR(100) NOT NULL DEFAULT  '',                        -- Bezeichnung des Verfahren
-            Beschreibung TEXT NOT NULL DEFAULT  '',                               -- Ausführlichere Beschreibung des Verfahrens
-            Risikolevel INT NOT NULL DEFAULT 2,                                   -- Ergebnis der Risikoanalyse (1 = Niedrig, 2 = Mittel, 3 = Hoch)
-            Fachabteilung VARCHAR(100) NOT NULL DEFAULT  '',                      -- Name der betreuenden Fachabteilung
-            IVV VARCHAR(100) NOT NULL DEFAULT  '',                                -- Name der betreuenden IVV
-            FachKontakt VARCHAR(8) NOT NULL DEFAULT  '',                          -- Nutzerkennung des fachlichen Ansprechpartners
-            TechKontakt VARCHAR(8) NOT NULL DEFAULT  '',                          -- Nutzerkennung des technischen Ansprechpartners
-            Ersteller VARCHAR(8) NOT NULL,                                        -- Nutzerkennung des Erstellers
-            Bearbeitergruppe VARCHAR(8) NOT NULL DEFAULT  '',                     -- Nutzergruppe, die das Verfahren bearbeiten darf
-            Status INT NOT NULL DEFAULT 0,                                        -- Aktueller Status des Verfahren (0 = In Bearbeitung, 2 = In Betrieb, 3 = Gelöscht)
-            Sichtbarkeit INT NOT NULL DEFAULT 0,                                  -- Sichtbarkeit des Verfahrens für andere Personen
-            JSON BLOB NOT NULL DEFAULT '{}',                                      -- Verfahrensinhalt als JSON kodiert
-            DSBKommentar TEXT DEFAULT ''                                          -- Kommentarfeld für DSBs
+            ID INTEGER PRIMARY KEY,                               -- Eindeutige ID für ein Verfahren (kann automatisch inkrementiert werden oder manuell gesetzt werden)
+            Typ INT NOT NULL DEFAULT 1,                           -- Typ des Eintrags (1 = Verarbeitungstätigkeit, 2 = IT-Verfahren)
+            Erstelldatum DATE DEFAULT '',                         -- Einführungsdatum des Verfahrens
+            Bezeichnung VARCHAR(100) NOT NULL DEFAULT  '',        -- Bezeichnung des Verfahren
+            Beschreibung TEXT NOT NULL DEFAULT  '',               -- Ausführlichere Beschreibung des Verfahrens
+            Risikolevel INT NOT NULL DEFAULT 2,                   -- Ergebnis der Risikoanalyse (1 = Niedrig, 2 = Mittel, 3 = Hoch)
+            Fachabteilung VARCHAR(100) NOT NULL DEFAULT  '',      -- Name der betreuenden Fachabteilung
+            IVV VARCHAR(100) NOT NULL DEFAULT  '',                -- Name der betreuenden IVV
+            FachKontakt VARCHAR(8) NOT NULL DEFAULT  '',          -- Nutzerkennung des fachlichen Ansprechpartners
+            TechKontakt VARCHAR(8) NOT NULL DEFAULT  '',          -- Nutzerkennung des technischen Ansprechpartners
+            Ersteller VARCHAR(8) NOT NULL,                        -- Nutzerkennung des Erstellers
+            Bearbeitergruppe VARCHAR(8) NOT NULL DEFAULT  '',     -- Nutzergruppe, die das Verfahren bearbeiten darf
+            Status INT NOT NULL DEFAULT 0,                        -- Aktueller Status des Verfahren (0 = In Bearbeitung, 2 = In Betrieb, 3 = Gelöscht)
+            Sichtbarkeit INT NOT NULL DEFAULT 0,                  -- Sichtbarkeit des Verfahrens für andere Personen
+            JSON BLOB NOT NULL DEFAULT '{}',                      -- Verfahrensinhalt als JSON kodiert
+            DSBKommentar TEXT DEFAULT ''                          -- Kommentarfeld für DSBs
         );",
         "CREATE TABLE rechtsgrundlagen (
             ID INTEGER PRIMARY KEY,    -- Eindeutige ID für die Rechtsgrundlage
@@ -187,7 +286,7 @@
             Name TEXT                                   -- Name der Organisationseinheit
         );",
         "CREATE TABLE ivven (
-            Name TEXT PRIMARY KEY ON CONFLICT IGNORE -- Name der IVV
+            Name TEXT PRIMARY KEY ON CONFLICT IGNORE  -- Name der IVV
         );",
         "CREATE TABLE cpe (
             CPE TEXT PRIMARY KEY ON CONFLICT REPLACE, -- CPE-Nummer
@@ -234,6 +333,38 @@
           Tier INT,                     -- Tier (1 = processing activity, 2 = app tier, 3 = IT process)
           PRIMARY KEY (TOMID, Lang, Tier),
           FOREIGN KEY (TOMID, Lang) REFERENCES toms(Identifier, Lang) ON UPDATE CASCADE ON DELETE CASCADE
+        );",
+        # 12
+        "CREATE TABLE toms (
+            Identifier VARCHAR(10),            -- Unique identifier across one language, e.g. APP.1.1.A1
+            Category TEXT NOT NULL,            -- Grouping for multiple TOMs, e.g. APP - Anwendungen
+            Subcategory TEXT DEFAULT '',       -- Secondary level grouping, e.g. APP.1.1 Office-Produkte
+            Title TEXT DEFAULT '',             -- Short title for TOM, e.g. Sicherstellen der Integrität von Office-Produkten
+            Description TEXT NOT NULL,         -- Full description
+            URL TEXT DEFAULT '',               -- URL, e.g. for BSI web site
+            Risklevel  INT NOT NULL DEFAULT 1, -- Risklevel where this is needed (1 = Low, 2 = Medium, 3 = High)
+            PRIMARY KEY (Identifier)
+        );",
+        # 13
+        "CREATE TABLE rollen (                 -- Rollen aus dem BSI IT-Grundschutz-Kompendium
+            RoleID INT NOT NULL DEFAULT 0,     -- ID der Rolle
+            Rolle VARCHAR(128),                -- Name der Rolle
+            PRIMARY KEY (RoleID)
+        );",
+        # 14
+        "CREATE TABLE ebene_rollen (           -- Zuweisung von Rollen zu Ebenen
+            EbeneID INT NOT NULL DEFAULT 0,    -- ID der Ebene (1 - Verarbeitungstätigkeit, 2 - Fachapplikation, 3 - IT-Verfahren)
+            RoleID INT NOT NULL DEFAULT 0,     -- ID der Rolle (siehe Tabelle rollen)
+            PRIMARY KEY (EbeneID, RoleID),
+            FOREIGN KEY (RoleID) REFERENCES rollen(RoleID) ON UPDATE CASCADE ON DELETE CASCADE
+        );",
+        # 15
+        "CREATE TABLE tom_rollen (             -- Zuweisung von TOMs zu Rollen
+            TOMID VARCHAR(10),                 -- ID der TOM (siehe Tabelle toms)
+            RoleID INT NOT NULL DEFAULT 0,     -- ID der Rolle (siehe Tabelle rollen)
+            PRIMARY KEY (TOMID, RoleID),
+            FOREIGN KEY (TOMID) REFERENCES toms(Identifier) ON UPDATE CASCADE ON DELETE CASCADE,
+            FOREIGN KEY (RoleID) REFERENCES rollen(RoleID) ON UPDATE CASCADE ON DELETE CASCADE
         );"
     ];
 
@@ -248,7 +379,7 @@
     ];
 
     /**
-     * DBCon-Konstruktor; Stellt eine Verbindung zur Datenbank her und überprüft die Datenbank-Version.
+     * DBCon-Konstruktor: Stellt eine Verbindung zur Datenbank her und überprüft die Datenbank-Version.
      * Erstellt eine neue leere Datenbank, falls die Datenbank nicht existiert.
      *
      * @param string $directory (optional) Speicherpfad für die Datenbank-Datei
@@ -269,6 +400,7 @@
 
       if($dbname) $this->filename = $dbname;
 
+      # Tabelle erzeugen, falls noch nicht vorhanden
       if(!file_exists($this->path . DIRECTORY_SEPARATOR . $this->filename)) {
         trigger_error("[SecDoc] DBCon.class.php -> Datenbank-Datei existiert nicht! Leere Datenbank wird erstellt!");
         error_log("[SecDoc] DBCon.class.php -> Datenbank-Datei existiert nicht! Leere Datenbank wird erstellt!");
@@ -279,7 +411,7 @@
         $this->pdo->exec("PRAGMA foreign_keys = ON;");
 
         # Tabellen erstellen
-        foreach(self::TABLES as $table) {
+        foreach(self::CURRENT_TABLES as $table) {
           $this->pdo->exec($table);
         }
 
@@ -406,6 +538,22 @@
           $this->pdo->exec("PRAGMA user_version = 8;");
           $this->pdo->commit();
         }
+        else if($db_version == 8) {
+          trigger_error("[SecDoc] DBCon.class.php -> Aktualisiere Datenbank von Version $db_version zu " . self::DBVERSION . "!");
+          error_log("[SecDoc] DBCon.class.php -> Aktualisiere Datenbank von Version $db_version zu " . self::DBVERSION . "!");
+
+          $this->pdo->beginTransaction();
+          $this->pdo->exec("DROP TABLE tomassignment;");
+          $this->pdo->exec("ALTER TABLE toms RENAME TO toms_old;");
+          $this->pdo->exec(self::TABLES[12]);
+          $this->pdo->exec(self::TABLES[13]);
+          $this->pdo->exec(self::TABLES[14]);
+          $this->pdo->exec(self::TABLES[15]);
+          $this->pdo->exec("INSERT INTO toms (Identifier, Category, Subcategory, Title, Description, Risklevel) SELECT Identifier, Category, Subcategory, Title, Description, Risklevel FROM toms_old;");
+          $this->pdo->exec("DROP TABLE toms_old;");
+          $this->pdo->exec("PRAGMA user_version = 9;");
+          $this->pdo->commit();
+        }
         else {
           throw new Exception("Datenbank kann nicht genutzt werden, da die Version nicht übereinstimmt und nicht aktualisiert werden kann! (Ist: $db_version - Soll: " . self::DBVERSION . ")");
         }
@@ -497,7 +645,7 @@
     }
 
     /**
-     * Holt die Nutzerkennung des TechKontakts aus einem Verfahren.
+     * Holt die Nutzerkennung des Techkontaktes zu einem Verfahren.
      *
      * @param  int $verfahrensId ID eines Verfahrens
      * @return string Nutzerkennung
@@ -522,7 +670,7 @@
 
 
    /**
-    * Holt die Nutzerkennung des FachKontakts aus einem Verfahren.
+    * Holt die Nutzerkennung des Fachkontaktes zu einem Verfahren.
     *
     * @param  int $verfahrensId ID eines Verfahrens
     * @return string Nutzerkennung
@@ -546,7 +694,7 @@
     }
 
     /**
-     * Holt die Nutzerkennung des FachKontakts aus einem Verfahren.
+     * Holt Meta-Informationen zu einem Verfahren.
      *
      * @param  int $verfahrensId ID eines Verfahrens
      * @return array Generelle Infos über eine Dokumentation ['ID' => 123, 'Typ' => 1, 'Bezeichnung' => 'Test Verfahren', 'Beschreibung' => 'Das ist ein Verfahren zum Testen']
@@ -608,7 +756,7 @@
     }
 
     /**
-     * Listet alle Verfahren auf, die in Betrieb sind und für den Nutzer freigegeben sind
+     * Listet alle Verfahren auf, die in Betrieb sind und für den Nutzer freigegeben sind.
      *
      * @param string $userId     Nutzerkennung des ausführenden Nutzers
      * @param array  $userGroups Gruppen des ausführenden Nutzers
@@ -1303,7 +1451,7 @@
       $tomRows = [];
 
       if($tier !== 0) {
-        $sth = $this->pdo->prepare("SELECT * FROM tomassignment LEFT JOIN toms ON tomassignment.TOMID = toms.Identifier WHERE Tier = ? ORDER BY Identifier ASC;");
+        $sth = $this->pdo->prepare("SELECT * FROM ebene_rollen LEFT JOIN tom_rollen ON ebene_rollen.RoleID = tom_rollen.RoleID LEFT JOIN toms ON tom_rollen.TOMID = toms.Identifier WHERE EbeneID = ? ORDER BY Identifier ASC;");
         $sth->execute([$tier]);
         $tomRows = $sth->fetchAll();
 
@@ -1328,7 +1476,7 @@
     }
 
     /**
-     * Aktualisiert die Berechtigungen für en Verfahren.
+     * Aktualisiert die Berechtigungen für ein Verfahren.
      *
      * @param  int      $verfahrensId ID des Verfahrens
      * @param  string   $userId       Nutzerkennung
@@ -1464,7 +1612,8 @@
     }
 
     /**
-     * Gibt die Berechtigungsstufe für einen Nutzer und ein Verfahren zurück
+     * Gibt die Berechtigungsstufe für einen Nutzer und ein Verfahren zurück.
+     *
      * @param  int      $verfahrensId ID des Verfahrens
      * @param  string   $userId       Nutzerkennung
      * @param  string[] $userGroups   Gruppen des Nutzers
@@ -1511,7 +1660,7 @@
     }
 
     /**
-     * Holt die Vorschläge für Eingabefelder.
+     * Gibt die Vorschläge für Eingabefelder zurück.
      *
      * @param  string $lang  (optional) Sprachschlüssel
      * @param  string $field (optional) Vorschläge für ein Feld filtern
