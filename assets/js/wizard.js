@@ -773,8 +773,8 @@ function loadFromServer(id) {
       $('input[name="meta_lastupdate"]').val(lastSaveDate);
       setSaveLabel('saved', new Date(lastSaveDate.replace(' ', 'T')));  // Safari benötigt das Format YYYY-MM-DDTHH:MM:SS (mit T)
 
-      document.title = data['data'][0]['Bezeichnung'] + ' - ' + document.title.split(' - ').slice(-1)[0];
-      $('#title').text('Dokumentation von ' + data['data'][0]['Bezeichnung']);
+      document.title = htmlDecode(data['data'][0]['Bezeichnung']) + ' - ' + document.title.split(' - ').slice(-1)[0];
+      $('#title').text('Dokumentation von ' + htmlDecode(data['data'][0]['Bezeichnung']));
       changedValues = false;
 
       // Abhängigkeiten bei IT-Verfahren anzeigen
