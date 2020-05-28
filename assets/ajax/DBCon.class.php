@@ -1451,7 +1451,7 @@
       $tomRows = [];
 
       if($tier !== 0) {
-        $sth = $this->pdo->prepare("SELECT * FROM ebene_rollen LEFT JOIN tom_rollen ON ebene_rollen.RoleID = tom_rollen.RoleID LEFT JOIN toms ON tom_rollen.TOMID = toms.Identifier WHERE EbeneID = ? ORDER BY Identifier ASC;");
+        $sth = $this->pdo->prepare("SELECT * FROM ebene_rollen INNER JOIN tom_rollen ON ebene_rollen.RoleID = tom_rollen.RoleID INNER JOIN toms ON tom_rollen.TOMID = toms.Identifier WHERE EbeneID = ? ORDER BY Identifier ASC;");
         $sth->execute([$tier]);
         $tomRows = $sth->fetchAll();
 
