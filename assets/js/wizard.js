@@ -569,17 +569,15 @@ function loadFromJSON(values, keepAccess = false) {
   }
 
   // Fallback für fehlende TOM Kategorie Auswahlfelder
-  if(Object.keys(values).filter((elem) => (elem.search('tom_toggle_') >= 0)).length === 0) {
-    let tomFields = Object.keys(values).filter((elem) => (elem.search('massnahmen_') >= 0));
-    tomFields.forEach((id) => {
-      id = id.split('_')[1];
-      if(['risiko', 'vertraulichkeit', 'integritaet', 'verfuegbarkeit'].includes(id)) return;
-      let tomEntry = tomsMapping.filter((elem) => (elem.Identifier === id));
-      if(tomEntry.length === 0) return;
-      let targetSubcategory = ('tom_toggle_' + tomEntry[0]['Category'].trim() + '_' + (tomEntry[0]['Subcategory'].trim() ? tomEntry[0]['Subcategory'].trim() : 'all')).replace(/\W/g, '_');
-      $('input[name="' + targetSubcategory + '"]:not(:checked)').prop('checked', true).trigger('change');
-    });
-  }
+  let tomFields = Object.keys(values).filter((elem) => (elem.search('massnahmen_') >= 0));
+  tomFields.forEach((id) => {
+    id = id.split('_')[1];
+    if(['risiko', 'vertraulichkeit', 'integritaet', 'verfuegbarkeit'].includes(id)) return;
+    let tomEntry = tomsMapping.filter((elem) => (elem.Identifier === id));
+    if(tomEntry.length === 0) return;
+    let targetSubcategory = ('tom_toggle_' + tomEntry[0]['Category'].trim() + '_' + (tomEntry[0]['Subcategory'].trim() ? tomEntry[0]['Subcategory'].trim() : 'all')).replace(/\W/g, '_');
+    $('input[name="' + targetSubcategory + '"]:not(:checked)').prop('checked', true).trigger('change');
+  });
 
   var extendedTables = [];
   Object.keys(values).forEach(function(val, idx) {
