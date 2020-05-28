@@ -359,13 +359,17 @@ Art. 25 DSGVO Datenschutz durch Technikgestaltung und durch datenschutzfreundlic
               <td>
                 <input type="text" data-tool="typeahead" data-action="searchVerfahren" data-minlength="0" data-dynamic="true" data-hiddenfield="abschluss_abhaengigkeit_id[]" class="form-control" name="abschluss_abhaengigkeit_name[]" placeholder="Bsp.: E-Mail Dienst">
                 <input type="hidden" name="abschluss_abhaengigkeit_id[]">
+                <div class="form-group">
+                  <label>Betreiber:</label><br>
+                  <input type="text" class="form-control" name="abschluss_abhaengigkeit_betreiber[]" readonly />
+                </div>
               </td>
               <td>
                 <textarea class="form-control" rows="3" disabled></textarea>
               </td>
               <td class="text-center">
-                <button type="button" class="abschluss_abhaengigkeit_del btn btn-danger"><i class="fa fa-minus"></i> Löschen</button><br />
-                <a class="btn" style="margin-top: 2px;" href="#" target="_blank">Anzeigen</a>
+                <button type="button" class="abschluss_abhaengigkeit_del btn btn-danger" title="Abhängigkeit aus Liste entfernen"><i class="fa fa-minus"></i> Entfernen</button><br />
+                <a class="btn" style="margin-top: 2px;" target="_blank" title="Dokumentation in neuem Fenster öffnen" disabled>Anzeigen</a>
               </td>
             </tr>
           </tbody>

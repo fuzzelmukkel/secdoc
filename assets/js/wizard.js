@@ -882,15 +882,24 @@ function genHTMLforPDF() {
     if(parseInt($(this).data('risk')) > currRiskLevel) $(this).remove();
   });
 
+  if(toSend.find('#toggletoms').find('input[type=checkbox]:checked').length === 0 || toSend.find('#tom_accordion').find('tr').length === 0) {
+    toSend.find('#tom_accordion').append('<h5 class="text-center"><strong>Es wurden keine Technischen und Organisatorischen Maßnahmen ausgewählt.</strong></h5>');
+  }
+
   /* Link hinzufügen */
   let baseURL = window.location.href.split('?')[0].replace(/x?sso/i, 'www');
   let link = baseURL + '?id=' + loadId;
   toSend.append('<div class="text-center"><h5 class="info-text text-ul">Dokumentation online einsehen</h5><p><a href="' + link + '">' + link + '</a></p></div>');
 
   /* Links in Abhängigkeiten anpassen */
-  toSend.find('table#abschluss_vonabhaengig tr, table#abschluss_abhaengigkeit tr, table#itverfahren_abhaengigkeit tr').each(function(idx) {
+  toSend.find('table#abschluss_vonabhaengig tr, table#abschluss_abhaengigkeit tr, table#itverfahren_abhaengigkeit tr, table#verarbeitung_abhaengigkeit tr').each(function(idx) {
     let abhLnk = $(this).find('td:last a');
-    abhLnk.attr('href', baseURL + abhLnk.attr('href'));
+    if(abhLnk.attr('href') === undefined) {
+      abhLnk.detach();
+    }
+    else {
+      abhLnk.attr('href', baseURL + abhLnk.attr('href'));
+    }
   });
 
   toSend.find('table#abschluss_abhaengigkeit tr, table#itverfahren_abhaengigkeit tr').each(function(idx) {
@@ -1568,6 +1577,14 @@ function generateTOMList() {
 
   // Listener für toggleTOMList()
   toggleTab.find('input[type="checkbox"]').change((evt) => { toggleTOMList(evt); });
+
+  // Listener zum Aufklappen von Accordions (zur Anpassung der Textarea Höhe)
+  $('#tom_accordion').on('shown.bs.collapse', (evt) => {
+    $(evt.target).find('textarea').each((idx, elem) => {
+      let targetCat = $(elem);
+      targetCat.height(targetCat.parent().innerHeight() - 16 - (idx === 0 ? 23 : 22));
+    });
+  });
 }
 
 /**
@@ -1611,20 +1628,25 @@ function toggleTOMList(evt) {
 
       if($('#' + targetCategory).length !== 1) {
         let inserted = false;
+        // Alphabetisch an der richtigen Stelle einfügen (anhand Kategorie + Subkategorie)
         targetElem.find('.panel-heading').each(function(idx, elem) {
           if(elem.id.localeCompare('heading_' + targetCategory) === 1) {
-            $(elem).parent('div').prev('h6').before('<span class="snip"></span><h6 class="info-text text-ul-dot printOnly hidden">' + tomCategory + '</h6>');
+            // Hinweis: <span class="snip"></span> ist Platzhalter für Aufteilung des HTMLs bei der PDF-Generierung (MPDF hat ein Limit für die HTML Länge)
+            $(elem).parent('div').prev('h6').before('<span class="snip"></span><h6 class="info-text text-ul-dot printOnly hidden"><a href="' + tomUrl + '" target="_blank" rel="noopener noreferrer">' + tomCategory + '</h6>');
             $(elem).parent('div').prev('h6').before('<div class="panel panel-default printHide"><div class="panel-heading" role="tab" id="heading_' + targetCategory + '"><h4 class="panel-title"><a role="button" data-toggle="collapse" data-parent="#' + targetID + '" href="#' + targetCategory + '" aria-expanded="true" aria-controls="' + targetCategory + '">' + tomCategory + '</a></h4></div></div>');
             inserted = true;
             return false;
           }
         });
 
+        // Unten einfügen falls korrekte Stelle zum Einfügen nicht gefunden
         if(!inserted) {
+          // Hinweis: <span class="snip"></span> ist Platzhalter für Aufteilung des HTMLs bei der PDF-Generierung (MPDF hat ein Limit für die HTML Länge)
           targetElem.append('<span class="snip"></span><h6 class="info-text text-ul-dot printOnly hidden"><a href="' + tomUrl + '" target="_blank" rel="noopener noreferrer">' + tomCategory + '</h6>');
           targetElem.append('<div class="panel panel-default printHide"><div class="panel-heading" role="tab" id="heading_' + targetCategory + '"><h4 class="panel-title"><a role="button" data-toggle="collapse" data-parent="#' + targetID + '" href="#' + targetCategory + '" aria-expanded="true" aria-controls="' + targetCategory + '">' + tomCategory + '</a></h4></div></div>');
         }
 
+        // Tabelle vorbereiten und einfügen
         let anforderungDesc = 'Als <em>Sicherheitsanforderung</em> werden Anforderungen für den organisatorischen, personellen, infrastrukturellen und technischen Bereich bezeichnet, deren Erfüllung zur Erhöhung der Informationssicherheit notwendig ist bzw. dazu beiträgt. Eine Sicherheitsanforderung beschreibt also, was getan werden muss, um ein bestimmtes Niveau bezüglich der Informationssicherheit zu erreichen. Wie die Anforderungen im konkreten Fall erfüllt werden, muss in der entsprechenden Sicherheitsmaßnahme beschrieben werden. (<em>Im englischen Sprachraum wird für Sicherheitsanforderungen häufig der Begriff „control“ verwendet.</em>)<br>Der IT-Grundschutz unterscheidet zwischen Basis-Anforderungen, Standard-Anforderungen und Anforderungen bei erhöhtem Schutzbedarf. <em>Basis-Anforderungen</em> (grün) sind fundamental und stets umzusetzen, sofern nicht gravierende Gründe dagegen sprechen. <em>Standard-Anforderungen</em> (gelb) sind für den normalen Schutzbedarf grundsätzlich umzusetzen, sofern sie nicht durch mindestens gleichwertige Alternativen oder die bewusste Akzeptanz des Restrisikos ersetzt werden. <em>Anforderungen bei erhöhtem Schutzbedarf</em> (rot) sind exemplarische Vorschläge, was bei entsprechendem Schutzbedarf zur Absicherung sinnvoll umzusetzen ist.';
         let statusDesc = 'Als Antworten bezüglich des <em>Umsetzungsstatus</em> der einzelnen Anforderungen kommen folgende Aussagen in Betracht:<ul><li><strong>Ja</strong> - Zu der Anforderung wurden geeignete Maßnahmen vollständig, wirksam und angemessen umgesetzt.</li><li><strong>Teilweise</strong> - Die Anforderung wurde nur teilweise umgesetzt.</li><li><strong>Nein</strong> - Die Anforderung wurde noch nicht erfüllt, also geeignete Maßnahmen sind größtenteils noch nicht umgesetzt worden.</li><li><strong>Entbehrlich</strong> - Die Erfüllung der Anforderung ist in der vorgeschlagenen Art nicht notwendig, weil die Anforderung im betrachteten Informationsverbund nicht relevant ist (z. B. weil Dienste nicht aktiviert wurden) oder bereits durch Alternativmaßnahmen erfüllt wurde. Wenn Basisanforderungen nicht erfüllt werden, bleibt grundsätzlich ein erhöhtes Risiko bestehen.</ul>';
         let massnahmeDesc = 'Als <em>Sicherheitsmaßnahme</em> (kurz Maßnahme) werden alle Aktionen bezeichnet, die dazu dienen, um Sicherheitsrisiken zu steuern und um diesen entgegenzuwirken. Dies schließt sowohl organisatorische, als auch personelle, technische oder infrastrukturelle Sicherheitsmaßnahmen ein. Sicherheitsmaßnahmen dienen zur Erfüllung von Sicherheitsanforderungen. Synonym werden auch die Begriffe Sicherheitsvorkehrung oder Schutzmaßnahme benutzt. (<em>Im englischen Sprachraum werden die Begriffe „safeguard“, „security measure“ oder „measure“ verwendet.</em>)';
@@ -1637,6 +1659,7 @@ function toggleTOMList(evt) {
         });
       }
 
+      // Alle TOMs in die passende Tabelle einfügen
       let className = row['Risklevel'] == 1 ? 'success' : row['Risklevel'] == 2 ? 'warning' : 'danger';
       let tomID = row['Identifier'].trim().replace(/ /g, '_');
       // Titel einblenden, falls vorhanden (bei ENISA gibt es nur die Beschreibung)
@@ -1782,18 +1805,32 @@ Promise.all(promises).then(function() {
           showError('Auslesen der Abhängigkeiten', 'Scheinbar existiert eine Abhängigkeit nicht mehr!');
           console.error('Fehler beim Abruf von Abhängigkeiten! Fehler: ' + data['error']);
           descText.val('<Das Verfahren existiert nicht!>');
+          idField.closest('td').find('input[name="abschluss_abhaengigkeit_betreiber[]"], input[name="itverfahren_abhaengigkeit_betreiber[]"], input[name="verarbeitung_abhaengigkeit_betreiber[]"]').val('');
+          // Disable Link
+          idField.closest('tr').find('td:last').find('a').removeAttr('href');
+          idField.closest('tr').find('td:last').find('a').attr('disabled', 'disabled');
           return;
         }
-        idField.closest('td').find('input[name="abschluss_abhaengigkeit_name[]"], input[name="itverfahren_abhaengigkeit_name[]"], input[name="verarbeitung_abhaengigkeit_name[]"]').val(htmlDecode(data['data'][0]['Bezeichnung']) + ' [' + htmlDecode(data['data'][0]['Fachabteilung']) + ']');
+        idField.closest('td').find('input[name="abschluss_abhaengigkeit_name[]"], input[name="itverfahren_abhaengigkeit_name[]"], input[name="verarbeitung_abhaengigkeit_name[]"]').val(htmlDecode(data['data'][0]['Bezeichnung']));
+        idField.closest('td').find('input[name="abschluss_abhaengigkeit_betreiber[]"], input[name="itverfahren_abhaengigkeit_betreiber[]"], input[name="verarbeitung_abhaengigkeit_betreiber[]"]').val(htmlDecode(data['data'][0]['Fachabteilung']));
+        // Enable Link
         idField.closest('tr').find('a').attr('href', '?id=' + idField.val());
+        idField.closest('tr').find('td:last').find('a').removeAttr('disabled');
         descText.val(htmlDecode(data['data'][0]['Beschreibung']));
       }).fail((jqXHR, error, errorThrown) => {
         console.error('Fehler beim Abruf von Abhängigkeiten! HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
         descText.val('<Fehler beim Abrufen>');
+        idField.closest('td').find('input[name="abschluss_abhaengigkeit_betreiber[]"], input[name="itverfahren_abhaengigkeit_betreiber[]"], input[name="verarbeitung_abhaengigkeit_betreiber[]"]').val('');
+        // Disable Link
+        idField.closest('tr').find('td:last').find('a').removeAttr('href');
+        idField.closest('tr').find('td:last').find('a').attr('disabled', 'disabled');
       });
     }
     else {
       descText.val('');
+      // Disable Link
+      idField.closest('tr').find('td:last').find('a').removeAttr('href');
+      idField.closest('tr').find('td:last').find('a').attr('disabled', 'disabled');
     }
   });
 

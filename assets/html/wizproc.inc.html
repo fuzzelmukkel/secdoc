@@ -190,7 +190,7 @@
               <th class="col-sm-1">Nr.</th>
               <th class="col-sm-4">Beschreibung</th>
               <th class="col-sm-4">Herkunft</th>
-              <th class="col-sm-2">Besonders <i data-toggle="tooltip" title="Eine Kategorie personenbezogener Daten muss als besonders gekennzeichnet sein, wenn es sich um Daten gemäßg Art. 9 oder 10 DSGVO handelt. Das sind Daten, aus denen die rassische und ethnische Herkunft, politische Meinungen, religiöse oder weltanschauliche Überzeugungen oder die Gewerkschaftszugehörigkeit hervorgehen, sowie genetischen Daten, biometrischen Daten zur eindeutigen Identifizierung einer natürlichen Person, Gesundheitsdaten oder Daten zum Sexualleben oder der sexuellen Orientierung. Auch Daten über strafrechtliche Verurteilungen und Straftaten fallen unter diese Klassifizierung." class="fa fa-question-circle-o fa-lg"></i></th>
+              <th class="col-sm-2">Besonders nach Art. 9 DSGVO <i data-toggle="tooltip" title="Eine Kategorie personenbezogener Daten muss als besonders gekennzeichnet sein, wenn es sich um Daten gemäßg Art. 9 oder 10 DSGVO handelt. Das sind Daten, aus denen die rassische und ethnische Herkunft, politische Meinungen, religiöse oder weltanschauliche Überzeugungen oder die Gewerkschaftszugehörigkeit hervorgehen, sowie genetischen Daten, biometrischen Daten zur eindeutigen Identifizierung einer natürlichen Person, Gesundheitsdaten oder Daten zum Sexualleben oder der sexuellen Orientierung. Auch Daten über strafrechtliche Verurteilungen und Straftaten fallen unter diese Klassifizierung." class="fa fa-question-circle-o fa-lg"></i></th>
               <th class="col-sm-1"></th>
             </tr>
           </thead>
@@ -477,13 +477,17 @@ Art. 25 DSGVO Datenschutz durch Technikgestaltung und durch datenschutzfreundlic
               <td>
                 <input type="text" data-tool="typeahead" data-action="searchFachapp" data-minlength="0" data-dynamic="true" data-hiddenfield="abschluss_abhaengigkeit_id[]" class="form-control" name="abschluss_abhaengigkeit_name[]" placeholder="Bsp.: E-Mail Dienst">
                 <input type="hidden" name="abschluss_abhaengigkeit_id[]">
+                <div class="form-group">
+                  <label>Betreiber:</label><br>
+                  <input type="text" class="form-control" name="abschluss_abhaengigkeit_betreiber[]" readonly />
+                </div>
               </td>
               <td>
                 <textarea class="form-control" rows="3" disabled></textarea>
               </td>
               <td class="text-center">
-                <button type="button" class="abschluss_abhaengigkeit_del btn btn-danger"><i class="fa fa-minus"></i> Löschen</button><br />
-                <a class="btn" style="margin-top: 2px;" href="#" target="_blank">Anzeigen</a>
+                <button type="button" class="abschluss_abhaengigkeit_del btn btn-danger" title="Abhängigkeit aus Liste entfernen"><i class="fa fa-minus"></i> Entfernen</button><br />
+                <a class="btn" style="margin-top: 2px;" target="_blank" title="Dokumentation in neuem Fenster öffnen" disabled>Anzeigen</a>
               </td>
             </tr>
           </tbody>
@@ -510,13 +514,17 @@ Art. 25 DSGVO Datenschutz durch Technikgestaltung und durch datenschutzfreundlic
               <td>
                 <input type="text" data-tool="typeahead" data-action="searchverarbeitung" data-minlength="0" data-dynamic="true" data-hiddenfield="verarbeitung_abhaengigkeit_id[]" class="form-control" name="verarbeitung_abhaengigkeit_name[]" placeholder="Bsp.: Immatrikulation">
                 <input type="hidden" name="verarbeitung_abhaengigkeit_id[]">
+                <div class="form-group">
+                  <label>Betreiber:</label><br>
+                  <input type="text" class="form-control" name="verarbeitung_abhaengigkeit_betreiber[]" readonly />
+                </div>
               </td>
               <td>
                 <textarea class="form-control" rows="3" disabled></textarea>
               </td>
               <td class="text-center">
-                <button type="button" class="verarbeitung_abhaengigkeit_del btn btn-danger"><i class="fa fa-minus"></i> Löschen</button><br />
-                <a class="btn" style="margin-top: 2px;" href="#" target="_blank">Anzeigen</a>
+                <button type="button" class="verarbeitung_abhaengigkeit_del btn btn-danger" title="Abhängigkeit aus Liste entfernen"><i class="fa fa-minus"></i> Entfernen</button><br />
+                <a class="btn" style="margin-top: 2px;" target="_blank" title="Dokumentation in neuem Fenster öffnen" disabled>Anzeigen</a>
               </td>
             </tr>
           </tbody>
