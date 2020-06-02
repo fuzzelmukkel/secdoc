@@ -600,12 +600,12 @@ function loadFromJSON(values, keepAccess = false) {
 
       for(let c = 0; c < values[val].length; c++) {
         if(inputs[c].type === 'checkbox') {
-          if(values[val][c] !== '0') $(inputs[c]).prop('checked', true).trigger('change');
+          if(values[val][c] !== '0' && !$(inputs[c]).prop('checked')) $(inputs[c]).prop('checked', true).trigger('change');
         }
         else if(inputs[c].type === 'radio') {
           let fieldsPerValue = inputs.length / values[val].length;
           for(let d = 0; d < fieldsPerValue; d++) {
-            if(inputs[c * fieldsPerValue + d].value === values[val][c]) $(inputs[c * fieldsPerValue + d]).prop('checked', true).trigger('change');
+            if(inputs[c * fieldsPerValue + d].value === values[val][c] && !$(inputs[c * fieldsPerValue + d]).prop('checked')) $(inputs[c * fieldsPerValue + d]).prop('checked', true).trigger('change');
           }
         }
         else {
@@ -618,7 +618,7 @@ function loadFromJSON(values, keepAccess = false) {
       var inp = $('[name="' + val + '"]');
       if(inp.length === 1) {
         if(inp[0].type === 'checkbox') {
-          if(values[val] !== '0') inp.prop('checked', true).trigger('change');
+          if(values[val] !== '0' && !inp.prop('checked')) inp.prop('checked', true).trigger('change');
         }
         else {
           if(!Array.isArray(values[val])) values[val] = htmlDecode(values[val]);
@@ -627,7 +627,7 @@ function loadFromJSON(values, keepAccess = false) {
       }
       else if(inp.length > 1 && inp[0].type === 'radio') {
         for(let c = 0; c < inp.length; c++) {
-          if(inp[c].value === values[val]) $(inp[c]).prop('checked', true).trigger('change');
+          if(inp[c].value === values[val] && !$(inp[c]).prop('checked')) $(inp[c]).prop('checked', true).trigger('change');
         }
       }
       else {
