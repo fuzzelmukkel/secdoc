@@ -1216,6 +1216,10 @@ function initTypeahead(node) {
     var itemKeys = Object.keys(item);
     var split = lowcaseQuery.split(' ');
     var found = undefined;
+
+    // Aktuelle Dokumentation aus Auswahllisten filtern
+    if(Number.parseInt(item.value) === loadId) return undefined;
+
     for(let c=0; c < itemKeys.length; c++) {
       if(item[itemKeys[c]] !== null && item[itemKeys[c]].toLowerCase().search(lowcaseQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) > -1) {
         found = true;
@@ -1622,7 +1626,7 @@ function toggleTOMList(evt) {
       let targetElem = $('#' + targetID);
       let tomCategory = row['Category'].trim() + (row['Subcategory'] ? ' - ' + row['Subcategory'].trim() : '');
       let targetCategory = 'tom_category_' + tomCategory.replace(/\W/g, '_');
-      let tomUrl = row['URL'];
+      let tomUrl = row['URL'] ? row['URL'] : '';
 
       if($('#' + targetCategory).length !== 1) {
         let inserted = false;
@@ -1630,7 +1634,7 @@ function toggleTOMList(evt) {
         targetElem.find('.panel-heading').each(function(idx, elem) {
           if(elem.id.localeCompare('heading_' + targetCategory) === 1) {
             // Hinweis: <span class="snip"></span> ist Platzhalter für Aufteilung des HTMLs bei der PDF-Generierung (MPDF hat ein Limit für die HTML Länge)
-            $(elem).parent('div').prev('h6').before('<span class="snip"></span><h6 class="info-text text-ul-dot printOnly hidden"><a href="' + tomUrl + '" target="_blank" rel="noopener noreferrer">' + tomCategory + '</h6>');
+            $(elem).parent('div').prev('h6').before('<span class="snip"></span><h6 class="info-text text-ul-dot printOnly hidden"><a href="' + tomUrl + '" target="_blank" rel="noopener noreferrer">' + tomCategory + '</a></h6>');
             $(elem).parent('div').prev('h6').before('<div class="panel panel-default printHide"><div class="panel-heading" role="tab" id="heading_' + targetCategory + '"><h4 class="panel-title"><a role="button" data-toggle="collapse" data-parent="#' + targetID + '" href="#' + targetCategory + '" aria-expanded="true" aria-controls="' + targetCategory + '">' + tomCategory + '</a></h4></div></div>');
             inserted = true;
             return false;
@@ -1640,7 +1644,7 @@ function toggleTOMList(evt) {
         // Unten einfügen falls korrekte Stelle zum Einfügen nicht gefunden
         if(!inserted) {
           // Hinweis: <span class="snip"></span> ist Platzhalter für Aufteilung des HTMLs bei der PDF-Generierung (MPDF hat ein Limit für die HTML Länge)
-          targetElem.append('<span class="snip"></span><h6 class="info-text text-ul-dot printOnly hidden"><a href="' + tomUrl + '" target="_blank" rel="noopener noreferrer">' + tomCategory + '</h6>');
+          targetElem.append('<span class="snip"></span><h6 class="info-text text-ul-dot printOnly hidden"><a href="' + tomUrl + '" target="_blank" rel="noopener noreferrer">' + tomCategory + '</a></h6>');
           targetElem.append('<div class="panel panel-default printHide"><div class="panel-heading" role="tab" id="heading_' + targetCategory + '"><h4 class="panel-title"><a role="button" data-toggle="collapse" data-parent="#' + targetID + '" href="#' + targetCategory + '" aria-expanded="true" aria-controls="' + targetCategory + '">' + tomCategory + '</a></h4></div></div>');
         }
 
@@ -1663,13 +1667,15 @@ function toggleTOMList(evt) {
       // Titel einblenden, falls vorhanden (bei ENISA gibt es nur die Beschreibung)
       let tomContent = row['Title'] ? '<p class="strong">' + row['Title'] + ' </p><p>' + row['Description'] + '</p>' : row['Description'];
       let tableBody = $('#' + targetCategory).find('tbody');
+      // Identifier als Link falls URL vorhanden
+      let tomIdentifier = tomUrl ? '<a href="' + tomUrl + '" target="_blank" rel="noopener noreferrer">' + row['Identifier'] + '</a>' : row['Identifier'];
 
       let tomDropdown = $('<select data-tool="selectpicker" name="massnahmen_' + tomID + '"></select>')
         .append('<option value="1">Ja</option>')
         .append('<option value="0" selected>Nein</option>')
         .append('<option value="2">Teilweise</option>')
         .append('<option value="4">Entbehrlich</option>');
-      tableBody.append('<tr data-risk="' + row['Risklevel'] + '" class="' + className + '"><td>' + row['Identifier'] + '</td><td>' + tomContent + '</td><td>' + tomDropdown[0].outerHTML + '</td><td><textarea rows="5" name="massnahmen_' + tomID + '_kommentar" class="form-control" placeholder="Beschreibung der Sicherheitsmaßnahme, Erläuterung bzw. Begründung"></textarea></td></tr>');
+      tableBody.append('<tr data-risk="' + row['Risklevel'] + '" class="' + className + '"><td>' + tomIdentifier + '</td><td>' + tomContent + '</td><td>' + tomDropdown[0].outerHTML + '</td><td><textarea rows="5" name="massnahmen_' + tomID + '_kommentar" class="form-control" placeholder="Beschreibung der Sicherheitsmaßnahme, Erläuterung bzw. Begründung"></textarea></td></tr>');
     });
 
     // Tooltips aktivieren

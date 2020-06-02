@@ -26,7 +26,7 @@
   # Globale Konfiguration setzen
   # ----------------------------------------
   $prog_name    = "SecDoc Demosystem";
-  $prog_version = "1.5 (2020.05.28)";
+  $prog_version = "1.5.1 (2020.06.02)";
   $prog_url     = 'http://localhost/';
 
   # Debugging

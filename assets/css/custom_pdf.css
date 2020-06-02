@@ -1,0 +1,11 @@
+/*
+ * custom_pdf.css - Anpassungen für MPDF
+ *
+ * Author Dustin Gawron <dustin.gawron@uni-muenster.de>
+ * Copyright (c) 2018-2020 Westfälische Wilhelms-Universität Münster
+ * Licensed under AGPL-3.0-or-later (https://www.gnu.org/licenses/agpl.html)
+ */
+
+.strong, strong {
+  font-weight: bold;
+}

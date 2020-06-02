@@ -137,6 +137,8 @@
     $mpdf->WriteHTML($style,1);
     $style = file_get_contents('../css/custom.css');
     $mpdf->WriteHTML($style,1);
+    $style = file_get_contents('../css/custom_pdf.css');
+    $mpdf->WriteHTML($style,1);
 
     # HTML aufbauen
     $finalHTML = <<<EOH
