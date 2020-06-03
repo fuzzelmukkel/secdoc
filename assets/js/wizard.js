@@ -594,7 +594,7 @@ function loadFromJSON(values, keepAccess = false) {
 
       if(inputs.length === 0) {
         debugLog('Konnte keine Eingabefelder mit Namen "' + val + '" finden! Überspringe...');
-        missingFields.push(val);
+        missingFields.push(htmlEncode(val));
         return true;
       }
 
@@ -632,7 +632,7 @@ function loadFromJSON(values, keepAccess = false) {
       }
       else {
         debugLog('Keine passenden oder mehrere Eingabefelder mit Namen "' + val + '" gefunden! Überspringe...');
-        missingFields.push(val);
+        missingFields.push(htmlEncode(val));
       }
     }
   });
@@ -760,6 +760,9 @@ function loadFromServer(id) {
       if(!data['data'][0]['Editierbar']) {
         canEdit = false;
         $('#content').find('input, textarea, select, button[id!="showVerfahrensliste"]').prop('disabled', true);
+        $('#content > .tab-content > .tab-pane > div').appendTo('#content > .tab-content > .tab-pane:first()');
+        $('#content > .wizard-navigation, #content > .wizard-footer div').remove();
+        $('#content > .tab-content').css('padding-top', '0px');
       }
 
       lastSaveDate = data['data'][0]['Aktualisierung'];
@@ -833,9 +836,10 @@ function copyFromServer(id) {
 
 /**
  * Generiert den HTML-Code-Auschnitt für die PDF-Generierung
+ * @param {boolean} draft Zeigt an, ob ein Abschluss- oder Entwurfs-Dokument erstellt wird
  * @returns {String} HTML-Code
  */
-function genHTMLforPDF() {
+function genHTMLforPDF(draft = false) {
   console.time('HTML-Code-Generierung für PDF');
 
   /* Alle leeren Tabellenzeilen entfernen */
@@ -880,6 +884,11 @@ function genHTMLforPDF() {
     if(parseInt($(this).data('risk')) > currRiskLevel) $(this).remove();
   });
 
+  /* Bei Abschluss-PDF Volltexte entfernen */
+  if(!draft) toSend.find('#tom_accordion').find('tbody td:nth-child(2) p.tom_desc').remove();
+  if(!draft) toSend.find('#tom_accordion').find('tbody td:nth-child(2) p').removeClass('strong');
+
+  /* Hinweis-Text bei keinen ausgewählten TOMs */
   if(toSend.find('#toggletoms').find('input[type=checkbox]:checked').length === 0 || toSend.find('#tom_accordion').find('tr').length === 0) {
     toSend.find('#tom_accordion').append('<h5 class="text-center"><strong>Es wurden keine Technischen und Organisatorischen Maßnahmen ausgewählt.</strong></h5>');
   }
@@ -1665,7 +1674,7 @@ function toggleTOMList(evt) {
       let className = row['Risklevel'] == 1 ? 'success' : row['Risklevel'] == 2 ? 'warning' : 'danger';
       let tomID = row['Identifier'].trim().replace(/ /g, '_');
       // Titel einblenden, falls vorhanden (bei ENISA gibt es nur die Beschreibung)
-      let tomContent = row['Title'] ? '<p class="strong">' + row['Title'] + ' </p><p>' + row['Description'] + '</p>' : row['Description'];
+      let tomContent = row['Title'] ? '<p class="strong">' + row['Title'] + ' </p><p class="tom_desc">' + row['Description'] + '</p>' : row['Description'];
       let tableBody = $('#' + targetCategory).find('tbody');
       // Identifier als Link falls URL vorhanden
       let tomIdentifier = tomUrl ? '<a href="' + tomUrl + '" target="_blank" rel="noopener noreferrer">' + row['Identifier'] + '</a>' : row['Identifier'];
@@ -1920,7 +1929,7 @@ Promise.all(promises).then(function() {
 
     if(canEdit) saveOnServer();
 
-    let htmlForPDF = genHTMLforPDF();
+    let htmlForPDF = genHTMLforPDF(true);
 
     $.post(backendPath, JSON.stringify({'action':'gendraftpdf', 'id': loadId, 'data': {'title': $('[name="allgemein_bezeichnung"]').val(), 'pdfCode': htmlForPDF}, 'debug': debug})).done((data) => {
       if(!data['success']) {
