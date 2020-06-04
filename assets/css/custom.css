@@ -171,3 +171,8 @@ input.customError {
 .strong {
     font-weight: 700 !important;
 }
+
+/* Kleinere Select-Felder in TOM-Liste */
+#tom_accordion .bootstrap-select {
+  width: 100% !important;
+}

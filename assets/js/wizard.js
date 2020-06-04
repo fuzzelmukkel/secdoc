@@ -1663,7 +1663,7 @@ function toggleTOMList(evt) {
         let massnahmeDesc = 'Als <em>Sicherheitsmaßnahme</em> (kurz Maßnahme) werden alle Aktionen bezeichnet, die dazu dienen, um Sicherheitsrisiken zu steuern und um diesen entgegenzuwirken. Dies schließt sowohl organisatorische, als auch personelle, technische oder infrastrukturelle Sicherheitsmaßnahmen ein. Sicherheitsmaßnahmen dienen zur Erfüllung von Sicherheitsanforderungen. Synonym werden auch die Begriffe Sicherheitsvorkehrung oder Schutzmaßnahme benutzt. (<em>Im englischen Sprachraum werden die Begriffe „safeguard“, „security measure“ oder „measure“ verwendet.</em>)';
 
         $('#heading_' + targetCategory).after('<div id="' + targetCategory + '" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading_' + targetCategory + '"><div class="panel-body"></div></div>');
-        $('#' + targetCategory).find('.panel-body').append('<table class="table table-striped table-hover"><thead><tr class="text-nowrap"><th class="col-sm-auto">Anforderung <i data-toggle="tooltip" data-html="true" title="' + anforderungDesc + '" class="fa fa-question-circle-o fa-lg"></i></th><th class="col-sm-5">Beschreibung</th><th class="col-sm-auto">Umsetzungsstatus <i data-toggle="tooltip" title="' + statusDesc + '" class="fa fa-question-circle-o fa-lg"></i></th><th class="col-sm-4">Maßnahme <i data-toggle="tooltip" data-html="true" title="' + massnahmeDesc + '" class="fa fa-question-circle-o fa-lg"></i></th></tr></thead><tbody></tbody></table>');
+        $('#' + targetCategory).find('.panel-body').append('<table class="table table-striped table-hover"><thead><tr class="text-nowrap"><th class="col-sm-auto">Anforderung <i data-toggle="tooltip" data-html="true" title="' + anforderungDesc + '" class="fa fa-question-circle-o fa-lg"></i></th><th class="col-sm-5">Beschreibung</th><th class="col-sm-auto">Umsetzung <i data-toggle="tooltip" title="' + statusDesc + '" class="fa fa-question-circle-o fa-lg"></i></th><th class="col-sm-4">Maßnahme <i data-toggle="tooltip" data-html="true" title="' + massnahmeDesc + '" class="fa fa-question-circle-o fa-lg"></i></th></tr></thead><tbody></tbody></table>');
         $('#heading_' + targetCategory + ', #heading_' + targetCategory + ' a').click((evt) => {
           if(evt.target.nodeName === "A") return;
           $(evt.target).find('a').click();
@@ -1677,7 +1677,7 @@ function toggleTOMList(evt) {
       let tomContent = row['Title'] ? '<p class="strong">' + row['Title'] + ' </p><p class="tom_desc">' + row['Description'] + '</p>' : row['Description'];
       let tableBody = $('#' + targetCategory).find('tbody');
       // Identifier als Link falls URL vorhanden
-      let tomIdentifier = tomUrl ? '<a href="' + tomUrl + '" target="_blank" rel="noopener noreferrer">' + row['Identifier'] + '</a>' : row['Identifier'];
+      let tomIdentifier = row['Identifier'];
 
       let tomDropdown = $('<select data-tool="selectpicker" name="massnahmen_' + tomID + '"></select>')
         .append('<option value="1">Ja</option>')
