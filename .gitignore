@@ -6,3 +6,8 @@ bower_components
 .svn
 assets/vendor
 phpdoc-cache-*
+.idea
+
+#NPM/React specific
+admin/package-lock.json
+admin/node_modules
