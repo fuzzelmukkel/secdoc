@@ -1722,6 +1722,11 @@ function toggleTOMList(evt) {
         .append('<option value="2">Teilweise</option>')
         .append('<option value="4">Entbehrlich</option>');
       tableBody.append('<tr data-risk="' + row['Risklevel'] + '" class="' + className + '"><td>' + tomIdentifier + '</td><td>' + tomContent + '</td><td>' + tomDropdown[0].outerHTML + '</td><td><textarea rows="5" name="massnahmen_' + tomID + '_kommentar" class="form-control" placeholder="Beschreibung der Sicherheitsmaßnahme, Erläuterung bzw. Begründung"></textarea></td></tr>');
+
+      if(row['Title'].search('ENTFALLEN') >= 0) {
+        tableBody.find('tr').last().find('textarea').prop('disabled', true);
+        tableBody.find('tr').last().find('select').replaceWith('ENTFALLEN');
+      }
     });
 
     // Tooltips aktivieren
