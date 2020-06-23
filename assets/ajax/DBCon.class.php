@@ -1593,7 +1593,7 @@
 
       $dependencies = [];
 
-      $sql = 'SELECT Dependent, Bezeichnung, Typ FROM dependency LEFT JOIN verfahren ON dependency.Dependent = verfahren.ID WHERE Dependency = ? ORDER BY Bezeichnung ASC;';
+      $sql = 'SELECT Dependent, Bezeichnung, Typ, Status FROM dependency LEFT JOIN verfahren ON dependency.Dependent = verfahren.ID WHERE Dependency = ? ORDER BY Bezeichnung ASC;';
 
       $sth = $this->pdo->prepare($sql);
 
@@ -1605,7 +1605,7 @@
       print "DBCon.class.php -> getDependencies() Execute: $sqlDump";
 
       foreach($sth->fetchAll() as $entry) {
-        array_push($dependencies, ['id' => intval($entry['Dependent']), 'name' => $entry['Bezeichnung'], 'type' => intval($entry['Typ'])]);
+        array_push($dependencies, ['id' => intval($entry['Dependent']), 'name' => $entry['Bezeichnung'], 'type' => intval($entry['Typ']), 'status' => intval($entry['Status'])]);
       }
 
       return $dependencies;

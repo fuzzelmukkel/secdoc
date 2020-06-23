@@ -94,6 +94,13 @@ var getUserPromise = Promise.resolve();
  */
 var statusMapping = {'0': 'In Bearbeitung', '1': 'Zur Freigabe', '2': 'In Betrieb', '9': 'Unbekannt'};
 
+/**
+ * Mapping für Status Symbole
+ * @global
+ * @type {Object}
+ */
+var statusSymbolMapping = {'0': 'fa-pencil-square-o', '2': 'fa-check-square-o', '9': 'fa-question'};
+
 /*
  * Debug Modus initialisieren
  */
