@@ -78,6 +78,13 @@ if(mode === 'wizit')  modeName = ['IT-Verfahren', 'IT-Verfahren'];
 var changedValues = false;
 
 /**
+ * Liste der IDs aller veränderten Felder seit dem letzten Speichern
+ * @global
+ * @type {Array}
+ */
+var changedFields = [];
+
+/**
  * Gibt an, ob das Verfahren als abgeschlossen markiert wurde
  * @global
  * @type {Boolean}
@@ -97,6 +104,13 @@ var status = 0;
  * @type {Array}
  */
 var promises = [];
+
+/**
+ * JS Interval Timer für regelmäßigen Autosave
+ * @global
+ * @type {Number}
+ */
+var autoSaveTimer = -1;
 
 // Mappings
 /**
@@ -709,6 +723,7 @@ function saveOnServer() {
         history.replaceState({}, document.title, window.location.href.split('?')[0] + '?id=' + loadId);
         setSaveLabel('saved', new Date(data['data']['Date']));
         changedValues = false;
+        changedFields = [];
       }
       else {
         showError('Anlegen der Dokumentation', data['error']);
@@ -739,6 +754,7 @@ function saveOnServer() {
         setSaveLabel('saved', new Date(data['data']['Date'].replace(' ', 'T')));  // Safari benötigt das Format YYYY-MM-DDTHH:MM:SS (mit T)
         history.replaceState({}, document.title, window.location.href.split('?')[0] + '?id=' + loadId);
         changedValues = false;
+        changedFields = [];
 
         // Hinweis anzeigen, falls Status zurückgesetzt wurde
         if(markedAsFinished) {
@@ -805,6 +821,7 @@ function loadFromServer(id) {
       let statusSymbol = status in statusSymbolMapping ? ' <i data-toggle="tooltip" class="fa fa-lg ' + statusSymbolMapping[status] + '" title="' + statusMapping[status]  + '"></i>' : '';
       $('#title').text('Dokumentation von ' + htmlDecode(data['data'][0]['Bezeichnung'])).append(statusSymbol).find('i').tooltip();
       changedValues = false;
+      changedFields = [];
 
       // Abhängigkeiten bei IT-Verfahren anzeigen
       if(userIsDSB) {
@@ -859,6 +876,7 @@ function copyFromServer(id) {
       $('input[name=allgemein_bezeichnung]').val('[Kopie] ' + $('input[name=allgemein_bezeichnung]').val()); /* Kopie vor Bezeichnung setzen */
       history.replaceState({}, document.title, window.location.href.split('?')[0]);
       changedValues = true;
+      changedFields = ['allgemein_bezeichnung'];
     }
     else {
       showError('Kopieren der Dokumentation', data['error']);
@@ -2033,6 +2051,14 @@ Promise.all(promises).then(function() {
   $('#exportBtn').removeClass('hidden').click((evt) => {exportJSON()});
   $('#importBtn').removeClass('hidden').click((evt) => {showImportDialog()});
 
+  // Autosave Timer
+  autoSaveTimer = window.setInterval(() => {
+    if(loadId !== 0 && changedValues) {
+      console.log('Autosaving...');
+      saveOnServer();
+    }
+  }, 600000);
+
   console.timeEnd('Spezielle Handler initialisieren');
 
   // Verfahren laden, falls ID in der URL übergeben
@@ -2050,7 +2076,7 @@ Promise.all(promises).then(function() {
   }
 
   // Überprüpft, ob Angaben geändert wurden
-  $('form').on('change', '[name!=""]', (e) => { changedValues = true; });
+  $('form').on('change', '[name!=""]', (e) => { changedValues = true; changedFields.push(e.target.name); e.stopPropagation() });
 
   // DSB Elemente anzeigen
   if(userIsDSB) {
