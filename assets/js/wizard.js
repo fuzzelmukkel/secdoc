@@ -112,6 +112,13 @@ var promises = [];
  */
 var autoSaveTimer = -1;
 
+/**
+ * Zeit zwischen Autosaves
+ * @global
+ * @type {Number}
+ */
+var autoSaveWait = 600000;
+
 // Mappings
 /**
  * Mapping für die Liste der TOMs
@@ -747,7 +754,43 @@ function saveOnServer() {
 
     return $.post(backendPath, JSON.stringify({'action':'update', 'debug': debug, 'id': loadId, 'data': currentState})).done(function(data) {
       if(!data['success']) {
-        showError('Speichern der Dokumentation', data['error']);
+        let errorText = data['error'];
+
+        if(errorText.search('bearbeitet') >= 0) {
+          let unsavedChanges = $('<div></div>').append('<p><h4>Übersicht der ungespeicherten Änderungen</h4><table class="table table-bordered bg-info"><thead><tr><th>Feld</th><th>Inhalt</th></tr></thead><tbody></tbody></table></p>');
+          let changedFieldsCopy = changedFields;
+
+          changedFieldsCopy.forEach((x, idx) => {
+            let fieldName = $('[name="' + x + '"]').closest('div.form-group').find('label').text();
+            if(!fieldName) fieldName = $('[name="' + x + '"]').closest('table').closest('div').prev().find('h1, h2, h3, h4, h5, h6').text();
+
+            if(fieldName) {
+              unsavedChanges.find('tbody').append('<tr><td>' + htmlEncode(fieldName) + '</td><td>' + htmlEncode($('[name="' + x + '"]').val()) + '</td></tr>');
+              changedFieldsCopy.splice(idx, 1);
+            }
+          });
+
+          changedFieldsCopy.forEach((x, idx) => {
+            if(x.search('tom_toggle_') === 0) {
+              if($('[name="' + x + '"]').prop('checked')) {
+                unsavedChanges.find('tbody').append('<tr><td>TOM Kategorie ausgewählt</td><td>' + htmlEncode($('[name="' + x + '"]').parent().text()) + '</td></tr>');
+              }
+              else {
+                unsavedChanges.find('tbody').append('<tr><td>TOM Kategorie abgewählt</td><td>' + htmlEncode($('[name="' + x + '"]').parent().text()) + '</td></tr>');
+              }
+            }
+            else if(x.search('massnahmen_') === 0) {
+              unsavedChanges.find('tbody').append('<tr><td>Massnahme ' + htmlEncode($('[name="' + x + '"]').closest('tr').find('td').first().text()) + '</td><td>' + htmlEncode($('[name="' + x + '"]').val()) + '</td></tr>');
+            }
+            else {
+              unsavedChanges.find('tbody').append('<tr><td>' + htmlEncode(x) + '</td><td>' + htmlEncode($('[name="' + x + '"]').val()) + '</td></tr>');
+            }
+          });
+
+          errorText = errorText + '<br />' + unsavedChanges.html();
+        }
+
+        showError('Speichern der Dokumentation', errorText);
         setSaveLabel('failed');
       }
       else {
@@ -2057,7 +2100,8 @@ Promise.all(promises).then(function() {
       console.log('Autosaving...');
       saveOnServer();
     }
-  }, 600000);
+  }, autoSaveWait);
+  $('#autosaveLabel').text('Automatisches Speichern alle ' + (autoSaveWait / 60000) + ' Mins.').removeClass('hidden');
 
   console.timeEnd('Spezielle Handler initialisieren');
 
