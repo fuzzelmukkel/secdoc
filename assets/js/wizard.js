@@ -110,7 +110,7 @@ var promises = [];
  * @global
  * @type {Number}
  */
-var autoSaveTimer = -1;
+var autoSaveTimer = 0;
 
 /**
  * Zeit zwischen Autosaves
@@ -1803,7 +1803,7 @@ function toggleTOMList(evt) {
         .append('<option value="4">Entbehrlich</option>');
       tableBody.append('<tr data-risk="' + row['Risklevel'] + '" class="' + className + '"><td>' + tomIdentifier + '</td><td>' + tomContent + '</td><td>' + tomDropdown[0].outerHTML + '</td><td><textarea rows="5" name="massnahmen_' + tomID + '_kommentar" class="form-control" placeholder="Beschreibung der Sicherheitsmaßnahme, Erläuterung bzw. Begründung"></textarea></td></tr>');
 
-      if(row['Title'].search('ENTFALLEN') >= 0) {
+      if(tomContent.includes('ENTFALLEN')) {
         tableBody.find('tr').last().find('textarea').prop('disabled', true);
         tableBody.find('tr').last().find('select').replaceWith('ENTFALLEN');
       }
@@ -2121,6 +2121,24 @@ Promise.all(promises).then(function() {
     }
   }, autoSaveWait);
   $('#autosaveLabel').text('Automatisches Speichern alle ' + (autoSaveWait / 60000) + ' Mins.').removeClass('hidden');
+
+  // Toggle für Autosave
+  $('#autosaveLabel').click((evt) => {
+    if(autoSaveTimer) {
+      window.clearInterval(autoSaveTimer);
+      autoSaveTimer = 0;
+      $('#autosaveLabel').text('Automatisches Speichern ausgeschaltet');
+    }
+    else {
+      autoSaveTimer = window.setInterval(() => {
+        if(loadId !== 0 && changedValues) {
+          console.log('Autosaving...');
+          saveOnServer();
+        }
+      }, autoSaveWait);
+      $('#autosaveLabel').text('Automatisches Speichern alle ' + (autoSaveWait / 60000) + ' Mins.');
+    }
+  });
 
   console.timeEnd('Spezielle Handler initialisieren');
 
