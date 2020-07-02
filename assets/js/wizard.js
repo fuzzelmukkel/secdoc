@@ -756,22 +756,29 @@ function saveOnServer() {
       if(!data['success']) {
         let errorText = data['error'];
 
-        if(errorText.search('bearbeitet') >= 0) {
+        if(errorText.includes('bearbeitet')) {
           let unsavedChanges = $('<div></div>').append('<p><h4>Übersicht der ungespeicherten Änderungen</h4><table class="table table-bordered bg-info"><thead><tr><th>Feld</th><th>Inhalt</th></tr></thead><tbody></tbody></table></p>');
-          let changedFieldsCopy = changedFields;
+          let changedFieldsCopy = [...new Set(changedFields)];
+          let changedFieldsRest = [];
 
           changedFieldsCopy.forEach((x, idx) => {
-            let fieldName = $('[name="' + x + '"]').closest('div.form-group').find('label').text();
-            if(!fieldName) fieldName = $('[name="' + x + '"]').closest('table').closest('div').prev().find('h1, h2, h3, h4, h5, h6').text();
+            let fieldName = $('[name="' + x + '"]').first().closest('div.form-group').find('label').text();
+            if(!fieldName) fieldName = $('[name="' + x + '"]').first().closest('table').closest('div').prev().find('h1, h2, h3, h4, h5, h6, .info-text').text();
 
             if(fieldName) {
-              unsavedChanges.find('tbody').append('<tr><td>' + htmlEncode(fieldName) + '</td><td>' + htmlEncode($('[name="' + x + '"]').val()) + '</td></tr>');
-              changedFieldsCopy.splice(idx, 1);
+              let val = htmlEncode($('[name="' + x + '"]').val());
+
+              if(x.includes('[]')) val = 'Tabelle verändert';
+
+              unsavedChanges.find('tbody').append('<tr><td>' + htmlEncode(fieldName) + '</td><td>' + val + '</td></tr>');
+            }
+            else {
+              changedFieldsRest.push(x);
             }
           });
 
-          changedFieldsCopy.forEach((x, idx) => {
-            if(x.search('tom_toggle_') === 0) {
+          changedFieldsRest.forEach((x, idx) => {
+            if(x.includes('tom_toggle_')) {
               if($('[name="' + x + '"]').prop('checked')) {
                 unsavedChanges.find('tbody').append('<tr><td>TOM Kategorie ausgewählt</td><td>' + htmlEncode($('[name="' + x + '"]').parent().text()) + '</td></tr>');
               }
@@ -779,8 +786,20 @@ function saveOnServer() {
                 unsavedChanges.find('tbody').append('<tr><td>TOM Kategorie abgewählt</td><td>' + htmlEncode($('[name="' + x + '"]').parent().text()) + '</td></tr>');
               }
             }
-            else if(x.search('massnahmen_') === 0) {
-              unsavedChanges.find('tbody').append('<tr><td>Massnahme ' + htmlEncode($('[name="' + x + '"]').closest('tr').find('td').first().text()) + '</td><td>' + htmlEncode($('[name="' + x + '"]').val()) + '</td></tr>');
+            else if(x.includes('massnahmen_')) {
+              if($('[name="' + x + '"]').prop('nodeName') === 'SELECT') {
+                let val = 'Nein';
+                switch($('[name="' + x + '"]').val()) {
+                  case '1': val = 'Ja'; break;
+                  case '0': val = 'Nein'; break;
+                  case '2': val = 'Teilweise'; break;
+                  case '4': val = 'Entbehrlich'; break;
+                }
+                unsavedChanges.find('tbody').append('<tr><td>Umsetzung Massnahme ' + htmlEncode($('[name="' + x + '"]').closest('tr').find('td').first().text()) + '</td><td>' + val + '</td></tr>');
+              }
+              else {
+                unsavedChanges.find('tbody').append('<tr><td>Kommentar Massnahme ' + htmlEncode($('[name="' + x + '"]').closest('tr').find('td').first().text()) + '</td><td>' + htmlEncode($('[name="' + x + '"]').val()) + '</td></tr>');
+              }
             }
             else {
               unsavedChanges.find('tbody').append('<tr><td>' + htmlEncode(x) + '</td><td>' + htmlEncode($('[name="' + x + '"]').val()) + '</td></tr>');
