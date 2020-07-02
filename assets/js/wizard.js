@@ -78,6 +78,13 @@ if(mode === 'wizit')  modeName = ['IT-Verfahren', 'IT-Verfahren'];
 var changedValues = false;
 
 /**
+ * Liste der IDs aller veränderten Felder seit dem letzten Speichern
+ * @global
+ * @type {Array}
+ */
+var changedFields = [];
+
+/**
  * Gibt an, ob das Verfahren als abgeschlossen markiert wurde
  * @global
  * @type {Boolean}
@@ -85,11 +92,32 @@ var changedValues = false;
 var markedAsFinished = false;
 
 /**
+ * Gibt an, welchen Status das Verfahren hat
+ * @global
+ * @type {Number}
+ */
+var status = 0;
+
+/**
  * Sammlung von Promises für AJAX-Anfragen, die zu Beginn durchgeführt werden müssen
  * @global
  * @type {Array}
  */
 var promises = [];
+
+/**
+ * JS Interval Timer für regelmäßigen Autosave
+ * @global
+ * @type {Number}
+ */
+var autoSaveTimer = 0;
+
+/**
+ * Zeit zwischen Autosaves
+ * @global
+ * @type {Number}
+ */
+var autoSaveWait = 600000;
 
 // Mappings
 /**
@@ -307,6 +335,12 @@ function myFinish() {
           return;
         }
         markedAsFinished = true;
+        status = 2;
+
+        let statusSymbol = status in statusSymbolMapping ? ' <i data-toggle="tooltip" class="fa fa-lg ' + statusSymbolMapping[status] + '" title="' + statusMapping[status]  + '"></i>' : '';
+        $('#title').find('i').replaceWith(statusSymbol);
+        $('#title').find('i').tooltip();
+
         modal.find('.modal-title').text('Dokumentation abgeschlossen');
         var modalBody = modal.find('.modal-body');
         modalBody.html('<p>Hiermit wurde die Dokumentation als abgeschlossen gekennzeichnet.</p>');
@@ -372,8 +406,9 @@ function showVerfahrensliste(startup = false) {
 
       modeCount++;
 
-      var currId = parseInt(data['data'][c]['ID']);
-      var newEntry = $('<tr></tr>');
+      let currId = parseInt(data['data'][c]['ID']);
+      let newEntry = $('<tr></tr>');
+      let statusSymbol = data['data'][c]['Status'] in statusSymbolMapping ? ' <i class="fa ' + statusSymbolMapping[data['data'][c]['Status']] + '"></i>' : '';
       data['data'][c]['Status'] = data['data'][c]['Status'] in statusMapping ? statusMapping[data['data'][c]['Status']] : statusMapping['9'];
 
       // Editierbare/Eigene Verfahren
@@ -381,7 +416,7 @@ function showVerfahrensliste(startup = false) {
         newEntry.append('<td style="width: 16px;"></td>');
         newEntry.append('<td>' + data['data'][c]['Bezeichnung'] + ' <i data-toggle="tooltip" class="fa fa-info-circle" title="' + data['data'][c]['Beschreibung'] + '"></i></td>');
         newEntry.append('<td>' + data['data'][c]['Fachabteilung']  + '</td>');
-        newEntry.append('<td>' + data['data'][c]['Status'] + '</td>');
+        newEntry.append('<td>' + data['data'][c]['Status'] + statusSymbol + '</td>');
         newEntry.append('<td>' + data['data'][c]['LetzterBearbeiter'] + ' <i data-toggle="tooltip" class="fa fa-info-circle" title="' + (data['data'][c]['BearbeiterDetails'] ? data['data'][c]['BearbeiterDetails'] : '<Keine Details vorhanden>') + '"></i></td>');
         newEntry.append('<td>' + data['data'][c]['Aktualisierung'] + '</td>');
         newEntry.append('<td><div class="btn-group inline"><a class="btn" href="?id=' + currId + (debug ? '&debug=true' : '') + '" target="_blank"><i class="fa fa-edit"></i> Bearbeiten</a><a class="btn" href="?copy=' + currId + '" target="_blank"><i class="fa fa-copy"></i> Kopieren</a><button type="button" title="Die PDF-Version repräsentiert das zuletzt abgeschlossene Verfahren!" data-id="' + currId + '" class="btn pdfdownload" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '>PDF anzeigen</button></div> <button type="button" data-id="' + currId +'" data-name="' + data['data'][c]['Bezeichnung'] +'" class="btn del btn-danger" ' + (data['data'][c]['Löschbar'] === true ? '' : 'disabled')  + '><i class="fa fa-minus"></i> Löschen</button></td>');
@@ -391,7 +426,7 @@ function showVerfahrensliste(startup = false) {
         newEntry.append('<td style="width: 16px;"></td>');
         newEntry.append('<td>' + data['data'][c]['Bezeichnung'] + ' <i data-toggle="tooltip" class="fa fa-info-circle" title="' + data['data'][c]['Beschreibung'] + '"></i></td>');
         newEntry.append('<td>' + data['data'][c]['Fachabteilung']  + '</td>');
-        newEntry.append('<td>' + data['data'][c]['Status'] + '</td>');
+        newEntry.append('<td>' + data['data'][c]['Status'] + statusSymbol + '</td>');
         newEntry.append('<td>' + data['data'][c]['Aktualisierung'] + '</td>');
         newEntry.append('<td><div class="btn-group inline"><a class="btn" href="?id=' + currId + (debug ? '&debug=true' : '') + '" target="_blank"><i class="fa fa-edit"></i> Anzeigen</a><a class="btn" href="?copy=' + currId + '" target="_blank"><i class="fa fa-copy"></i> Kopieren</a><button type="button" data-id="' + currId + '" class="btn pdfdownload" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '>PDF anzeigen</button></div></td>');
         modalBody.find('#readableprocesses tbody').append(newEntry);
@@ -481,6 +516,10 @@ function loadEmpty() {
   loadId = 0;
   $('input[name=meta_id]').val(loadId);
 
+  // Status zurücksetzen
+  status = 0;
+  markedAsFinished = false;
+
   // Felder wieder bearbeitbar machen
   $('#content').find('input, textarea, select, button[id!="showVerfahrensliste"]').prop('disabled', false);
   canEdit = true;
@@ -502,7 +541,8 @@ function loadEmpty() {
   let emptyTitle = 'Dokumentation einer Verarbeitungstätigkeit';
   if(mode === 'wizapp') emptyTitle = 'Dokumentation einer Fachapplikation';
   if(mode === 'wizit')  emptyTitle = ' Dokumentation eines IT-Verfahrens';
-  $('#title').text(emptyTitle);
+  let statusSymbol = status in statusSymbolMapping ? ' <i data-toggle="tooltip" class="fa fa-lg ' + statusSymbolMapping[status] + '" title="' + statusMapping[status]  + '"></i>' : '';
+  $('#title').text(emptyTitle).append(statusSymbol).find('i').tooltip();
 
   setSaveLabel('failed');
   setOverlay(false);
@@ -690,6 +730,7 @@ function saveOnServer() {
         history.replaceState({}, document.title, window.location.href.split('?')[0] + '?id=' + loadId);
         setSaveLabel('saved', new Date(data['data']['Date']));
         changedValues = false;
+        changedFields = [];
       }
       else {
         showError('Anlegen der Dokumentation', data['error']);
@@ -713,13 +754,69 @@ function saveOnServer() {
 
     return $.post(backendPath, JSON.stringify({'action':'update', 'debug': debug, 'id': loadId, 'data': currentState})).done(function(data) {
       if(!data['success']) {
-        showError('Speichern der Dokumentation', data['error']);
+        let errorText = data['error'];
+
+        if(errorText.includes('bearbeitet')) {
+          let unsavedChanges = $('<div></div>').append('<p><h4>Übersicht der ungespeicherten Änderungen</h4><table class="table table-bordered bg-info"><thead><tr><th>Feld</th><th>Inhalt</th></tr></thead><tbody></tbody></table></p>');
+          let changedFieldsCopy = [...new Set(changedFields)];
+          let changedFieldsRest = [];
+
+          changedFieldsCopy.forEach((x, idx) => {
+            let fieldName = $('[name="' + x + '"]').first().closest('div.form-group').find('label').text();
+            if(!fieldName) fieldName = $('[name="' + x + '"]').first().closest('table').closest('div').prev().find('h1, h2, h3, h4, h5, h6, .info-text').text();
+
+            if(fieldName) {
+              let val = htmlEncode($('[name="' + x + '"]').val());
+
+              if(x.includes('[]')) val = 'Tabelle verändert';
+
+              unsavedChanges.find('tbody').append('<tr><td>' + htmlEncode(fieldName) + '</td><td>' + val + '</td></tr>');
+            }
+            else {
+              changedFieldsRest.push(x);
+            }
+          });
+
+          changedFieldsRest.forEach((x, idx) => {
+            if(x.includes('tom_toggle_')) {
+              if($('[name="' + x + '"]').prop('checked')) {
+                unsavedChanges.find('tbody').append('<tr><td>TOM Kategorie ausgewählt</td><td>' + htmlEncode($('[name="' + x + '"]').parent().text()) + '</td></tr>');
+              }
+              else {
+                unsavedChanges.find('tbody').append('<tr><td>TOM Kategorie abgewählt</td><td>' + htmlEncode($('[name="' + x + '"]').parent().text()) + '</td></tr>');
+              }
+            }
+            else if(x.includes('massnahmen_')) {
+              if($('[name="' + x + '"]').prop('nodeName') === 'SELECT') {
+                let val = 'Nein';
+                switch($('[name="' + x + '"]').val()) {
+                  case '1': val = 'Ja'; break;
+                  case '0': val = 'Nein'; break;
+                  case '2': val = 'Teilweise'; break;
+                  case '4': val = 'Entbehrlich'; break;
+                }
+                unsavedChanges.find('tbody').append('<tr><td>Umsetzung Massnahme ' + htmlEncode($('[name="' + x + '"]').closest('tr').find('td').first().text()) + '</td><td>' + val + '</td></tr>');
+              }
+              else {
+                unsavedChanges.find('tbody').append('<tr><td>Kommentar Massnahme ' + htmlEncode($('[name="' + x + '"]').closest('tr').find('td').first().text()) + '</td><td>' + htmlEncode($('[name="' + x + '"]').val()) + '</td></tr>');
+              }
+            }
+            else {
+              unsavedChanges.find('tbody').append('<tr><td>' + htmlEncode(x) + '</td><td>' + htmlEncode($('[name="' + x + '"]').val()) + '</td></tr>');
+            }
+          });
+
+          errorText = errorText + '<br />' + unsavedChanges.html();
+        }
+
+        showError('Speichern der Dokumentation', errorText);
         setSaveLabel('failed');
       }
       else {
         setSaveLabel('saved', new Date(data['data']['Date'].replace(' ', 'T')));  // Safari benötigt das Format YYYY-MM-DDTHH:MM:SS (mit T)
         history.replaceState({}, document.title, window.location.href.split('?')[0] + '?id=' + loadId);
         changedValues = false;
+        changedFields = [];
 
         // Hinweis anzeigen, falls Status zurückgesetzt wurde
         if(markedAsFinished) {
@@ -728,6 +825,13 @@ function saveOnServer() {
           modal.find('.modal-body').append('<p><button type="button" class="center-block btn btn-primary" data-dismiss="modal" aria-label="Close">Schließen</button></p>');
           modal.modal();
           markedAsFinished = false;
+
+          // Status aktualisieren
+          status = 0;
+          let statusText = status in statusMapping ? statusMapping[status] : statusMapping['9'];
+          let statusSymbol = status in statusSymbolMapping ? ' <i data-toggle="tooltip" class="fa ' + statusSymbolMapping[status] + '" title="' + statusText + '"></i>' : '';
+          $('#title').find('i').replaceWith(statusSymbol);
+          $('#title').find('i').tooltip();
         }
       }
     }).fail((jqXHR, error, errorThrown) => {
@@ -754,6 +858,7 @@ function loadFromServer(id) {
       }
       loadFromJSON(data['data'][0]['JSON']);
       markedAsFinished = (parseInt(data['data'][0]['Status']) === 2);
+      status = parseInt(data['data'][0]['Status']);
       loadId = parseInt(data['data'][0]['ID']);
       $('input[name="meta_id"]').val(loadId);
 
@@ -775,8 +880,10 @@ function loadFromServer(id) {
       setSaveLabel('saved', new Date(lastSaveDate.replace(' ', 'T')));  // Safari benötigt das Format YYYY-MM-DDTHH:MM:SS (mit T)
 
       document.title = htmlDecode(data['data'][0]['Bezeichnung']) + ' - ' + document.title.split(' - ').slice(-1)[0];
-      $('#title').text('Dokumentation von ' + htmlDecode(data['data'][0]['Bezeichnung']));
+      let statusSymbol = status in statusSymbolMapping ? ' <i data-toggle="tooltip" class="fa fa-lg ' + statusSymbolMapping[status] + '" title="' + statusMapping[status]  + '"></i>' : '';
+      $('#title').text('Dokumentation von ' + htmlDecode(data['data'][0]['Bezeichnung'])).append(statusSymbol).find('i').tooltip();
       changedValues = false;
+      changedFields = [];
 
       // Abhängigkeiten bei IT-Verfahren anzeigen
       if(userIsDSB) {
@@ -788,11 +895,17 @@ function loadFromServer(id) {
           }
 
           data['data'].forEach(dependant => {
-            dependantType = 'Verarbeitungstätigkeit';
+            let dependantType = 'Verarbeitungstätigkeit';
             if(dependant['type'] === 2) dependantType = 'IT-Verfahren';
             if(dependant['type'] === 3) dependantType = 'Fachapplikation';
-            $('#abschluss_vonabhaengig tbody').append('<tr><td>' + htmlDecode(dependant['name']) + '</td><td>' + dependantType + '</td><td><a class="btn" href="?id=' + dependant['id'] + '" target="_blank">Anzeigen</a></td></tr>');
+
+            let statusText = dependant['status'] in statusMapping ? statusMapping[dependant['status']] : statusMapping['9'];
+            let statusSymbol = dependant['status'] in statusSymbolMapping ? ' <i data-toggle="tooltip" class="fa fa-lg ' + statusSymbolMapping[dependant['status']] + '" title="' + statusText + '"></i>' : '';
+
+            $('#abschluss_vonabhaengig tbody').append('<tr><td>' + htmlDecode(dependant['name']) + statusSymbol + '</td><td>' + dependantType + '</td><td><a class="btn" href="?id=' + dependant['id'] + '" target="_blank">Anzeigen</a></td></tr>');
           });
+
+          $('#abschluss_vonabhaengig tbody').find('i[data-toggle="tooltip"]').tooltip();
         }).fail((jqXHR, error, errorThrown) => {
           console.error('Fehler beim Abruf von abhängigen Verfahren! HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
         });
@@ -825,6 +938,7 @@ function copyFromServer(id) {
       $('input[name=allgemein_bezeichnung]').val('[Kopie] ' + $('input[name=allgemein_bezeichnung]').val()); /* Kopie vor Bezeichnung setzen */
       history.replaceState({}, document.title, window.location.href.split('?')[0]);
       changedValues = true;
+      changedFields = ['allgemein_bezeichnung'];
     }
     else {
       showError('Kopieren der Dokumentation', data['error']);
@@ -1438,6 +1552,9 @@ function addTableRow(table) {
     initTypeahead(value);
   });
 
+  // Tooltips initialisieren
+  clone.find('i[data-toggle="tooltip"]').tooltip();
+
   // Fall 1: Die aktuelle Tabelle wird nicht automatisch durchnummeriert
   if(clone.find('input[name="' + table + '_nummer[]"]').length !== 1) {
     // Delete Funktion an den neuen Button binden
@@ -1685,6 +1802,11 @@ function toggleTOMList(evt) {
         .append('<option value="2">Teilweise</option>')
         .append('<option value="4">Entbehrlich</option>');
       tableBody.append('<tr data-risk="' + row['Risklevel'] + '" class="' + className + '"><td>' + tomIdentifier + '</td><td>' + tomContent + '</td><td>' + tomDropdown[0].outerHTML + '</td><td><textarea rows="5" name="massnahmen_' + tomID + '_kommentar" class="form-control" placeholder="Beschreibung der Sicherheitsmaßnahme, Erläuterung bzw. Begründung"></textarea></td></tr>');
+
+      if(tomContent.includes('ENTFALLEN')) {
+        tableBody.find('tr').last().find('textarea').prop('disabled', true);
+        tableBody.find('tr').last().find('select').replaceWith('ENTFALLEN');
+      }
     });
 
     // Tooltips aktivieren
@@ -1819,24 +1941,42 @@ Promise.all(promises).then(function() {
           console.error('Fehler beim Abruf von Abhängigkeiten! Fehler: ' + data['error']);
           descText.val('<Das Verfahren existiert nicht!>');
           idField.closest('td').find('input[name="abschluss_abhaengigkeit_betreiber[]"], input[name="itverfahren_abhaengigkeit_betreiber[]"], input[name="verarbeitung_abhaengigkeit_betreiber[]"]').val('');
+
           // Disable Link
           idField.closest('tr').find('td:last').find('a').removeAttr('href');
           idField.closest('tr').find('td:last').find('a').attr('disabled', 'disabled');
+
+          // Refresh status
+          idField.closest('td').find('.status i').replaceWith('<i data-toggle="tooltip" class="fa fa-lg fa-question" title="Unbekannt"></i>');
+          idField.closest('td').find('.status i').tooltip();
           return;
         }
         idField.closest('td').find('input[name="abschluss_abhaengigkeit_name[]"], input[name="itverfahren_abhaengigkeit_name[]"], input[name="verarbeitung_abhaengigkeit_name[]"]').val(htmlDecode(data['data'][0]['Bezeichnung']));
         idField.closest('td').find('input[name="abschluss_abhaengigkeit_betreiber[]"], input[name="itverfahren_abhaengigkeit_betreiber[]"], input[name="verarbeitung_abhaengigkeit_betreiber[]"]').val(htmlDecode(data['data'][0]['Fachabteilung']));
+
         // Enable Link
         idField.closest('tr').find('a').attr('href', '?id=' + idField.val());
         idField.closest('tr').find('td:last').find('a').removeAttr('disabled');
+
         descText.val(htmlDecode(data['data'][0]['Beschreibung']));
+
+        // Refresh status
+        let statusText = data['data'][0]['Status'] in statusMapping ? statusMapping[data['data'][0]['Status']] : statusMapping['9'];
+        let statusSymbol = data['data'][0]['Status'] in statusSymbolMapping ? ' <i data-toggle="tooltip" class="fa fa-lg ' + statusSymbolMapping[data['data'][0]['Status']] + '" title="' + statusText + '"></i>' : '';
+        idField.closest('td').find('.status i').replaceWith(statusSymbol);
+        idField.closest('td').find('.status i').tooltip();
       }).fail((jqXHR, error, errorThrown) => {
         console.error('Fehler beim Abruf von Abhängigkeiten! HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
         descText.val('<Fehler beim Abrufen>');
         idField.closest('td').find('input[name="abschluss_abhaengigkeit_betreiber[]"], input[name="itverfahren_abhaengigkeit_betreiber[]"], input[name="verarbeitung_abhaengigkeit_betreiber[]"]').val('');
+
         // Disable Link
         idField.closest('tr').find('td:last').find('a').removeAttr('href');
         idField.closest('tr').find('td:last').find('a').attr('disabled', 'disabled');
+
+        // Refresh status
+        idField.closest('td').find('.status i').replaceWith('<i data-toggle="tooltip" class="fa fa-lg fa-question" title="Unbekannt"></i>').tooltip();
+        idField.closest('td').find('.status i').tooltip();
       });
     }
     else {
@@ -1844,6 +1984,10 @@ Promise.all(promises).then(function() {
       // Disable Link
       idField.closest('tr').find('td:last').find('a').removeAttr('href');
       idField.closest('tr').find('td:last').find('a').attr('disabled', 'disabled');
+
+      // Refresh status
+      idField.closest('td').find('.status i').replaceWith('<i data-toggle="tooltip" class="fa fa-lg fa-question" title="Unbekannt"></i>').tooltip();
+      idField.closest('td').find('.status i').tooltip();
     }
   });
 
@@ -1951,7 +2095,8 @@ Promise.all(promises).then(function() {
   // Titel anhand Bezeichnung aktualisieren
   $('input[name="allgemein_bezeichnung"]').on('input', (e) => {
     document.title = e.target.value + ' - ' + document.title.split(' - ').slice(-1)[0];
-    $('#title').text('Dokumentation von ' + e.target.value);
+    let statusSymbol = status in statusSymbolMapping ? ' <i data-toggle="tooltip" class="fa fa-lg ' + statusSymbolMapping[status] + '" title="' + statusMapping[status]  + '"></i>' : '';
+    $('#title').text('Dokumentation von ' + e.target.value).append(statusSymbol).find('i').tooltip();
   });
 
   // Warnung vor dem Schließen der Webseite, falls ungespeicherte Änderungen vorhanden sind
@@ -1967,6 +2112,33 @@ Promise.all(promises).then(function() {
   // Ex-/Import Handler
   $('#exportBtn').removeClass('hidden').click((evt) => {exportJSON()});
   $('#importBtn').removeClass('hidden').click((evt) => {showImportDialog()});
+
+  // Autosave Timer
+  autoSaveTimer = window.setInterval(() => {
+    if(loadId !== 0 && changedValues) {
+      console.log('Autosaving...');
+      saveOnServer();
+    }
+  }, autoSaveWait);
+  $('#autosaveLabel').text('Automatisches Speichern alle ' + (autoSaveWait / 60000) + ' Mins.').removeClass('hidden');
+
+  // Toggle für Autosave
+  $('#autosaveLabel').click((evt) => {
+    if(autoSaveTimer) {
+      window.clearInterval(autoSaveTimer);
+      autoSaveTimer = 0;
+      $('#autosaveLabel').text('Automatisches Speichern ausgeschaltet');
+    }
+    else {
+      autoSaveTimer = window.setInterval(() => {
+        if(loadId !== 0 && changedValues) {
+          console.log('Autosaving...');
+          saveOnServer();
+        }
+      }, autoSaveWait);
+      $('#autosaveLabel').text('Automatisches Speichern alle ' + (autoSaveWait / 60000) + ' Mins.');
+    }
+  });
 
   console.timeEnd('Spezielle Handler initialisieren');
 
@@ -1985,7 +2157,7 @@ Promise.all(promises).then(function() {
   }
 
   // Überprüpft, ob Angaben geändert wurden
-  $('form').on('change', '[name!=""]', (e) => { changedValues = true; });
+  $('form').on('change', '[name!=""]', (e) => { changedValues = true; changedFields.push(e.target.name); e.stopPropagation() });
 
   // DSB Elemente anzeigen
   if(userIsDSB) {
