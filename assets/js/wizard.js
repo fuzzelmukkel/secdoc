@@ -49,7 +49,7 @@ var canEdit = true;
  * @global
  * @type {String}
  */
-var mode = ['wizit', 'wizproc', 'wizapp'].includes(page) ? page : 'wizproc';
+var mode = ['wizit', 'wizproc', 'wizapp', 'wizmeasures'].includes(page) ? page : 'wizproc';
 
 /**
  * Interne Nummerierung für die Dokumentations-Modi
@@ -57,9 +57,10 @@ var mode = ['wizit', 'wizproc', 'wizapp'].includes(page) ? page : 'wizproc';
  * @type {Number}
  */
 let modeNum = 0;
-if(mode === 'wizproc') modeNum = 1;
-if(mode === 'wizapp')  modeNum = 3;
-if(mode === 'wizit')   modeNum = 2;
+if(mode === 'wizproc')       modeNum = 1;
+if(mode === 'wizapp')        modeNum = 3;
+if(mode === 'wizit')         modeNum = 2;
+if(mode === 'wizmeasures')   modeNum = 4;
 
 /**
  * Lesbarer Name des Modus; genutzt für die Ersetzung in Texten
@@ -67,8 +68,9 @@ if(mode === 'wizit')   modeNum = 2;
  * @type {Array}
  */
 var modeName = ['Verarbeitungstätigkeit', 'Verarbeitungstätigkeiten'];
-if(mode === 'wizapp') modeName = ['Fachapplikation', 'Fachapplikationen'];
-if(mode === 'wizit')  modeName = ['IT-Verfahren', 'IT-Verfahren'];
+if(mode === 'wizapp')      modeName = ['Fachapplikation', 'Fachapplikationen'];
+if(mode === 'wizit')       modeName = ['IT-Verfahren', 'IT-Verfahren'];
+if(mode === 'wizmeasures') modeName = ['Übergreifende Massnahmen', 'Übergreifende Massnahmen'];
 
 /**
  * Gibt an, ob Eingaben geändert wurden seit dem letzten Laden/Speichern
@@ -400,9 +402,10 @@ function showVerfahrensliste(startup = false) {
     for(var c=0; c < data['count']; c++) {
       // Filter nach Ebene
       let currType = parseInt(data['data'][c]['Typ']);
-      if(currType === 1 && mode !== 'wizproc') continue;
-      if(currType === 2 && mode !== 'wizit') continue;
-      if(currType === 3 && mode !== 'wizapp') continue;
+      if(currType === 1 && mode !== 'wizproc')     continue;
+      if(currType === 2 && mode !== 'wizit')       continue;
+      if(currType === 3 && mode !== 'wizapp')      continue;
+      if(currType === 4 && mode !== 'wizmeasures') continue;
 
       modeCount++;
 
@@ -539,8 +542,9 @@ function loadEmpty() {
   // Clear title
   document.title = document.title.split(' - ').slice(-1)[0];
   let emptyTitle = 'Dokumentation einer Verarbeitungstätigkeit';
-  if(mode === 'wizapp') emptyTitle = 'Dokumentation einer Fachapplikation';
-  if(mode === 'wizit')  emptyTitle = ' Dokumentation eines IT-Verfahrens';
+  if(mode === 'wizapp')       emptyTitle = 'Dokumentation einer Fachapplikation';
+  if(mode === 'wizit')        emptyTitle = ' Dokumentation eines IT-Verfahrens';
+  if(mode === 'wizmeasures')  emptyTitle = ' Dokumentation von übergreifenden Massnahmen';
   let statusSymbol = status in statusSymbolMapping ? ' <i data-toggle="tooltip" class="fa fa-lg ' + statusSymbolMapping[status] + '" title="' + statusMapping[status]  + '"></i>' : '';
   $('#title').text(emptyTitle).append(statusSymbol).find('i').tooltip();
 
@@ -786,7 +790,7 @@ function saveOnServer() {
                 unsavedChanges.find('tbody').append('<tr><td>TOM Kategorie abgewählt</td><td>' + htmlEncode($('[name="' + x + '"]').parent().text()) + '</td></tr>');
               }
             }
-            else if(x.includes('massnahmen_')) {
+            else if(x.includes('massnahmen_') && x !== 'massnahmen_risiko') {
               if($('[name="' + x + '"]').prop('nodeName') === 'SELECT') {
                 let val = 'Nein';
                 switch($('[name="' + x + '"]').val()) {
@@ -898,6 +902,7 @@ function loadFromServer(id) {
             let dependantType = 'Verarbeitungstätigkeit';
             if(dependant['type'] === 2) dependantType = 'IT-Verfahren';
             if(dependant['type'] === 3) dependantType = 'Fachapplikation';
+            if(dependant['type'] === 4) dependantType = 'Übergreifende Massnahmen';
 
             let statusText = dependant['status'] in statusMapping ? statusMapping[dependant['status']] : statusMapping['9'];
             let statusSymbol = dependant['status'] in statusSymbolMapping ? ' <i data-toggle="tooltip" class="fa fa-lg ' + statusSymbolMapping[dependant['status']] + '" title="' + statusText + '"></i>' : '';
@@ -964,7 +969,7 @@ function genHTMLforPDF(draft = false) {
   var toSend = $('<div></div>');
 
   /* Überschrift */
-  toSend.append('<h2 class="text-center">Dokumentation ' + ( mode === 'wizproc' ? 'der Verarbeitungstätigkeit' : ( mode === 'wizapp' ? 'der Fachapplikation' : 'des IT-Verfahrens' ) ) + '</h2>');
+  toSend.append('<h2 class="text-center">Dokumentation ' + ( mode === 'wizproc' ? 'der Verarbeitungstätigkeit' : ( mode === 'wizapp' ? 'der Fachapplikation' : ( mode === 'wizmeasures' ? 'der übergreifenden Massnahmen' : 'des IT-Verfahrens' ) ) ) + '</h2>');
   toSend.append('<h3 class="text-center">' + htmlEncode($('[name="allgemein_bezeichnung"]').val()) + '</h3>');
   toSend.append('<h4 class="pull-left" style="color: darkgray;">Letzte Aktualisierung: ' + $('#saveTime').text() + '</h4>');
   toSend.append('<h4 class="pull-right" style="color: darkgray;">Lfd. Nr.: ' + loadId + '</h4>');
@@ -1013,7 +1018,7 @@ function genHTMLforPDF(draft = false) {
   toSend.append('<div class="text-center"><h5 class="info-text text-ul">Dokumentation online einsehen</h5><p><a href="' + link + '">' + link + '</a></p></div>');
 
   /* Links in Abhängigkeiten anpassen */
-  toSend.find('table#abschluss_vonabhaengig tr, table#abschluss_abhaengigkeit tr, table#itverfahren_abhaengigkeit tr, table#verarbeitung_abhaengigkeit tr').each(function(idx) {
+  toSend.find('table#abschluss_vonabhaengig tr, table#abschluss_abhaengigkeit tr, table#itverfahren_abhaengigkeit tr, table#verarbeitung_abhaengigkeit tr, table#massnahmen_abhaengigkeit tr').each(function(idx) {
     let abhLnk = $(this).find('td:last a');
     if(abhLnk.attr('href') === undefined) {
       abhLnk.detach();
@@ -1023,7 +1028,7 @@ function genHTMLforPDF(draft = false) {
     }
   });
 
-  toSend.find('table#abschluss_abhaengigkeit tr, table#itverfahren_abhaengigkeit tr').each(function(idx) {
+  toSend.find('table#abschluss_abhaengigkeit tr, table#itverfahren_abhaengigkeit tr, table#verarbeitung_abhaengigkeit tr, table#massnahmen_abhaengigkeit tr').each(function(idx) {
     $(this).find('td:last button').remove();
     $(this).append($(this).find('td:last, th:last').clone());
   });
@@ -1109,6 +1114,7 @@ function exportJSON() {
     'abschluss_abhaengigkeit_id',
     'itverfahren_abhaengigkeit_id',
     'verarbeitung_abhaengigkeit_id',
+    'massnahmen_abhaengigkeit_id',
     'meta_gruppen_kennung',
     'meta_gruppen_name',
     'meta_gruppen_schreiben',
@@ -1122,6 +1128,7 @@ function exportJSON() {
     'abschluss_abhaengigkeit_name',
     'itverfahren_abhaengigkeit_name',
     'verarbeitung_abhaengigkeit_name',
+    'massnahmen_abhaengigkeit_name',
     'allgemein_fachlich_name',
     'allgemein_technisch_name'
   ];
@@ -1845,6 +1852,7 @@ Promise.all(promises).then(function() {
   // TOM-Auswahl erzeugen und auf Standard setzen
   generateTOMList();
   filterTOMList(2);
+  if(mode === 'wizmeasures') filterTOMList(3);
 
   // Initialisierung für die Endlos-Tabellen
   initEndlessTables();
@@ -1931,7 +1939,7 @@ Promise.all(promises).then(function() {
   });
 
   // Zeigt die aktuelle Beschreibung der abhängigen Verfahren an
-  $('#abschluss_abhaengigkeit, #itverfahren_abhaengigkeit, #verarbeitung_abhaengigkeit').on('change', 'input[name="abschluss_abhaengigkeit_id[]"], input[name="itverfahren_abhaengigkeit_id[]"], input[name="verarbeitung_abhaengigkeit_id[]"]', function() {
+  $('#abschluss_abhaengigkeit, #itverfahren_abhaengigkeit, #verarbeitung_abhaengigkeit, #massnahmen_abhaengigkeit').on('change', 'input[name="abschluss_abhaengigkeit_id[]"], input[name="itverfahren_abhaengigkeit_id[]"], input[name="verarbeitung_abhaengigkeit_id[]"], input[name="massnahmen_abhaengigkeit_id[]"]', function() {
     var idField = $(this);
     var descText = idField.closest('td').next('td').find('textarea');
     if(idField.val() !== '') {
@@ -1940,7 +1948,7 @@ Promise.all(promises).then(function() {
           showError('Auslesen der Abhängigkeiten', 'Scheinbar existiert eine Abhängigkeit nicht mehr!');
           console.error('Fehler beim Abruf von Abhängigkeiten! Fehler: ' + data['error']);
           descText.val('<Das Verfahren existiert nicht!>');
-          idField.closest('td').find('input[name="abschluss_abhaengigkeit_betreiber[]"], input[name="itverfahren_abhaengigkeit_betreiber[]"], input[name="verarbeitung_abhaengigkeit_betreiber[]"]').val('');
+          idField.closest('td').find('input[name="abschluss_abhaengigkeit_betreiber[]"], input[name="itverfahren_abhaengigkeit_betreiber[]"], input[name="verarbeitung_abhaengigkeit_betreiber[]"], input[name="massnahmen_abhaengigkeit_betreiber[]"]').val('');
 
           // Disable Link
           idField.closest('tr').find('td:last').find('a').removeAttr('href');
@@ -1951,8 +1959,8 @@ Promise.all(promises).then(function() {
           idField.closest('td').find('.status i').tooltip();
           return;
         }
-        idField.closest('td').find('input[name="abschluss_abhaengigkeit_name[]"], input[name="itverfahren_abhaengigkeit_name[]"], input[name="verarbeitung_abhaengigkeit_name[]"]').val(htmlDecode(data['data'][0]['Bezeichnung']));
-        idField.closest('td').find('input[name="abschluss_abhaengigkeit_betreiber[]"], input[name="itverfahren_abhaengigkeit_betreiber[]"], input[name="verarbeitung_abhaengigkeit_betreiber[]"]').val(htmlDecode(data['data'][0]['Fachabteilung']));
+        idField.closest('td').find('input[name="abschluss_abhaengigkeit_name[]"], input[name="itverfahren_abhaengigkeit_name[]"], input[name="verarbeitung_abhaengigkeit_name[]"], input[name="massnahmen_abhaengigkeit_name[]"]').val(htmlDecode(data['data'][0]['Bezeichnung']));
+        idField.closest('td').find('input[name="abschluss_abhaengigkeit_betreiber[]"], input[name="itverfahren_abhaengigkeit_betreiber[]"], input[name="verarbeitung_abhaengigkeit_betreiber[]"], input[name="massnahmen_abhaengigkeit_betreiber[]"]').val(htmlDecode(data['data'][0]['Fachabteilung']));
 
         // Enable Link
         idField.closest('tr').find('a').attr('href', '?id=' + idField.val());
@@ -1968,7 +1976,7 @@ Promise.all(promises).then(function() {
       }).fail((jqXHR, error, errorThrown) => {
         console.error('Fehler beim Abruf von Abhängigkeiten! HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
         descText.val('<Fehler beim Abrufen>');
-        idField.closest('td').find('input[name="abschluss_abhaengigkeit_betreiber[]"], input[name="itverfahren_abhaengigkeit_betreiber[]"], input[name="verarbeitung_abhaengigkeit_betreiber[]"]').val('');
+        idField.closest('td').find('input[name="abschluss_abhaengigkeit_betreiber[]"], input[name="itverfahren_abhaengigkeit_betreiber[]"], input[name="verarbeitung_abhaengigkeit_betreiber[]"], input[name="massnahmen_abhaengigkeit_betreiber[]"]').val('');
 
         // Disable Link
         idField.closest('tr').find('td:last').find('a').removeAttr('href');

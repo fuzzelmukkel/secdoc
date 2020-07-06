@@ -21,6 +21,12 @@
   <p class="text-center">
     <strong>Zielgruppe:</strong> Administratoren oder Betreiber von IT-Infrastruktur
   </p>
+  <p class="text-center dsbOnly">
+    <a class="btn btn-fill btn-default btn-wd" href="?page=wizmeasures">Übergreifende Massnahmen</a> <i data-toggle="tooltip" title="Die zusätzliche Ebene 4 stellt übergreifende Massnahmen dar, die universitäts- oder institutsweit umgesetzt wurden und für verschiedene IT-Verfahren gültig sind." class="fa fa-question-circle-o fa-lg"></i>
+  </p>
+  <p class="text-center dsbOnly">
+    <strong>Zielgruppe:</strong> ?
+  </p>
   <hr>
   <p id="dsbviewBtn" class="hidden text-center">
     <a class="btn btn-fill btn-default btn-wd" href="?page=dsbview">DSB Ansicht</a>
@@ -30,7 +36,10 @@
   $('#homeButton').addClass('hidden');
 
   getUserPromise.then(() => {
-    if(userIsDSB) $('#dsbviewBtn').removeClass('hidden');
+    if(userIsDSB) {
+      $('#dsbviewBtn').removeClass('hidden');
+      $('.dsbOnly').removeClass('dsbOnly');
+    }
   });
 
   // Tooltips initialisieren

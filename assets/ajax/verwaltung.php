@@ -654,6 +654,27 @@ EOH;
       break;
     }
 
+    # Durchsucht die für den aktuellen Nutzer einsehbaren übergreifenden Massnahmen
+    case 'searchmassnahmen': {
+      if($userIsDSB) {
+        $list = $dbcon->listVerfahrenDSB($search);
+      }
+      else {
+        $list = $dbcon->listVerfahrenOwn($userId, $userGroups, $search);
+        $list = array_merge($list, $dbcon->listVerfahrenShared($userId, $userGroups, $search));
+      }
+
+      $result = array();
+      foreach($list as $entry) {
+        if(intval($entry['Typ']) === 4) array_push($result, array('value' => $entry['ID'], 'label' => $entry['Bezeichnung'] . " [" . $entry['Fachabteilung'] . "]"));
+      }
+
+      $output['data'] = $result;
+      $output['count'] = count($result);
+      $output['success'] = TRUE;
+      break;
+    }
+
     # Durchsucht die für den aktuellen Nutzer einsehbaren Fachapplikationen
     case 'searchfachapp': {
       if($userIsDSB) {
@@ -737,6 +758,11 @@ EOH;
         if(!isset($data[$reqVar]) || empty($data[$reqVar])) {
           returnError('Ein oder mehrere notwendige Parameter fehlen - Aktuell: ' . $reqVar);
         }
+      }
+
+      if(intval($data['allgemein_typ']) === 4 && !$userIsDSB) {
+        returnError('Nur Nutzer mit DSB-Berechtigung können übergreifende Massnahmen anlegen!');
+        break;
       }
 
       # HTML Symbole ersetzen
@@ -891,6 +917,13 @@ EOH;
 
       if(isset($data['verarbeitung_abhaengigkeit_id']) && is_array($data['verarbeitung_abhaengigkeit_id'])) {
         foreach($data['verarbeitung_abhaengigkeit_id'] as $dependency) {
+          $dependency = intval($dependency);
+          if($dependency !== 0) array_push($newDependencies, $dependency);
+        }
+      }
+
+      if(isset($data['massnahmen_abhaengigkeit_id']) && is_array($data['massnahmen_abhaengigkeit_id'])) {
+        foreach($data['massnahmen_abhaengigkeit_id'] as $dependency) {
           $dependency = intval($dependency);
           if($dependency !== 0) array_push($newDependencies, $dependency);
         }

@@ -1,8 +1,8 @@
 <h4 id="title" class="text-center">
-  Dokumentation eines IT-Verfahrens
+  Dokumentation übergreifender Massnahmen
 </h4>
 <h4 class="text-center">
-  <small>Mit diesem Assistenten erzeugen Sie in wenigen Schritten eine Dokumentation für Ihr IT-Verfahren.</small>
+  <small>Mit diesem Assistenten erzeugen Sie in wenigen Schritten eine Dokumentation für übergreifende Massnahmen zur Verwendung in anderen Dokumentationen.</small>
 </h4>
 <!-- Wizard navigation -->
 <div class="wizard-navigation">
@@ -23,16 +23,6 @@
 
     <!-- Wizard tab #2 -->
     <li>
-      <a href="#systeme" data-toggle="tab">
-        <div class="icon-circle">
-          <i class="fa fa-server"></i>
-        </div>
-        Systeme
-      </a>
-    </li>
-
-    <!-- Wizard tab #3 -->
-    <li>
       <a href="#massnahmen" data-toggle="tab">
         <div class="icon-circle">
           <i class="fa fa-clipboard"></i>
@@ -41,7 +31,7 @@
       </a>
     </li>
 
-    <!-- Wizard tab #4 -->
+    <!-- Wizard tab #3 -->
     <li>
       <a href="#abhaengigkeiten" data-toggle="tab">
         <div class="icon-circle">
@@ -51,7 +41,7 @@
       </a>
     </li>
 
-    <!-- Wizard tab #5 -->
+    <!-- Wizard tab #4 -->
     <li>
       <a href="#abschluss" data-toggle="tab">
         <div class="icon-circle">
@@ -72,31 +62,19 @@
       <div class="col-sm-12">
         <h5 class="info-text text-ul">Allgemeine Angaben</h5>
       </div>
-      <div class="col-sm-7 col-sm-offset-1 printHide">
+      <div class="col-sm-10 col-sm-offset-1 printHide">
         <div class="form-group">
           <label>Bezeichnung <i data-toggle="tooltip" title="Eindeutiges Kürzel" class="fa fa-question-circle-o fa-lg"></i></label>
           <input data-tool="typeahead" data-action="getsuggestions" data-minlength="0" data-dynamic="false" data-cache="true" data-display="entry" data-path="data.allgemein_bezeichnung.de" type="text" class="form-control" name="allgemein_bezeichnung" placeholder="Bsp.: E-Mail Service" required>
           <input type="hidden" name="meta_id" value="0" />
           <input type="hidden" name="meta_lastupdate" value="" />
-          <input type="hidden" name="allgemein_typ" value="2" />
-        </div>
-      </div>
-      <div class="col-sm-3">
-        <div class="form-group">
-          <label>Datum der Einführung <i data-toggle="tooltip" title="Das Datum seit dem das IT-Verfahren aktiv ist. <br /> Sollte das genaue Datum nicht bekannt sein, kann eine grobe Angabe, wie etwa '01.01.2017', eingetragen werden." class="fa fa-question-circle-o fa-lg"></i></label><br>
-          <input type="date" class="form-control" name="allgemein_datum">
+          <input type="hidden" name="allgemein_typ" value="4" />
         </div>
       </div>
       <div class="col-sm-10 col-sm-offset-1">
         <div class="form-group">
-          <label>Zweck des Verfahrens <i data-toggle="tooltip" title="Kurzbeschreibung des Zwecks" class="fa fa-question-circle-o fa-lg"></i></label><br>
-          <input data-tool="typeahead" data-action="getsuggestions" data-minlength="0" data-dynamic="false" data-cache="true" data-display="entry" data-path="data.allgemein_zweck.de" type="text" class="form-control" name="allgemein_zweck" placeholder="Bsp.: Verwaltung von E-Mails">
-        </div>
-      </div>
-      <div class="col-sm-10 col-sm-offset-1">
-        <div class="form-group">
-          <label>Beschreibung <i data-toggle="tooltip" title="Ausführliche Beschreibung des Verfahrens" class="fa fa-question-circle-o fa-lg"></i></label><br>
-          <textarea class="form-control" name="allgemein_beschreibung" placeholder="Bsp.: Stellt Dienste bereit zum Empfang und Versand von E-Mails für Angehörige der WWU" rows="5"></textarea>
+          <label>Beschreibung <i data-toggle="tooltip" title="Ausführliche Beschreibung der Massnahmen" class="fa fa-question-circle-o fa-lg"></i></label><br>
+          <textarea class="form-control" name="allgemein_beschreibung" placeholder="Bsp.: Übergreifene Massnahmen für die Absicherung von Server-Räumen" rows="5"></textarea>
         </div>
       </div>
       <div class="col-sm-12">
@@ -113,7 +91,7 @@
         </div>
       </div>
       <div class="col-sm-6 col-sm-offset-3">
-        <h6 class="info-text">Ansprechpartner IT-Verfahren <i data-toggle="tooltip" title="Ansprechpartner für technische Fragen zum IT-Verfahren <br /><br /> Es kann ein Mitarbeiter aus der Liste gewählt oder eine Funktionsbezeichnung (z.B. Leiter Abt. 3) eingetragen werden. Der automatische Zugriff bzw. die E-Mail-Benachrichtigungen funktionieren nur bei Auswahl eines Mitarbeiters aus der Liste!" class="fa fa-question-circle-o fa-lg"></i></h6>
+        <h6 class="info-text">Ansprechpartner <i data-toggle="tooltip" title="Ansprechpartner für technische Fragen zu den Massnahmen <br /><br /> Es kann ein Mitarbeiter aus der Liste gewählt oder eine Funktionsbezeichnung (z.B. Leiter Abt. 3) eingetragen werden. Der automatische Zugriff bzw. die E-Mail-Benachrichtigungen funktionieren nur bei Auswahl eines Mitarbeiters aus der Liste!" class="fa fa-question-circle-o fa-lg"></i></h6>
         <div class="form-group">
           <label>Name</label><br>
           <input data-tool="typeahead" data-action="searchmitarbeiter" data-minlength="0" data-dynamic="true" data-cache="false" data-hiddenfield="allgemein_fachlich_kennung" type="text" class="form-control" name="allgemein_fachlich_name" placeholder="Geben Sie eine Kennung oder einen Namen (min. 4 Zeichen) ein...">
@@ -124,175 +102,6 @@
   </div>
 
   <!-- Wizard tab content #2 -->
-  <div class="tab-pane" id="systeme">
-    <div class="row">
-
-      <!-- Tabelle für eingesetzte Software -->
-      <div class="col-sm-12">
-        <h5 class="info-text text-ul">Eingesetzte Software auf Klienten und Servern (außer dem Betriebssystem) <i data-toggle="tooltip" title="Alle verwendete Software, die das IT-Verfahren unterstützen, muss hier aufgeführt werden. Ausgenommen ist/sind das/die verwendeten Betriebssystem(e). Sollten virtualisierte Server bei dem Verfahren zum Einsatz kommen, so ist die Software, mit der die Virtualisierung realisiert wird, hier ebenfalls zu nennen." class="fa fa-question-circle-o fa-lg"></i></h5>
-      </div>
-      <div class="col-sm-offset-1 col-sm-10">
-        <table data-tool="endlessTable" id="systeme_software" class="table table-striped table-hover btn-table">
-          <thead>
-            <tr>
-              <th class="col-sm-1">Nr.</th>
-              <th class="col-sm-4">Art der Software</th>
-              <th class="col-sm-4">Bezeichnung</th>
-              <th class="col-sm-2">Einsatz</th>
-              <th class="col-sm-1"></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><input type="text" class="form-control" name="systeme_software_nummer[]" value="1" disabled></td>
-              <td>
-                <input data-tool="typeahead" data-action="getsuggestions" data-minlength="0" data-dynamic="false" data-cache="true" data-display="entry" data-path="data.systeme_software_art.de" type="text" class="form-control" name="systeme_software_art[]" placeholder="Bsp.: Datenbank">
-              </td>
-              <td>
-                <input type="text" data-tool="typeahead" data-action="searchApp" data-dynamic="true" data-hiddenfield="systeme_software_bezeichnungcpe[]" class="form-control" name="systeme_software_bezeichnung[]" placeholder="Bsp.: PostgreSQL 10.3">
-                <input type="hidden" name="systeme_software_bezeichnungcpe[]">
-              </td>
-              <td>
-                <div class="form-group">
-                  <label><input class="form-check-input" name="systeme_software_klient[]" type="checkbox" value="1"> Klient</label>
-                  <label><input class="form-check-input" name="systeme_software_server[]" type="checkbox" value="1"> Server</label>
-                </div>
-              </td>
-              <td class="text-center"><button type="button" class="systeme_software_del btn btn-danger"><i class="fa fa-minus"></i> Löschen</button></td>
-            </tr>
-          </tbody>
-        </table>
-        <button type="button" id="systeme_software_add" class="btn btn-wd btn-success"><i class="fa fa-plus"></i> Hinzufügen</button>
-      </div>
-
-      <!-- Tabelle für beteiligte Server -->
-      <div class="col-sm-12">
-        <h5 class="info-text text-ul">Beteiligte Server <i data-toggle="tooltip" title="Bei virtuellen Instanzen sind sowohl bei den Angaben der verwendeten Software der verwendete Hypervisor zu ergänzen, als auch die beteiligten Server, auf denen die Infrastruktur des Hypervisors läuft, im Anmerkungsfeld zu referenzieren. Sollte diese Infrastruktur aus mehr als einem Server oder aus einem Servercluster bestehen, so reicht es aus, stellvertretend einen repräsentativen Server zu beschreiben." class="fa fa-question-circle-o fa-lg"></i></h5>
-      </div>
-      <div class="col-sm-offset-1 col-sm-10">
-        <table data-tool="endlessTable" id="systeme_server" class="table table-striped table-hover btn-table">
-          <thead>
-            <tr>
-              <th class="col-sm-1">Nr.</th>
-              <th class="col-sm-3">Name/IP</th>
-              <th class="col-sm-3">Betriebssystem</th>
-              <th class="col-sm-4">Funktion/Anmerkung</th>
-              <th class="col-sm-1"></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>
-                <input type="text" class="form-control" name="systeme_server_nummer[]" value="1" disabled>
-              </td>
-              <td>
-                <input data-tool="typeahead" data-action="searchIPDNS" data-dynamic="true" data-hiddenfield="systeme_server_ip[]" type="text" class="form-control" name="systeme_server_name[]" placeholder="Nach DNS-Name oder IP suchen...">
-                <input type="hidden" name="systeme_server_ip[]">
-                <div class="form-group">
-                  <label>Aufstellungsort:</label><br>
-                  <input type="text" class="form-control" readonly></input>
-                </div>
-              </td>
-              <td>
-                <input type="text" data-tool="typeahead" data-action="searchOS" data-dynamic="true" data-hiddenfield="systeme_server_betriebssystemcpe[]" class="form-control" name="systeme_server_betriebssystem[]" placeholder="Bsp.: Windows 10">
-                <input type="hidden" name="systeme_server_betriebssystemcpe[]">
-                <div class="form-group">
-                  <label>Genutzte Software:</label><br>
-                  <select class="nutzt_systeme_software_nummer" data-tool="selectpicker" name="systeme_server_software[]" multiple></select>
-                </div>
-              </td>
-              <td>
-                <input data-tool="typeahead" data-action="getsuggestions" data-minlength="0" data-dynamic="false" data-cache="true" data-display="entry" data-path="data.systeme_server_funktion.de" type="text" class="form-control" name="systeme_server_funktion[]" placeholder="Bsp.: Datenbankserver">
-              </td>
-              <td class="text-center"><button type="button" class="systeme_server_del btn btn-danger"><i class="fa fa-minus"></i> Löschen</button></td>
-            </tr>
-          </tbody>
-        </table>
-        <button type="button" id="systeme_server_add" class="btn btn-wd btn-success"><i class="fa fa-plus"></i> Hinzufügen</button>
-      </div>
-
-      <!-- Tabelle für Datensicherung -->
-      <div class="col-sm-12">
-        <h5 class="info-text text-ul">Datensicherung</h5>
-      </div>
-      <div class="col-sm-offset-1 col-sm-10">
-        <table data-tool="endlessTable" id="systeme_datensicherung" class="table table-striped table-hover btn-table">
-          <thead>
-            <tr>
-              <th class="col-sm-1">Nr.</th>
-              <th class="col-sm-3">Medium</th>
-              <th class="col-sm-4">Aufbewahrungsort <i data-toggle="tooltip" title="Bei dem Aufbewahrungsort sind das Behältnis zu nennen und der Brandabschnitt, in dem die Sicherungsmedien aufbewahrt werden. Dieser Brandabschnitt hat ein anderer zu sein als der, in dem die Server stehen, auf denen die personenbezogenen Daten gespeichert werden." class="fa fa-question-circle-o fa-lg"></i></th>
-              <th class="col-sm-3"></th>
-              <th class="col-sm-1"></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>
-                <input type="text" class="form-control" name="systeme_datensicherung_nummer[]" value="1" disabled>
-              </td>
-              <td>
-                <input data-tool="typeahead" data-action="getsuggestions" data-minlength="0" data-dynamic="false" data-cache="true" data-display="entry" data-path="data.systeme_datensicherung_medium.de" type="text" class="form-control" name="systeme_datensicherung_medium[]" placeholder="Bsp.: Festplatten">
-              </td>
-              <td>
-                <textarea class="form-control" rows="4" name="systeme_datensicherung_ort[]" placeholder=""></textarea>
-              </td>
-              <td>
-                <div class="form-group">
-                  <label>Genutzte Software:</label><br>
-                  <select class="nutzt_systeme_software_nummer" data-tool="selectpicker" name="systeme_datensicherung_software[]" multiple></select>
-                </div>
-                <div class="form-group">
-                  <label>Beteiligte Server:</label><br>
-                  <select class="nutzt_systeme_server_nummer" data-tool="selectpicker" name="systeme_datensicherung_server[]" multiple></select>
-                </div>
-              </td>
-              <td class="text-center"><button type="button" class="systeme_datensicherung_del btn btn-danger"><i class="fa fa-minus"></i> Löschen</button></td>
-            </tr>
-          </tbody>
-        </table>
-        <button type="button" id="systeme_datensicherung_add" class="btn btn-wd btn-success"><i class="fa fa-plus"></i> Hinzufügen</button>
-      </div>
-
-      <!-- Tabelle für verwendete Protokolle/Dienste/Verschlüsselung -->
-      <div class="col-sm-12">
-        <h5 class="info-text text-ul">Verwendete Protokolle, Dienste und Verschlüsselung</h5>
-      </div>
-      <div class="col-sm-offset-1 col-sm-10">
-        <table data-tool="endlessTable" id="systeme_protokolle" class="table table-striped table-hover btn-table">
-          <thead>
-            <tr>
-              <th class="col-sm-4">Übertragungsabschnitt <i data-toggle="tooltip" title="Die hier aufgeführten Übertragungsabschnitte sollten sich in der Darstellung der Netzstruktur eindeutig wiederfinden lassen." class="fa fa-question-circle-o fa-lg"></i></th>
-              <th class="col-sm-1">Software <i data-toggle="tooltip" title="Hier sollte die Software genannt werden, die über den Übertragungsabschnitt mit anderen Systemen kommuniziert." class="fa fa-question-circle-o fa-lg"></i></th>
-              <th class="col-sm-2">Protokoll, Port</th>
-              <th class="col-sm-4">Verschlüsselung <i data-toggle="tooltip" title="Hier sollte die verwendete Verschlüsselung mit technischen Parametern (Algorithmus (RSA, AES usw.), Schlüssellänge, Verschlüsselungsprotokoll mit Version (TLS o.ä.) oder weiteren Maßnahmen wie zum Beispiel &quot;HSTS-Header&quot;, &quot;PFS&quot;, usw) genannt werden. Für jeden Übertragungsabschnitt, der eine unverschlüsselte Kommunikation hat, muss eine Erläuterung der Erforderlichkeit und/oder Risikoabwägung beigelegt werden." class="fa fa-question-circle-o fa-lg"></i></th>
-              <th class="col-sm-1"></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>
-                <input type="text" class="form-control" name="systeme_protokolle_abschnitt[]" placeholder="Bsp.: Datenbank Server 1 <-> Klient 1">
-              </td>
-              <td>
-                <select class="nutzt_systeme_software_nummer" data-tool="selectpicker" name="systeme_protokolle_software[]" multiple></select>
-              </td>
-              <td>
-                <input data-tool="typeahead" data-action="getsuggestions" data-minlength="0" data-dynamic="false" data-cache="true" data-display="entry" data-path="data.systeme_protokolle_protokoll.de" type="text" class="form-control" name="systeme_protokolle_protokoll[]" placeholder="Bsp.: HTTPS, 443">
-              </td>
-              <td>
-                <input data-tool="typeahead" data-action="getsuggestions" data-minlength="0" data-dynamic="false" data-cache="true" data-display="entry" data-path="data.systeme_protokolle_verschluesselung.de" type="text" class="form-control" name="systeme_protokolle_verschluesselung[]" placeholder="Bsp.: SSL/TLS">
-              </td>
-              <td class="text-center"><button type="button" class="systeme_protokolle_del btn btn-danger"><i class="fa fa-minus"></i> Löschen</button></td>
-            </tr>
-          </tbody>
-        </table>
-        <button type="button" id="systeme_protokolle_add" class="btn btn-wd btn-success"><i class="fa fa-plus"></i> Hinzufügen</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Wizard tab content #3 -->
   <div class="tab-pane" id="massnahmen">
     <div class="row">
       <div class="col-sm-offset-1 col-sm-10">
@@ -301,13 +110,13 @@
       <div class="col-sm-12 text-center">
         <div class="btn-group">
           <label class="btn btn-success">
-            <input type="radio" name="massnahmen_risiko" value="1" /> Niedrig
+            <input type="radio" name="massnahmen_risiko" value="1" disabled /> Niedrig
           </label>
           <label class="btn btn-warning">
-            <input type="radio" name="massnahmen_risiko" value="2" checked /> Standard
+            <input type="radio" name="massnahmen_risiko" value="2" disabled /> Standard
           </label>
           <label class="btn btn-danger">
-            <input type="radio" name="massnahmen_risiko" value="3" /> Hoch
+            <input type="radio" name="massnahmen_risiko" value="3" checked disabled /> Hoch
           </label>
         </div>
       </div>
@@ -342,15 +151,13 @@ Art. 25 DSGVO Datenschutz durch Technikgestaltung und durch datenschutzfreundlic
       </div>
 
       <div class="col-sm-12">
-        <h6 class="info-text text-ul-dot">Abhängigkeit von IT-Verfahren</h6>
+        <h6 class="info-text text-ul-dot">Abhängigkeit von übergreifenden Massnahmen</h6>
       </div>
       <div class="col-sm-offset-1 col-sm-10">
-        <p class="printOnly hidden">Das IT-Verfahren hängt von den folgenden dokumentierten IT-Verfahren ab und nutzt Daten und/oder Dienste dieser Verfahren:</p>
-        <p class="printHide">Ist Ihr IT-Verfahren von anderen IT-Verfahren abhängig, die bereits dokumentiert wurden und für Sie sichtbar sind, können Sie diese hier auswählen.</p>
         <table data-tool="endlessTable" id="abschluss_abhaengigkeit" class="table table-hover btn-table table-striped">
           <thead>
             <tr>
-              <th>IT-Verfahren</th>
+              <th>Übergreifende Massnahme</th>
               <th>Beschreibung</th>
               <th></th>
             </tr>
@@ -358,7 +165,7 @@ Art. 25 DSGVO Datenschutz durch Technikgestaltung und durch datenschutzfreundlic
           <tbody>
             <tr>
               <td>
-                <input type="text" data-tool="typeahead" data-action="searchVerfahren" data-minlength="0" data-dynamic="true" data-hiddenfield="abschluss_abhaengigkeit_id[]" class="form-control" name="abschluss_abhaengigkeit_name[]" placeholder="Bsp.: E-Mail Dienst">
+                <input type="text" data-tool="typeahead" data-action="searchMassnahmen" data-minlength="0" data-dynamic="true" data-hiddenfield="abschluss_abhaengigkeit_id[]" class="form-control" name="abschluss_abhaengigkeit_name[]" placeholder="Bsp.: TOMs für Serverräume">
                 <input type="hidden" name="abschluss_abhaengigkeit_id[]">
                 <div class="status">
                   <label>Status:</label>
@@ -382,52 +189,11 @@ Art. 25 DSGVO Datenschutz durch Technikgestaltung und durch datenschutzfreundlic
         <button type="button" id="abschluss_abhaengigkeit_add" class="btn btn-wd btn-success"><i class="fa fa-plus"></i> Hinzufügen</button>
       </div>
 
-      <div class="col-sm-12">
-        <h6 class="info-text text-ul-dot">Abhängigkeit von übegreifenden Massnahmen</h6>
-      </div>
-      <div class="col-sm-offset-1 col-sm-10">
-        <p class="printOnly hidden">Das IT-Verfahren hängt von den folgenden dokumentierten übergreifenden Massnahmen ab:</p>
-        <p class="printHide">Hier können übergreifende Massnahmen ausgewählt werden, die bereits allgemein umgesetzt sind und nicht explizit für das vorliegende IT-Verfahren.</p>
-        <table data-tool="endlessTable" id="massnahmen_abhaengigkeit" class="table table-hover btn-table table-striped">
-          <thead>
-            <tr>
-              <th>Übergreifene Massnahmen</th>
-              <th>Beschreibung</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>
-                <input type="text" data-tool="typeahead" data-action="searchMassnahmen" data-minlength="0" data-dynamic="true" data-hiddenfield="massnahmen_abhaengigkeit_id[]" class="form-control" name="massnahmen_abhaengigkeit_name[]" placeholder="Bsp.: ISMS Massnahmen">
-                <input type="hidden" name="massnahmen_abhaengigkeit_id[]">
-                <div class="status">
-                  <label>Status:</label>
-                  <i data-toggle="tooltip" class="fa fa-lg fa-question" title="Unbekannt"></i>
-                </div>
-                <div class="form-group">
-                  <label>Betreiber:</label><br>
-                  <input type="text" class="form-control" name="massnahmen_abhaengigkeit_betreiber[]" readonly />
-                </div>
-              </td>
-              <td>
-                <textarea class="form-control" rows="5" disabled></textarea>
-              </td>
-              <td class="text-center">
-                <button type="button" class="massnahmen_abhaengigkeit_del btn btn-danger" title="Abhängigkeit aus Liste entfernen"><i class="fa fa-minus"></i> Entfernen</button><br />
-                <a class="btn" style="margin-top: 2px;" target="_blank" title="Dokumentation in neuem Fenster öffnen" disabled>Anzeigen</a>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        <button type="button" id="massnahmen_abhaengigkeit_add" class="btn btn-wd btn-success"><i class="fa fa-plus"></i> Hinzufügen</button>
-      </div>
-
       <div class="col-sm-12 dsbOnly">
-        <h6 class="info-text text-ul-dot">Abhängige Fachapplikationen und IT-Verfahren</h6>
+        <h6 class="info-text text-ul-dot">Abhängige IT-Verfahren und übergreifende Massnahmen</h6>
       </div>
       <div class="col-sm-offset-1 col-sm-10 dsbOnly">
-        <p>Von diesem IT-Verfahren hängen die folgenden Fachapplikationen und IT-Verfahren ab:</p>
+        <p>Von diesen übergreifenden Massnahmen hängen die folgenden IT-Verfahren und übergreifenden Massnahmen ab:</p>
         <table id="abschluss_vonabhaengig" class="table table-hover btn-table table-striped">
           <thead>
             <tr>

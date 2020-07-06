@@ -21,7 +21,7 @@
    * |PRIMARY KEY|   |            |            |            |           |             |            |           |           |          |                |      |            |    |            |
    * +-----------+---+------------+------------+------------+-----------+-------------+------------+-----------+-----------+----------+----------------+------+------------+----+------------+
    * </pre>
-   * * Typ: 1 = Verarbeitungstätigkeit, 2 = IT-Verfahren, 3 = Fachapplikation
+   * * Typ: 1 = Verarbeitungstätigkeit, 2 = IT-Verfahren, 3 = Fachapplikation, 4 = übergreifende Massnahmen
    * * Risikolevel: 1 = Niedrig, 2 = Mittel, 3 = Hoch
    * * Status: 0 = In Bearbeitung, 2 = Fertiggestellt, 3 = Gelöscht
    * * Sichtbarkeit: 0 = Nur für Bearbeiter (Ersteller, FachKontakt, TechKontakt und Bearbeitergruppe), 3 = Jeder eingeloggte Nutzer
@@ -1157,6 +1157,10 @@
           return FALSE;
         }
 
+        if(!$userIsDSB && $this->getVerfahrenInfo()['Typ'] === 4) {
+          return FALSE;
+        }
+
         # Abhängigkeiten entfernen
         if(!$this->updateDependency($verfahrensId, [], $userId, $userGroups, $userIsDSB)) return FALSE;
 
@@ -1626,9 +1630,10 @@
         throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
       }
 
-      $permLevel = 0;
+      $permLevel = 0; # Standardmäßig keine Berechtigung
 
       # Prüfe Leseberechtigung
+      # Gibt keine Reihe zurück bei keinen Berechtigungen; gibt 0 als Perm zurück bei Leseberechtigung und 1 bei Schreibberechtigung
       $sql = 'SELECT Perm FROM (
         SELECT 1 as Perm FROM verfahren WHERE ID = ? AND (Ersteller = ? OR FachKontakt = ? OR Techkontakt = ?)
         UNION SELECT CanEdit AS Perm FROM permissions WHERE Process_ID = ? AND ((IsGroup = 0 AND ID = ?) OR (IsGroup = 1 AND ID in (' . implode(', ', array_fill(0, count($userGroups), '?')) . '))))
@@ -1652,6 +1657,8 @@
 
       $result = $sth->fetch();
 
+      # Wenn keine Rückgabe existiert wird $permLevel 0 behalten
+      # Bei Rückgabe mit 1 existiert Schreibgerechtigung, sonst nur Leseberechtigung
       if(!empty($result)) {
         $permLevel = ((int) $result['Perm']) === 1 ? 2 : 1;
       }

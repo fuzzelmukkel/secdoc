@@ -37,7 +37,7 @@ var version = '';
  * @global
  * @type {String}
  */
-var page = ['dsbview', 'home', 'login', 'wizit', 'wizproc', 'wizapp'].includes(GetURLParameter('page')) ? GetURLParameter('page') : 'home';
+var page = ['dsbview', 'home', 'login', 'wizit', 'wizproc', 'wizapp', 'wizmeasures'].includes(GetURLParameter('page')) ? GetURLParameter('page') : 'home';
 
 /**
  * ID der Dokumentation, die geladen werden soll
@@ -387,6 +387,7 @@ function loadSubpage() {
         if(parseInt(data['data'][0]['Typ']) === 1) page = 'wizproc';
         if(parseInt(data['data'][0]['Typ']) === 2) page = 'wizit';
         if(parseInt(data['data'][0]['Typ']) === 3) page = 'wizapp';
+        if(parseInt(data['data'][0]['Typ']) === 4) page = 'wizmeasures';
 
         $.get('assets/html/' + page + '.inc.html?' + Date.now()).done((data) => { $('#content').html(data); }).fail((jqXHR, error, errorThrown) => {
           showError('Laden der Unterseite "' + page + '"', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
