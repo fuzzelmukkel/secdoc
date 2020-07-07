@@ -33,16 +33,6 @@
 
     <!-- Wizard tab #3 -->
     <li>
-      <a href="#abhaengigkeiten" data-toggle="tab">
-        <div class="icon-circle">
-          <i class="fa fa-exchange"></i>
-        </div>
-        Abhängigkeiten
-      </a>
-    </li>
-
-    <!-- Wizard tab #4 -->
-    <li>
       <a href="#abschluss" data-toggle="tab">
         <div class="icon-circle">
           <i class="fa fa-archive"></i>
@@ -104,10 +94,10 @@
   <!-- Wizard tab content #2 -->
   <div class="tab-pane" id="massnahmen">
     <div class="row">
-      <div class="col-sm-offset-1 col-sm-10">
+      <div class="col-sm-offset-1 col-sm-10 hidden">
         <h5 class="info-text text-ul">Ergebnis der Risikoanalyse <i data-toggle="tooltip" data-html="true" title="Ergebnis der Risikoanalyse <i data-toggle="tooltip" data-html="true" title="Als <em>Risikoanalyse</em> wird der komplette Prozess bezeichnet, um Risiken zu beurteilen (identifizieren, einschätzen und bewerten) sowie zu behandeln. Risikoanalyse bezeichnet nach den einschlägigen ISO-Normen ISO 31000 und ISO 27005 nur einen Schritt im Rahmen der Risikobeurteilung, die aus den folgenden Schritten besteht:<ul><li>Identifikation von Risiken (Risk Identification)</li><li>Analyse von Risiken (Risk Analysis)</li><li>Evaluation oder Bewertung von Risiken (Risk Evaluation)</li></ul> Die Durchführung einer Risikoanalyse gehört nicht zum Umfang dieses Tools und muss extern erfolgen, vgl. ENISA Guidelines for SMEs on the security of personal data processing, ENISA Handbook on Security of Personal Data Processing oder BSI-Standard 200-3: Risikomanagement, ISO/IEC 27005:2018 Information security risk management." class="fa fa-question-circle-o fa-lg"></i></h5>
       </div>
-      <div class="col-sm-12 text-center">
+      <div class="col-sm-12 text-center hidden">
         <div class="btn-group">
           <label class="btn btn-success">
             <input type="radio" name="massnahmen_risiko" value="1" disabled /> Niedrig
@@ -143,73 +133,7 @@ Art. 25 DSGVO Datenschutz durch Technikgestaltung und durch datenschutzfreundlic
     </div>
   </div>
 
-  <!-- Wizard tab content #4 -->
-  <div class="tab-pane" id="abhaengigkeiten">
-    <div class="row">
-      <div class="col-sm-12">
-        <h5 class="info-text text-ul">Abhängigkeiten</h5>
-      </div>
-
-      <div class="col-sm-12">
-        <h6 class="info-text text-ul-dot">Abhängigkeit von übergreifenden Massnahmen</h6>
-      </div>
-      <div class="col-sm-offset-1 col-sm-10">
-        <table data-tool="endlessTable" id="abschluss_abhaengigkeit" class="table table-hover btn-table table-striped">
-          <thead>
-            <tr>
-              <th>Übergreifende Massnahme</th>
-              <th>Beschreibung</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>
-                <input type="text" data-tool="typeahead" data-action="searchMassnahmen" data-minlength="0" data-dynamic="true" data-hiddenfield="abschluss_abhaengigkeit_id[]" class="form-control" name="abschluss_abhaengigkeit_name[]" placeholder="Bsp.: TOMs für Serverräume">
-                <input type="hidden" name="abschluss_abhaengigkeit_id[]">
-                <div class="status">
-                  <label>Status:</label>
-                  <i data-toggle="tooltip" class="fa fa-lg fa-question" title="Unbekannt"></i>
-                </div>
-                <div class="form-group">
-                  <label>Betreiber:</label><br>
-                  <input type="text" class="form-control" name="abschluss_abhaengigkeit_betreiber[]" readonly />
-                </div>
-              </td>
-              <td>
-                <textarea class="form-control" rows="5" disabled></textarea>
-              </td>
-              <td class="text-center">
-                <button type="button" class="abschluss_abhaengigkeit_del btn btn-danger" title="Abhängigkeit aus Liste entfernen"><i class="fa fa-minus"></i> Entfernen</button><br />
-                <a class="btn" style="margin-top: 2px;" target="_blank" title="Dokumentation in neuem Fenster öffnen" disabled>Anzeigen</a>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        <button type="button" id="abschluss_abhaengigkeit_add" class="btn btn-wd btn-success"><i class="fa fa-plus"></i> Hinzufügen</button>
-      </div>
-
-      <div class="col-sm-12 dsbOnly">
-        <h6 class="info-text text-ul-dot">Abhängige IT-Verfahren und übergreifende Massnahmen</h6>
-      </div>
-      <div class="col-sm-offset-1 col-sm-10 dsbOnly">
-        <p>Von diesen übergreifenden Massnahmen hängen die folgenden IT-Verfahren und übergreifenden Massnahmen ab:</p>
-        <table id="abschluss_vonabhaengig" class="table table-hover btn-table table-striped">
-          <thead>
-            <tr>
-              <th>Bezeichnung</th>
-              <th>Typ</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- Wizard tab content #5 -->
+  <!-- Wizard tab content #3 -->
   <div class="tab-pane" id="abschluss">
     <div class="row">
       <div class="col-sm-12">
@@ -348,7 +272,7 @@ Art. 25 DSGVO Datenschutz durch Technikgestaltung und durch datenschutzfreundlic
 
   <div class="clearfix"></div>
 
-  <button type='button' class='btn btn-fill btn-default btn-wd center-block mt' id="showVerfahrensliste"><i class="fa fa-list"></i> Alle IT-Verfahren anzeigen</button>
+  <button type='button' class='btn btn-fill btn-default btn-wd center-block mt' id="showVerfahrensliste"><i class="fa fa-list"></i> Alle übergreifenden Massnahmen anzeigen</button>
 </div>
 
 <!--  Core JS Files  -->
