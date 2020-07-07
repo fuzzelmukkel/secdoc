@@ -697,11 +697,11 @@
      * Holt Meta-Informationen zu einem Verfahren.
      *
      * @param  int $verfahrensId ID eines Verfahrens
-     * @return array Generelle Infos über eine Dokumentation ['ID' => 123, 'Typ' => 1, 'Bezeichnung' => 'Test Verfahren', 'Beschreibung' => 'Das ist ein Verfahren zum Testen']
+     * @return array Generelle Infos über eine Dokumentation ['ID' => 123, 'Typ' => 1, 'Status' => 0, 'Bezeichnung' => 'Test Verfahren', 'Beschreibung' => 'Das ist ein Verfahren zum Testen']
      */
      public function getVerfahrenInfo($verfahrensId) {
        if($this->isConnected()) {
-         $sth = $this->pdo->prepare("SELECT ID, Typ, Bezeichnung, Beschreibung, MAX(Datum) AS Aktualisierung FROM verfahren LEFT JOIN verfahren_historie ON verfahren.ID = verfahren_historie.Verfahrens_Id  WHERE ID = ? GROUP BY ID LIMIT 1;");
+         $sth = $this->pdo->prepare("SELECT ID, Typ, Status, Bezeichnung, Beschreibung, MAX(Datum) AS Aktualisierung FROM verfahren LEFT JOIN verfahren_historie ON verfahren.ID = verfahren_historie.Verfahrens_Id  WHERE ID = ? GROUP BY ID LIMIT 1;");
          $sth->execute([$verfahrensId]);
 
          ob_start();
@@ -1610,6 +1610,46 @@
 
       foreach($sth->fetchAll() as $entry) {
         array_push($dependencies, ['id' => intval($entry['Dependent']), 'name' => $entry['Bezeichnung'], 'type' => intval($entry['Typ']), 'status' => intval($entry['Status'])]);
+      }
+
+      return $dependencies;
+    }
+
+    /**
+     * Fragt ab, von welchen Verfahren $verfahrensId abhängt.
+     *
+     * @param  int      $verfahrensId ID des Verfahrens
+     * @param  string   $userId       Nutzerkennung
+     * @param  string[] $userGroups   Gruppen des ausführenden Nutzers
+     * @param  bool     $userIsDSB    (optional) Gibt an, ob der ausführende Nutzer ein DSB ist (Zugriff auf alle Verfahren)
+     * @return int[] Gibt eine Liste mit den IDs von abhängigen Verfahren an
+     * @throws PDOException
+     * @throws Exception
+     */
+    public function getDependenciesOf($verfahrensId, $userId, $userGroups, $userIsDSB = FALSE) {
+      if(!$this->isConnected()) {
+        throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
+      }
+
+      if(!$userIsDSB && $this->getPermissionLevel($verfahrensId, $userId, $userGroups) < 2) {
+        return FALSE;
+      }
+
+      $dependencies = [];
+
+      $sql = 'SELECT Dependency, Bezeichnung, Typ, Status FROM dependency LEFT JOIN verfahren ON dependency.Dependency = verfahren.ID WHERE Dependent = ? ORDER BY Bezeichnung ASC;';
+
+      $sth = $this->pdo->prepare($sql);
+
+      $sth->execute(array($verfahrensId));
+
+      ob_start();
+      $sth->debugDumpParams();
+      $sqlDump = ob_get_clean();
+      print "DBCon.class.php -> getDependenciesOf() Execute: $sqlDump";
+
+      foreach($sth->fetchAll() as $entry) {
+        array_push($dependencies, ['id' => intval($entry['Dependency']), 'name' => $entry['Bezeichnung'], 'type' => intval($entry['Typ']), 'status' => intval($entry['Status'])]);
       }
 
       return $dependencies;

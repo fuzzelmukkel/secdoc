@@ -144,7 +144,7 @@
        }
        return sprintf(
          '<em><i>%s</i></em>',
-         gettext("Nicht angegeben")
+         "Nicht angegeben"
        );
     }
 
