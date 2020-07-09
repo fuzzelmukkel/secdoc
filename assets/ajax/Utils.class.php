@@ -307,14 +307,12 @@
       }
 
       $result = self::getfromLDAP($ldap_configs['usergroups']['ldap_base'], str_replace('$', ldap_escape($userId), $ldap_configs['usergroups']['ldap_filter']), $ldap_configs['usergroups']['ldap_attributes']);
-
+      
       if(is_array($result) && array_key_exists('count', $result) && $result['count'] > 0) {
         $foundGroups = [];
 
-        foreach($result as $group) {
-          if(is_array($group) && array_key_exists($ldap_configs['usergroups']['ldap_attributes'][0], $group)) {
-            array_push($foundGroups, $group[$ldap_configs['usergroups']['ldap_attributes'][0]][0]);
-          }
+        foreach($result[0]['memberof'] as $group) {
+          if(is_string($group)) array_push($foundGroups, explode('=', explode(',', $group)[0])[1]);
         }
 
         return $foundGroups;
