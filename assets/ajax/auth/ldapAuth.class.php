@@ -27,7 +27,7 @@ class ldapAuth extends Auth {
     session_start([
       'save_path' => $sessions_dir,
       'name' => preg_replace('/\s+/', '_', $prog_name) . "_session",
-      'cookie_lifetime' => $auth_ldap_config['cookie_lifetime'],
+      #'cookie_lifetime' => $auth_ldap_config['cookie_lifetime'], # Cookie won't be refreshed, so set it for the whole browser session
       'cookie_secure' => $auth_ldap_config['cookie_secure'],
       'cookie_httponly' => TRUE,
       'cookie_samesite' => 'Strict',
@@ -156,7 +156,7 @@ class ldapAuth extends Auth {
     # Extend session expiration and generate new token
     if($validSession === TRUE) {
       if($auth_ldap_config['refresh_token']) {
-        $_SESSION['expires'] = time() + 60;
+        $_SESSION['expires'] = time() + 300;
         session_regenerate_id(false);
       }
 

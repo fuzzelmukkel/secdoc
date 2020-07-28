@@ -339,7 +339,7 @@ function myFinish() {
         markedAsFinished = true;
         status = 2;
 
-        let statusSymbol = status in statusSymbolMapping ? ' <i data-toggle="tooltip" class="fa fa-lg ' + statusSymbolMapping[status] + '" title="' + statusMapping[status]  + '"></i>' : '';
+        let statusSymbol = status in statusSymbolMapping ? ' <i data-toggle="tooltip" class="fa ' + statusSymbolMapping[status] + '" title="' + statusMapping[status]  + '"></i>' : '';
         $('#title').find('i').replaceWith(statusSymbol);
         $('#title').find('i').tooltip();
 
@@ -545,7 +545,7 @@ function loadEmpty() {
   if(mode === 'wizapp')       emptyTitle = 'Dokumentation einer Fachapplikation';
   if(mode === 'wizit')        emptyTitle = ' Dokumentation eines IT-Verfahrens';
   if(mode === 'wizmeasures')  emptyTitle = ' Dokumentation von übergreifenden Massnahmen';
-  let statusSymbol = status in statusSymbolMapping ? ' <i data-toggle="tooltip" class="fa fa-lg ' + statusSymbolMapping[status] + '" title="' + statusMapping[status]  + '"></i>' : '';
+  let statusSymbol = status in statusSymbolMapping ? ' <i data-toggle="tooltip" class="fa ' + statusSymbolMapping[status] + '" title="' + statusMapping[status]  + '"></i>' : '';
   $('#title').text(emptyTitle).append(statusSymbol).find('i').tooltip();
 
   setSaveLabel('failed');
@@ -884,7 +884,7 @@ function loadFromServer(id) {
       setSaveLabel('saved', new Date(lastSaveDate.replace(' ', 'T')));  // Safari benötigt das Format YYYY-MM-DDTHH:MM:SS (mit T)
 
       document.title = htmlDecode(data['data'][0]['Bezeichnung']) + ' - ' + document.title.split(' - ').slice(-1)[0];
-      let statusSymbol = status in statusSymbolMapping ? ' <i data-toggle="tooltip" class="fa fa-lg ' + statusSymbolMapping[status] + '" title="' + statusMapping[status]  + '"></i>' : '';
+      let statusSymbol = status in statusSymbolMapping ? ' <i data-toggle="tooltip" class="fa ' + statusSymbolMapping[status] + '" title="' + statusMapping[status]  + '"></i>' : '';
       $('#title').text('Dokumentation von ' + htmlDecode(data['data'][0]['Bezeichnung'])).append(statusSymbol).find('i').tooltip();
       changedValues = false;
       changedFields = [];
@@ -1041,8 +1041,13 @@ function genHTMLforPDF(draft = false) {
   toSend.find('table[data-tool="endlessTable"]').each(function(idx){
     var tbl = $(this);
     if(tbl.find('tr').length < 2) {
-      tbl.parent().prev().remove();
-      tbl.parent().remove();
+      if(['abschluss_abhaengigkeit', 'itverfahren_abhaengigkeit', 'verarbeitung_abhaengigkeit', 'massnahmen_abhaengigkeit'].includes(this.id)) {
+        tbl.parent().replaceWith('<div class="col-sm-offset-1 col-sm-10"><p>Es wurden keine Abhängigkeiten angegeben.</p></div>');
+      }
+      else {
+        tbl.parent().prev().remove();
+        tbl.parent().remove();
+      }
     }
   });
 
@@ -2103,7 +2108,7 @@ Promise.all(promises).then(function() {
   // Titel anhand Bezeichnung aktualisieren
   $('input[name="allgemein_bezeichnung"]').on('input', (e) => {
     document.title = e.target.value + ' - ' + document.title.split(' - ').slice(-1)[0];
-    let statusSymbol = status in statusSymbolMapping ? ' <i data-toggle="tooltip" class="fa fa-lg ' + statusSymbolMapping[status] + '" title="' + statusMapping[status]  + '"></i>' : '';
+    let statusSymbol = status in statusSymbolMapping ? ' <i data-toggle="tooltip" class="fa ' + statusSymbolMapping[status] + '" title="' + statusMapping[status]  + '"></i>' : '';
     $('#title').text('Dokumentation von ' + e.target.value).append(statusSymbol).find('i').tooltip();
   });
 
@@ -2128,14 +2133,14 @@ Promise.all(promises).then(function() {
       saveOnServer();
     }
   }, autoSaveWait);
-  $('#autosaveLabel').text('Automatisches Speichern alle ' + (autoSaveWait / 60000) + ' Mins.').removeClass('hidden');
+  $('#autosaveLabel').html('<i class="fa fa-hourglass"></i> <span>Automatisches Speichern alle ' + (autoSaveWait / 60000) + ' Mins.</span>').removeClass('hidden');
 
   // Toggle für Autosave
   $('#autosaveLabel').click((evt) => {
     if(autoSaveTimer) {
       window.clearInterval(autoSaveTimer);
       autoSaveTimer = 0;
-      $('#autosaveLabel').text('Automatisches Speichern ausgeschaltet');
+      $('#autosaveLabel').html('<i class="fa fa-hourglass-o"></i> <span>Automatisches Speichern ausgeschaltet</span>');
     }
     else {
       autoSaveTimer = window.setInterval(() => {
@@ -2144,7 +2149,7 @@ Promise.all(promises).then(function() {
           saveOnServer();
         }
       }, autoSaveWait);
-      $('#autosaveLabel').text('Automatisches Speichern alle ' + (autoSaveWait / 60000) + ' Mins.');
+      $('#autosaveLabel').html('<i class="fa fa-hourglass"></i> <span>Automatisches Speichern alle ' + (autoSaveWait / 60000) + ' Mins.</span>');
     }
   });
 
