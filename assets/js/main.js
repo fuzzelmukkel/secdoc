@@ -249,6 +249,9 @@ function showError(action, message = false, httperror = false) {
       if(httperror.jqXHR.status === 401) {
         modal.find('.modal-body').html('<div class="alert alert-danger"><h3>Beim ' + action + ' ist ein Fehler aufgetreten!</h3><p><strong>Fehlermeldung:</strong> Sie sind nicht angemeldet! Bitte erneut anmelden: <a class="btn btn-success btn-fill" href="index.html" target="_blank">Anmelden</a></p></div>');
       }
+      else if(httperror.jqXHR.status === 403) {
+        modal.find('.modal-body').html('<div class="alert alert-danger"><h3>Beim ' + action + ' ist ein Fehler aufgetreten!</h3><p><strong>Fehlermeldung:</strong> Sie besitzen nicht die notwendigen Nutzergruppen, um diese SecDoc-Instanz zu verwenden!</p></div>');
+      }
       else {
         modal.find('.modal-body').html('<div class="alert alert-danger"><h3>Beim ' + action + ' ist ein Fehler aufgetreten!</h3><p><strong>Fehlermeldung:</strong> HTTP Code: ' + httperror.jqXHR.status + ' Fehler: ' + httperror.error + ' - ' + httperror.errorThrown + '</p></div>');
       }
@@ -445,5 +448,8 @@ $.getJSON(backendPath + '?action=loggedin' + (debug ? '&debug=true' : '')).done(
     setOverlay(false);
   }
 }).fail((jqXHR, error, errorThrown) => {
+  if(jqXHR.status === 403) {
+    showError('Laden', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+  }
   loadLogin();
 });
