@@ -732,7 +732,8 @@ function saveOnServer() {
         loadId = parseInt(data['data']['ID']);
         idField.val(loadId);
         history.replaceState({}, document.title, window.location.href.split('?')[0] + '?id=' + loadId);
-        setSaveLabel('saved', new Date(data['data']['Date']));
+        setSaveLabel('saved', new Date(data['data']['Date'].replace(' ', 'T')));  // Safari benötigt das Format YYYY-MM-DDTHH:MM:SS (mit T)
+        $('input[name="meta_lastupdate"]').val(data['data']['Date']);
         changedValues = false;
         changedFields = [];
       }
@@ -818,6 +819,7 @@ function saveOnServer() {
       }
       else {
         setSaveLabel('saved', new Date(data['data']['Date'].replace(' ', 'T')));  // Safari benötigt das Format YYYY-MM-DDTHH:MM:SS (mit T)
+        $('input[name="meta_lastupdate"]').val(data['data']['Date']);
         history.replaceState({}, document.title, window.location.href.split('?')[0] + '?id=' + loadId);
         changedValues = false;
         changedFields = [];

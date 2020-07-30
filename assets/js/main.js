@@ -208,7 +208,6 @@ function setSaveLabel(action, currDate = new Date()) {
     case 'saved':
       $('#saveTime').text(saveTime);
       $('#successLabel').removeClass('hidden');
-      $('input[name="meta_lastupdate"]').val(saveTime);
       break;
 
     case 'failed':
