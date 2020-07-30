@@ -907,7 +907,7 @@ function loadFromServer(id) {
             if(dependant['type'] === 4) dependantType = 'Übergreifende Massnahmen';
 
             let statusText = dependant['status'] in statusMapping ? statusMapping[dependant['status']] : statusMapping['9'];
-            let statusSymbol = dependant['status'] in statusSymbolMapping ? ' <i data-toggle="tooltip" class="fa fa-lg ' + statusSymbolMapping[dependant['status']] + '" title="' + statusText + '"></i>' : '';
+            let statusSymbol = dependant['status'] in statusSymbolMapping ? ' <i data-toggle="tooltip" class="fa ' + statusSymbolMapping[dependant['status']] + '" title="' + statusText + '"></i>' : '';
 
             $('#abschluss_vonabhaengig tbody').append('<tr><td>' + htmlDecode(dependant['name']) + statusSymbol + '</td><td>' + dependantType + '</td><td><a class="btn" href="?id=' + dependant['id'] + '" target="_blank">Anzeigen</a></td></tr>');
           });
@@ -1720,7 +1720,7 @@ function generateTOMList() {
   toggleTab.find('div').first().addClass('active');
 
   // Listener für toggleTOMList()
-  toggleTab.find('input[type="checkbox"]').change((evt) => { toggleTOMList(evt); });
+  toggleTab.find('input[type="checkbox"]').change((evt) => { return toggleTOMList(evt); });
 
   // Listener zum Aufklappen von Accordions (zur Anpassung der Textarea Höhe)
   $('#tom_accordion').on('shown.bs.collapse', (evt) => {
@@ -1848,8 +1848,45 @@ function toggleTOMList(evt) {
     filterTOMList(parseInt($('[name=massnahmen_risiko]:checked').val()));
   }
   else {
-    $('#' + evtTarget.data('target')).parent('div').prev('h6').detach();
-    $('#' + evtTarget.data('target')).parent('div').detach();
+    // Überprüfen ob Eingaben verloren gehen beim Abwählen
+    let hasContent = false;
+
+    $('#' + evtTarget.data('target')).find('textarea').each(function(idx, elem) {
+      if($(elem).val() !== '') {
+        hasContent = true;
+        return false;
+      }
+    });
+
+    if(!hasContent) {
+      $('#' + evtTarget.data('target')).find('select').each(function(idx, elem) {
+        if($(elem).val() !== '0') {
+          hasContent = true;
+          return false;
+        }
+      });
+    }
+
+    if(!hasContent) {
+      $('#' + evtTarget.data('target')).parent('div').prev('h6').detach();
+      $('#' + evtTarget.data('target')).parent('div').detach();
+    }
+    else {
+      let confirmUncheck = confirm('Im Baustein "' + evtTarget.closest('label').text().trim() + '" wurden bereits Massnahmen bearbeitet, deren Inhalt beim Abwählen verloren geht. Wollen Sie den Baustein wirklich abwählen?');
+
+      if(!confirmUncheck) {
+        evtTarget[0].checked = true;
+        evt.preventDefault();
+        return false;
+      }
+      else {
+        $('#' + evtTarget.data('target')).parent('div').prev('h6').detach();
+        $('#' + evtTarget.data('target')).parent('div').detach();
+      }
+    }
+
+
+
   }
 }
 
@@ -1974,7 +2011,7 @@ Promise.all(promises).then(function() {
           idField.closest('tr').find('td:last').find('a').attr('disabled', 'disabled');
 
           // Refresh status
-          idField.closest('td').find('.status i').replaceWith('<i data-toggle="tooltip" class="fa fa-lg fa-question" title="Unbekannt"></i>');
+          idField.closest('td').find('.status span').replaceWith('<span>Unbekannt <i data-toggle="tooltip" class="fa fa-question" title="Unbekannt"></i></span>');
           idField.closest('td').find('.status i').tooltip();
           return;
         }
@@ -1989,8 +2026,8 @@ Promise.all(promises).then(function() {
 
         // Refresh status
         let statusText = data['data'][0]['Status'] in statusMapping ? statusMapping[data['data'][0]['Status']] : statusMapping['9'];
-        let statusSymbol = data['data'][0]['Status'] in statusSymbolMapping ? ' <i data-toggle="tooltip" class="fa fa-lg ' + statusSymbolMapping[data['data'][0]['Status']] + '" title="' + statusText + '"></i>' : '';
-        idField.closest('td').find('.status i').replaceWith(statusSymbol);
+        let statusSymbol = data['data'][0]['Status'] in statusSymbolMapping ? '<span>' + statusText + ' <i data-toggle="tooltip" class="fa ' + statusSymbolMapping[data['data'][0]['Status']] + '" title="' + statusText + '"></i></span>' : '<span>Unbekannt <i data-toggle="tooltip" class="fa fa-question" title="Unbekannt"></i></span>';
+        idField.closest('td').find('.status span').replaceWith(statusSymbol);
         idField.closest('td').find('.status i').tooltip();
       }).fail((jqXHR, error, errorThrown) => {
         console.error('Fehler beim Abruf von Abhängigkeiten! HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
@@ -2002,7 +2039,7 @@ Promise.all(promises).then(function() {
         idField.closest('tr').find('td:last').find('a').attr('disabled', 'disabled');
 
         // Refresh status
-        idField.closest('td').find('.status i').replaceWith('<i data-toggle="tooltip" class="fa fa-lg fa-question" title="Unbekannt"></i>').tooltip();
+        idField.closest('td').find('.status span').replaceWith('<span>Unbekannt <i data-toggle="tooltip" class="fa fa-question" title="Unbekannt"></i></span>');
         idField.closest('td').find('.status i').tooltip();
       });
     }
@@ -2013,7 +2050,7 @@ Promise.all(promises).then(function() {
       idField.closest('tr').find('td:last').find('a').attr('disabled', 'disabled');
 
       // Refresh status
-      idField.closest('td').find('.status i').replaceWith('<i data-toggle="tooltip" class="fa fa-lg fa-question" title="Unbekannt"></i>').tooltip();
+      idField.closest('td').find('.status span').replaceWith('<span>Unbekannt <i data-toggle="tooltip" class="fa fa-question" title="Unbekannt"></i></span>');
       idField.closest('td').find('.status i').tooltip();
     }
   });
