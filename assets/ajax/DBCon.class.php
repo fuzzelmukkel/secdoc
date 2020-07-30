@@ -140,7 +140,7 @@
     protected $path = '/secdoc/';
 
     /** @var int Aktuelle DB-Version */
-    const DBVERSION = 9; # Version für eine DB-Struktur; zur Überprüfung beim Laden genutzt
+    const DBVERSION = 10; # Version für eine DB-Struktur; zur Überprüfung beim Laden genutzt
 
     /** @var int Maximale Anzahl an Historien-Einträgen */
     const MAXHISTORY = 15; # Nur diese Anzahl an Historien-Einträgen wird behalten
@@ -240,6 +240,14 @@
             PRIMARY KEY (TOMID, RoleID),
             FOREIGN KEY (TOMID) REFERENCES toms(Identifier) ON UPDATE CASCADE ON DELETE CASCADE,
             FOREIGN KEY (RoleID) REFERENCES rollen(RoleID) ON UPDATE CASCADE ON DELETE CASCADE
+        );",
+        "CREATE TABLE toms_desc ( -- Beschreibungen zu Bausteinen
+            Identifier TEXT,      -- ID des Bausteins
+            Description TEXT,     -- Beschreibung
+            Objective TEXT,       -- Zielsetzung
+            Delimit TEXT,         -- Abgrenzung
+            URL TEXT DEFAULT '',  -- URL
+            PRIMARY KEY (Identifier)
         );"
     ];
 
@@ -365,6 +373,15 @@
             PRIMARY KEY (TOMID, RoleID),
             FOREIGN KEY (TOMID) REFERENCES toms(Identifier) ON UPDATE CASCADE ON DELETE CASCADE,
             FOREIGN KEY (RoleID) REFERENCES rollen(RoleID) ON UPDATE CASCADE ON DELETE CASCADE
+        );",
+        # 16
+        "CREATE TABLE toms_desc ( -- Beschreibungen zu Bausteinen
+            Identifier TEXT,      -- ID des Bausteins
+            Description TEXT,     -- Beschreibung
+            Objective TEXT,       -- Zielsetzung
+            Delimit TEXT,         -- Abgrenzung
+            URL TEXT DEFAULT '',  -- URL
+            PRIMARY KEY (Identifier)
         );"
     ];
 
@@ -552,6 +569,15 @@
           $this->pdo->exec("INSERT INTO toms (Identifier, Category, Subcategory, Title, Description, Risklevel) SELECT Identifier, Category, Subcategory, Title, Description, Risklevel FROM toms_old;");
           $this->pdo->exec("DROP TABLE toms_old;");
           $this->pdo->exec("PRAGMA user_version = 9;");
+          $this->pdo->commit();
+        }
+        else if($db_version == 9) {
+          trigger_error("[SecDoc] DBCon.class.php -> Aktualisiere Datenbank von Version $db_version zu " . self::DBVERSION . "!");
+          error_log("[SecDoc] DBCon.class.php -> Aktualisiere Datenbank von Version $db_version zu " . self::DBVERSION . "!");
+
+          $this->pdo->beginTransaction();
+          $this->pdo->exec(self::TABLES[16]);
+          $this->pdo->exec("PRAGMA user_version = 10;");
           $this->pdo->commit();
         }
         else {
@@ -1455,18 +1481,29 @@
       $tomRows = [];
 
       if($tier !== 0) {
-        $sth = $this->pdo->prepare("SELECT DISTINCT Identifier, Category, Subcategory, Title, Description, Url, Risklevel FROM ebene_rollen INNER JOIN tom_rollen ON ebene_rollen.RoleID = tom_rollen.RoleID INNER JOIN toms ON tom_rollen.TOMID = toms.Identifier WHERE EbeneID = ? ORDER BY Identifier ASC;");
+        $sth = $this->pdo->prepare("SELECT DISTINCT toms.Identifier AS Identifier, Category, Subcategory, Title, toms.Description AS Description, Risklevel, toms_desc.Description AS CatDesc, Objective AS CatObjective, Delimit AS CatDelimit, toms_desc.URL AS CatURL
+          FROM ebene_rollen
+          INNER JOIN tom_rollen ON ebene_rollen.RoleID = tom_rollen.RoleID
+          INNER JOIN toms ON tom_rollen.TOMID = toms.Identifier
+          LEFT OUTER JOIN toms_desc ON toms.Identifier LIKE toms_desc.Identifier || '%'
+          WHERE EbeneID = ? ORDER BY toms.Identifier ASC;");
         $sth->execute([$tier]);
         $tomRows = $sth->fetchAll();
 
         if(count($tomRows) === 0) {
-          $sth = $this->pdo->prepare("SELECT * FROM toms ORDER BY Identifier ASC;");
+          $sth = $this->pdo->prepare("SELECT DISTINCT toms.Identifier AS Identifier, Category, Subcategory, Title, toms.Description AS Description, Risklevel, toms_desc.Description AS CatDesc, Objective AS CatObjective, Delimit AS CatDelimit, toms_desc.URL AS CatURL
+            FROM toms
+            LEFT OUTER JOIN toms_desc ON toms.Identifier LIKE toms_desc.Identifier || '%'
+            ORDER BY toms.Identifier ASC;");
           $sth->execute();
           $tomRows = $sth->fetchAll();
         }
       }
       else {
-        $sth = $this->pdo->prepare("SELECT * FROM toms ORDER BY Identifier ASC;");
+        $sth = $this->pdo->prepare("SELECT DISTINCT toms.Identifier AS Identifier, Category, Subcategory, Title, toms.Description AS Description, Risklevel, toms_desc.Description AS CatDesc, Objective AS CatObjective, Delimit AS CatDelimit, toms_desc.URL AS CatURL
+          FROM toms
+          LEFT OUTER JOIN toms_desc ON toms.Identifier LIKE toms_desc.Identifier || '%'
+          ORDER BY toms.Identifier ASC;");
         $sth->execute();
         $tomRows = $sth->fetchAll();
       }

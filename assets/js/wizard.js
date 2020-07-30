@@ -1006,6 +1006,7 @@ function genHTMLforPDF(draft = false) {
   /* Bei Abschluss-PDF Volltexte entfernen */
   if(!draft) toSend.find('#tom_accordion').find('tbody td:nth-child(2) p.tom_desc').remove();
   if(!draft) toSend.find('#tom_accordion').find('tbody td:nth-child(2) p').removeClass('strong');
+  if(!draft) toSend.find('#tom_accordion').find('.panel-body > p, .panel-body > a').remove();
 
   /* Hinweis-Text bei keinen ausgewählten TOMs */
   if(toSend.find('#toggletoms').find('input[type=checkbox]:checked').length === 0 || toSend.find('#tom_accordion').find('tr').length === 0) {
@@ -1694,18 +1695,19 @@ function generateTOMList() {
   tempTOMs.forEach(function(row) {
     // Auswahlliste für Kategorien erstellen
     let targetToggleCategory = ('tom_toggle_' + row['Category'].trim()).replace(/\W/g, '_');
+    let catDelimit = row['CatDelimit'] ? '<i data-toggle="tooltip" title="' + row['CatDelimit'] + '" class="fa fa-question-circle-o fa-lg"></i>' : '';
 
     if($('#' + targetToggleCategory).length !== 1) {
       toggleHeading.append('<li role="presentation"><a href="#' + targetToggleCategory + '" aria-controls="technical" role="tab" data-toggle="tab">' + row['Category'].trim() + '</a></li>');
       toggleTab.append('<div role="tabpanel" class="tab-pane" id="' + targetToggleCategory + '"></div>');
-      $('#' + targetToggleCategory).append('<div class="checkbox"><label><input type="checkbox" data-category="' + row['Category'] + '" data-subcategory="' + row['Subcategory'] + '" data-target="tom_category_' + row['Category'].trim().replace(/\W/g, '_') + '" name="' + targetToggleCategory + '_all" value="1">Gesamte Kategorie</label></div>');
+      $('#' + targetToggleCategory).append('<div class="checkbox"><label><input type="checkbox" data-category="' + row['Category'] + '" data-subcategory="' + row['Subcategory'] + '" data-target="tom_category_' + row['Category'].trim().replace(/\W/g, '_') + '" name="' + targetToggleCategory + '_all" value="1">Gesamte Kategorie ' + catDelimit + '</label></div>');
     }
 
     if(row['Subcategory'].trim() !== '') {
       let targetSubcategory = ('tom_toggle_' + row['Category'].trim() + '_' + row['Subcategory'].trim()).replace(/\W/g, '_');
 
       if($('input[name="' + targetSubcategory + '"]').length !== 1) {
-        $('#' + targetToggleCategory).append('<div class="checkbox"><label><input type="checkbox" data-category="' + row['Category'] + '" data-subcategory="' + row['Subcategory'] + '" data-target="tom_category_' + (row['Category'].trim() + ' - ' + row['Subcategory'].trim()).replace(/\W/g, '_') + '" name="' + targetSubcategory + '" value="1">' + row['Subcategory'].trim() + '</label></div>');
+        $('#' + targetToggleCategory).append('<div class="checkbox"><label><input type="checkbox" data-category="' + row['Category'] + '" data-subcategory="' + row['Subcategory'] + '" data-target="tom_category_' + (row['Category'].trim() + ' - ' + row['Subcategory'].trim()).replace(/\W/g, '_') + '" name="' + targetSubcategory + '" value="1">' + row['Subcategory'].trim() + ' ' + catDelimit + '</label></div>');
         $('#' + targetToggleCategory).find('input[name="' + targetToggleCategory + '_all"]').closest('div').detach();
       }
     }
@@ -1724,6 +1726,12 @@ function generateTOMList() {
       let targetCat = $(elem);
       targetCat.height(targetCat.parent().innerHeight() - 16 - (idx === 0 ? 23 : 22));
     });
+  });
+
+  // Tooltips aktivieren
+  $('#toggletoms').find('[data-toggle="tooltip"]').tooltip({
+    placement: 'auto',
+    html: true
   });
 }
 
@@ -1790,8 +1798,12 @@ function toggleTOMList(evt) {
         let anforderungDesc = 'Als <em>Sicherheitsanforderung</em> werden Anforderungen für den organisatorischen, personellen, infrastrukturellen und technischen Bereich bezeichnet, deren Erfüllung zur Erhöhung der Informationssicherheit notwendig ist bzw. dazu beiträgt. Eine Sicherheitsanforderung beschreibt also, was getan werden muss, um ein bestimmtes Niveau bezüglich der Informationssicherheit zu erreichen. Wie die Anforderungen im konkreten Fall erfüllt werden, muss in der entsprechenden Sicherheitsmaßnahme beschrieben werden. (<em>Im englischen Sprachraum wird für Sicherheitsanforderungen häufig der Begriff „control“ verwendet.</em>)<br>Der IT-Grundschutz unterscheidet zwischen Basis-Anforderungen, Standard-Anforderungen und Anforderungen bei erhöhtem Schutzbedarf. <em>Basis-Anforderungen</em> (grün) sind fundamental und stets umzusetzen, sofern nicht gravierende Gründe dagegen sprechen. <em>Standard-Anforderungen</em> (gelb) sind für den normalen Schutzbedarf grundsätzlich umzusetzen, sofern sie nicht durch mindestens gleichwertige Alternativen oder die bewusste Akzeptanz des Restrisikos ersetzt werden. <em>Anforderungen bei erhöhtem Schutzbedarf</em> (rot) sind exemplarische Vorschläge, was bei entsprechendem Schutzbedarf zur Absicherung sinnvoll umzusetzen ist.';
         let statusDesc = 'Als Antworten bezüglich des <em>Umsetzungsstatus</em> der einzelnen Anforderungen kommen folgende Aussagen in Betracht:<ul><li><strong>Ja</strong> - Zu der Anforderung wurden geeignete Maßnahmen vollständig, wirksam und angemessen umgesetzt.</li><li><strong>Teilweise</strong> - Die Anforderung wurde nur teilweise umgesetzt.</li><li><strong>Nein</strong> - Die Anforderung wurde noch nicht erfüllt, also geeignete Maßnahmen sind größtenteils noch nicht umgesetzt worden.</li><li><strong>Entbehrlich</strong> - Die Erfüllung der Anforderung ist in der vorgeschlagenen Art nicht notwendig, weil die Anforderung im betrachteten Informationsverbund nicht relevant ist (z. B. weil Dienste nicht aktiviert wurden) oder bereits durch Alternativmaßnahmen erfüllt wurde. Wenn Basisanforderungen nicht erfüllt werden, bleibt grundsätzlich ein erhöhtes Risiko bestehen.</ul>';
         let massnahmeDesc = 'Als <em>Sicherheitsmaßnahme</em> (kurz Maßnahme) werden alle Aktionen bezeichnet, die dazu dienen, um Sicherheitsrisiken zu steuern und um diesen entgegenzuwirken. Dies schließt sowohl organisatorische, als auch personelle, technische oder infrastrukturelle Sicherheitsmaßnahmen ein. Sicherheitsmaßnahmen dienen zur Erfüllung von Sicherheitsanforderungen. Synonym werden auch die Begriffe Sicherheitsvorkehrung oder Schutzmaßnahme benutzt. (<em>Im englischen Sprachraum werden die Begriffe „safeguard“, „security measure“ oder „measure“ verwendet.</em>)';
+        let catObjective = row['CatObjective'] ? '<p>' + row['CatObjective'] + '</p>' : '';
+        let catURL = row['CatURL'] ? '<a href="' + row['CatURL'] + '" target="_blank" rel="noopener noreferrer">Zum BSI Grundschutz-Katalog</a>' : '';
 
         $('#heading_' + targetCategory).after('<div id="' + targetCategory + '" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading_' + targetCategory + '"><div class="panel-body"></div></div>');
+        if(catObjective) $('#' + targetCategory).find('.panel-body').append(catObjective);
+        if(catURL) $('#' + targetCategory).find('.panel-body').append(catURL);
         $('#' + targetCategory).find('.panel-body').append('<table class="table table-striped table-hover"><thead><tr class="text-nowrap"><th class="col-sm-auto">Anforderung <i data-toggle="tooltip" data-html="true" title="' + anforderungDesc + '" class="fa fa-question-circle-o fa-lg"></i></th><th class="col-sm-5">Beschreibung</th><th class="col-sm-auto">Umsetzung <i data-toggle="tooltip" title="' + statusDesc + '" class="fa fa-question-circle-o fa-lg"></i></th><th class="col-sm-4">Maßnahme <i data-toggle="tooltip" data-html="true" title="' + massnahmeDesc + '" class="fa fa-question-circle-o fa-lg"></i></th></tr></thead><tbody></tbody></table>');
         $('#heading_' + targetCategory + ', #heading_' + targetCategory + ' a').click((evt) => {
           if(evt.target.nodeName === "A") return;
