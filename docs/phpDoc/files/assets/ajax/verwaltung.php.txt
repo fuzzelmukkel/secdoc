@@ -3,8 +3,9 @@
    * verwaltung.php - REST-API zur Speicherung und Bearbeitung von Verfahren und Bereitstellung von Ausfüllhinweisen
    *
    * Die Schnittstelle stellt verschiedene Funktionen bereit, die über einfache HTTP-Anfragen genutzt werden können.
-   * Die Anfragen können als GET- oder POST-Requests gestellt werden und müssen auf jeden Fall den Paramter `action`
-   * enthalten, der die gewünschte Funktion repräsentiert. Für einige Aufrufe sind weitere Parameter notwendig.
+   * Die Anfragen können als GET- oder POST-Requests gestellt werden und müssen auf jeden Fall den Parameter `action`
+   * enthalten, der die gewünschte Funktion angibt. Für einige Aufrufe sind weitere Parameter notwendig.
+   *
    * Beispiel: `verwaltung.php?action=get&id=13`
    *
    * @author Thorsten Küfer <thorsten.kuefer@uni-muenster.de>
@@ -23,7 +24,6 @@
   use PHPMailer\PHPMailer\PHPMailer;
   use PHPMailer\PHPMailer\SMTP;
   use PHPMailer\PHPMailer\Exception;
-
 
   # Ausgabe Array vorbereiten
   $output = [];
@@ -87,7 +87,150 @@
    */
   function generateTXT(DBCon $dbcon, string $userId, array $userGroups, bool $userIsDSB, int $verfahrensId): bool
   {
-    return true;
+    global $includes_dir;
+
+    // Daten auslesen
+    $data = $dbcon->getVerfahren($verfahrensId, $userId, $userGroups, $userIsDSB);
+    if (($data === false) ||
+        (empty($data)) ||
+        (empty($data[0]['JSON']))) {
+        /**
+         * Beim Auslesen der Daten ist ein Fehler aufgetreten.
+         * Daher muss an dieser Stelle abgebrochen werden.
+         */
+        trigger_error('[SecDoc] verwaltung.php -> Kann keine Verfahrensdaten auslesen!');
+        error_log('[SecDoc] verwaltung.php -> Kann keine Verfahrensdaten auslesen!');
+        return false;
+    }
+    $verfahrensdaten = json_decode($data[0]['JSON'], true);// Text generieren
+    $verfahrensbezeichnung = Utils::valueOrDefault($verfahrensdaten['allgemein_bezeichnung']);
+    $verfahrenszweck = Utils::valueOrDefault($verfahrensdaten['allgemein_zweck']);
+    $output = '<p>'. sprintf(
+            'Das Verfahren <strong>%s</strong> verarbeitet zum Zweck <strong>%s</strong> die folgenden personenbezogenen Daten.',
+            $verfahrensbezeichnung,
+            $verfahrenszweck
+        ) .'</p>';
+    $output .= sprintf(
+        '<table><thead><tr><th>%s</th><th>%s</th><th>%s</th><th>%s</th><th>%s</th></tr></thead><tbody>',
+        "Kategorie",
+        "Betroffene",
+        "Herkunft",
+        "Rechtsgrundlage",
+        "Löschfrist"
+    );
+    if (array_key_exists('daten_kategorien_nummer', $verfahrensdaten) && is_array($verfahrensdaten['daten_kategorien_nummer'])) {
+      for ($i = 0; $i < count($verfahrensdaten['daten_kategorien_nummer']); $i++) {
+          $id = $verfahrensdaten['daten_kategorien_nummer'][$i];
+          $kategoriename = Utils::valueOrDefault(
+                $verfahrensdaten['daten_kategorien_beschreibung'][$i]
+          );
+          $kategorieherkunft = Utils::valueOrDefault(
+              $verfahrensdaten['daten_kategorien_herkunft'][$i]
+          );
+          // Auslesen und Zuordnen der jeweils betroffenen Personengruppen
+          $betroffene = array();
+          if (is_array($verfahrensdaten['daten_personen_kategorie'])) {
+              foreach ($verfahrensdaten['daten_personen_kategorie'] AS $personID => $zuweisungen) {
+                  foreach ($zuweisungen AS $kategorieID) {
+                      if ($kategorieID == $id) {
+                          array_push(
+                              $betroffene,
+                              Utils::valueOrDefault(
+                                  $verfahrensdaten['daten_personen_betroffene'][$personID]
+                              )
+                          );
+                      }
+                  }
+              }
+          }
+          // Auslesen und Zuordnen der jeweiligen Rechtsgrundlage und ggf. eine passende erläuterung
+          $rechtsgrundlagen = array();
+          if (is_array($verfahrensdaten['daten_grundlagen_kategorie'])) {
+              foreach ($verfahrensdaten['daten_grundlagen_kategorie'] AS $grundlageID => $zuweisungen) {
+                  foreach ($zuweisungen AS $kategorieID) {
+                      if ($kategorieID == $id) {
+                          if ((isset($verfahrensdaten['daten_grundlagen_bezeichnung'][$grundlageID])) &&
+                              (!empty(trim($verfahrensdaten['daten_grundlagen_bezeichnung'][$grundlageID])))) {
+                              $rechtstext = $verfahrensdaten['daten_grundlagen_bezeichnung'][$grundlageID];
+                          }
+                          if ((isset($verfahrensdaten['daten_grundlagen_erlaeuterung'][$grundlageID])) &&
+                              (!empty(trim($verfahrensdaten['daten_grundlagen_erlaeuterung'][$grundlageID])))) {
+                              $erlaeuterung = $verfahrensdaten['daten_grundlagen_erlaeuterung'][$grundlageID];
+                              $rechtstext .= ' <em>Erl&auml;uterung: '. $erlaeuterung .'</em>';
+                          }
+                          array_push(
+                              $rechtsgrundlagen,
+                              $rechtstext
+                          );
+                      }
+                  }
+              }
+          }
+          // Auslesen und Zuordnen der jeweiligen Löschfristen
+          $fristen = array();
+          if (is_array($verfahrensdaten['daten_loeschung_kategorie'])) {
+              foreach ($verfahrensdaten['daten_loeschung_kategorie'] AS $fristID => $zuweisungen) {
+                  foreach ($zuweisungen AS $kategorieID) {
+                      if ($kategorieID == $id) {
+                          array_push(
+                              $fristen,
+                              $verfahrensdaten['daten_loeschung_frist'][$fristID]
+                          );
+                      }
+                  }
+              }
+          }
+          /**
+           * Aus den ggf. in einem Array abgelegten Rechtsgrundlagen generieren
+           * wir einen Text. Falls es mehrere Rechtsgrundlagen gibt, wird eine
+           * Liste erzeugt.
+           */
+          if (count($rechtsgrundlagen) === 0) {
+              $rechtsgrundlagen = Utils::valueOrDefault(null);
+          } else if (count($rechtsgrundlagen) > 1) {
+              $rechtsgrundlagen = '<ul><li>'. implode('</li><li>', $rechtsgrundlagen) .'</li></ul>';
+          } else {
+              $rechtsgrundlagen = $rechtsgrundlagen[0];
+          }
+          if (count($fristen) === 0) {
+              array_push($fristen, Utils::valueOrDefault(null));
+          }
+          $output .= sprintf(
+              '<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>',
+              $kategoriename,
+              implode(', ', $betroffene),
+              $kategorieherkunft,
+              $rechtsgrundlagen,
+              implode('. ', $fristen)
+          );
+      }
+    }
+    $output .= '</tbody></table>';
+    /**
+     * Am Ende betten wir unseren eigentlichen Output noch einmal in das
+     * Article- und div tag um korrekt in Imperiaseiten eingebunden werden
+     * zu koennen.
+     */
+    $output = '<article class="module extended"><div class="module-content">'. $output .'</div></article>';
+    // Auf Datei zugreifen, schreiben und schliessen.
+    $filename = sprintf(
+        '%s/%d.txt',
+        $includes_dir,
+        $verfahrensId
+    );
+    $fh = fopen($filename, 'w');
+    if (!$fh) {
+        error_log(
+            sprintf(
+                'Kann nicht in Datei "%s" schreiben!',
+                $filename
+            )
+        );
+        return false;
+    }
+    $written_bytes = fwrite($fh, $output);
+    return ((fclose($fh)) &&
+        ($written_bytes === strlen($output)));
   }
 
   /**
@@ -136,6 +279,8 @@
     $style = file_get_contents('../css/bootstrap.min.css');
     $mpdf->WriteHTML($style,1);
     $style = file_get_contents('../css/custom.css');
+    $mpdf->WriteHTML($style,1);
+    $style = file_get_contents('../css/custom_pdf.css');
     $mpdf->WriteHTML($style,1);
 
     # HTML aufbauen
@@ -265,7 +410,7 @@ EOH;
         $pageCount = $mpdf->SetSourceFile($filePath);
 
         for($c = 1; $c <= $pageCount; $c++) {
-          $mpdf->UseTemplate($mpdf->ImportPage($c));
+          $mpdf->UseTemplate($mpdf->ImportPage($c), 5, 0, 200, 282);
           if($p !== ($procCount - 1)) $mpdf->WriteHTML('<pagebreak />');
           if($p === ($procCount - 1) && $c !== $pageCount) $mpdf->WriteHTML('<pagebreak />');
         }
@@ -275,7 +420,7 @@ EOH;
         $mpdf->setFooter(htmlspecialchars("#{$processes[$p]['ID']}|{$processes[$p]['Bezeichnung']}") . '|{PAGENO}');
         $mpdf->TOC_Entry(htmlspecialchars("#{$processes[$p]['ID']} - {$processes[$p]['Bezeichnung']}"));
 
-        $mpdf->WriteHTML("<h2>PDF für Verarbeitungstätigkeit #{$processes[$p]['ID']} - '" . htmlspecialchars("{$processes[$p]['Bezeichnung']}") . "' fehlt</h2><p>Die Verarbeitungstätigkeit #{$processes[$p]['ID']} ist als abgeschlossen markiert, aber es ist keine PDF vorhanden!</p><p>Bitte schließen Sie die Verarbeitungstätigkeit neu ab, um eine korrekte PDF-Version zu erzeugen.</p><pagebreak />");
+        $mpdf->WriteHTML("<h2>PDF für Dokumentation #{$processes[$p]['ID']} - '" . htmlspecialchars("{$processes[$p]['Bezeichnung']}") . "' fehlt</h2><p>Die Dokumentation #{$processes[$p]['ID']} ist als abgeschlossen markiert, aber es ist keine PDF vorhanden!</p><p>Bitte schließen Sie die Dokumentation neu ab, um eine korrekte PDF-Version zu erzeugen.</p><pagebreak />");
       }
     }
 
@@ -292,6 +437,161 @@ EOH;
     }
 
     $filename = $pdf_dir . DIRECTORY_SEPARATOR . 'combined.pdf';
+    $fh = fopen($filename, 'w+');
+    if ($fh) {
+      $written_bytes = fwrite($fh, $pdf_content);
+      if ($written_bytes == 0) {
+        // Es konnte nicht alles geschrieben werden / Kein Speicherplatz mehr?
+        trigger_error('[SecDoc] verwaltung.php -> Konnte nicht in PDF-Datei schreiben');
+        error_log('[SecDoc] verwaltung.php -> Konnte nicht in PDF-Datei schreiben');
+        fclose($fh);
+        return FALSE;
+      }
+      fclose($fh);
+    } else {
+      /**
+       * Fehler beim Öffnen der Datei. Ungültiger Dateiname / Pfad
+       * oder eine fehlende Berechtigung könnten die Ursache sein.
+       */
+      trigger_error('[SecDoc] verwaltung.php -> Kann PDF-Datei nicht anlegen');
+      error_log('[SecDoc] verwaltung.php -> Kann PDF-Datei nicht anlegen');
+      return FALSE;
+    }
+    return TRUE;
+  }
+
+  /**
+   * Erstellt eine komplette PDF-Dokumentation einer Verarbeitungstätigkeit mit allen Abhängigkeiten.
+   *
+   * @param  array $process     Array der Hauptverarbeitungstätigkeit
+   * @param  array $procDep     Array der Abhängigkeiten von Verarbeitungstätigkeiten
+   * @param  array $appDep      Array der Abhängigkeiten von Fachapplikationen
+   * @param  array $itDep       Array der Abhängigkeiten von IT-Verfahren
+   * @param  array $measuresDep Array der Abhängigkeiten von übergreifenden Massnahmen
+   * @return bool               TRUE bei Erfolg, sonst FALSE
+   */
+  function generateCompletePDF(array $process, array $procDep, array $appDep, array $itDep, array $measuresDep): bool {
+    set_time_limit(0);
+
+    require_once '../vendor/autoload.php';
+
+    global $userId, $pdf_dir, $prog_name, $prog_version, $prog_url;
+    $res = Utils::searchUsers($userId, TRUE);
+    $author = $res[0]['name'];
+
+    # MPDF initialisieren
+    $mpdf = new \Mpdf\Mpdf(['debug' => false, 'CSSselectMedia' => 'screen', 'mode' => 'utf-8', 'format' => 'A4']);
+    $mpdf->SetTitle("Dokumentation #{$process['ID']} - {$process['Bezeichnung']}");
+    $mpdf->SetAuthor($author);
+    $mpdf->SetCreator($prog_name . ' v' . $prog_version);
+
+    # Stylesheets machen Probleme mit bestehenden PDFs...
+    #$style = file_get_contents('../css/bootstrap.min.css');
+    #$mpdf->WriteHTML($style,1);
+    #$style = file_get_contents('../css/custom.css');
+    #$mpdf->WriteHTML($style,1);
+
+    # Titelseite ohne Fußzeile initialisieren
+    $mpdf->AddPage('','','','','on');
+
+    # Titelseite einfügen
+    $titlePage = file_get_contents('../html/pdf_titlepage.inc.html');
+    $titlePage = preg_replace('/<h1>.*<\/h1>/', "<h1>Gesamtdokumentation</h1><br /><h2>#{$process['ID']} - {$process['Bezeichnung']}</h2>", $titlePage);
+    $titlePage .= '<pagebreak resetpagenum="1" pagenumstyle="1" suppress="off" />';
+    $mpdf->WriteHTML($titlePage);
+
+    # TOC einfügen
+    $mpdf->TOCpagebreakByArray([
+      'tocfont' => 'sans-serif',
+      'tocfontsize' => '',
+      'tocindent' => '',
+      'TOCusePaging' => TRUE,
+      'TOCuseLinking' => TRUE,
+      'toc_preHTML' => "<h2>Inhaltsverzeichnis</h2>",
+      'toc_ohvalue' => 'off',
+      'toc_ofvalue' => 'off',
+    ]);
+
+    # Hauptverarbeitungstätigkeit hinzufügen
+    $filePath = $pdf_dir . DIRECTORY_SEPARATOR . $process['ID'] . '.pdf';
+    if(file_exists($filePath)) {
+      $mpdf->SetFooter(htmlspecialchars("#{$process['ID']}|{$process['Bezeichnung']}") . '|{PAGENO}');
+      $mpdf->TOC_Entry(htmlspecialchars("Hauptverarbeitungstätigkeit #{$process['ID']} - {$process['Bezeichnung']}"));
+
+      $pageCount = $mpdf->SetSourceFile($filePath);
+
+      for($c = 1; $c <= $pageCount; $c++) {
+        $mpdf->UseTemplate($mpdf->ImportPage($c), 5, 0, 200, 282);
+        $mpdf->WriteHTML('<pagebreak />');
+      }
+    }
+    else {
+      trigger_error('[SecDoc] verwaltung.php -> Komplett-PDF kann nicht generiert werden, da PDF für Hauptverarbeitungstätigkeit fehlt');
+      error_log('[SecDoc] verwaltung.php -> Komplett-PDF kann nicht generiert werden, da PDF für Hauptverarbeitungstätigkeit fehlt');
+      return FALSE;
+    }
+
+    # Abhängigkeiten hinzufügen
+    $dependencies = [
+      'Verarbeitungstätigkeiten' => $procDep,
+      'Fachapplikationen' => $appDep,
+      'IT-Verfahren' => $itDep,
+      'übergreifenden Maßnahmen' => $measuresDep
+    ];
+
+    foreach($dependencies as $key => $deps) {
+      $docCount = count($deps);
+      if($docCount === 0) continue;
+
+      usort($deps, function($a, $b) { return (intval($a['id']) - intval($b['id'])); });
+
+      # Überschrift im TOC
+      $mpdf->TOC_Entry(htmlspecialchars("Abhängigkeiten von $key"));
+
+      for($doc = 0; $doc < $docCount; $doc++) {
+        $filePath = $pdf_dir . DIRECTORY_SEPARATOR . $deps[$doc]['id'] . '.pdf';
+
+        if(file_exists($filePath)) {
+          $mpdf->setFooter(htmlspecialchars("#{$deps[$doc]['id']}|{$deps[$doc]['name']}") . '|{PAGENO}');
+          $mpdf->TOC_Entry(htmlspecialchars("#{$deps[$doc]['id']} - {$deps[$doc]['name']}"), 1);
+
+          $pageCount = $mpdf->SetSourceFile($filePath);
+
+          for($c = 1; $c <= $pageCount; $c++) {
+            $mpdf->UseTemplate($mpdf->ImportPage($c), 5, 0, 200, 282);
+            $mpdf->WriteHTML('<pagebreak />');
+          }
+        }
+        # Fehlende PDF, obwohl abgeschlossen
+        elseif(intval($deps[$doc]['status']) === 2) {
+          $mpdf->setFooter(htmlspecialchars("#{$deps[$doc]['id']}|{$deps[$doc]['name']}") . '|{PAGENO}');
+          $mpdf->TOC_Entry(htmlspecialchars("#{$deps[$doc]['id']} - {$deps[$doc]['name']}"), 1);
+
+          $mpdf->WriteHTML("<h2>PDF für Dokumentation #{$deps[$doc]['id']} - '" . htmlspecialchars("{$deps[$doc]['name']}") . "' fehlt</h2><p>Die Dokumentation #{$deps[$doc]['id']} ist als abgeschlossen markiert, aber es ist keine PDF vorhanden!</p><p>Bitte schließen Sie die Dokumentation neu ab, um eine korrekte PDF-Version zu erzeugen.</p><p><a href=\"$prog_url?id={$deps[$doc]['id']}\">Dokumentation online einsehen</a></p><pagebreak />");
+        }
+        # Fehlende PDF, da noch nicht abgeschlossen
+        elseif(intval($deps[$doc]['status']) === 0) {
+          $mpdf->setFooter(htmlspecialchars("#{$deps[$doc]['id']}|{$deps[$doc]['name']}") . '|{PAGENO}');
+          $mpdf->TOC_Entry(htmlspecialchars("#{$deps[$doc]['id']} - {$deps[$doc]['name']}"), 1);
+
+          $mpdf->WriteHTML("<h2>PDF für Dokumentation #{$deps[$doc]['id']} - '" . htmlspecialchars("{$deps[$doc]['name']}") . "' fehlt</h2><p>Die Dokumentation #{$deps[$doc]['id']} ist noch nicht abgeschlossen worden, sodass bisher keine PDF existiert.</p><p>Bitte schließen Sie die Dokumentation ab, um eine korrekte PDF-Version zu erzeugen.</p><p><a href=\"$prog_url?id={$deps[$doc]['id']}\">Dokumentation online einsehen</a></p><pagebreak />");
+        }
+      }
+    }
+
+    $pdf_content = $mpdf->Output(
+      '',
+      \Mpdf\Output\Destination::STRING_RETURN
+    );
+
+    # Überprüfen, ob PDF Inhalt hat
+    if(empty($pdf_content)) {
+      trigger_error('[SecDoc] verwaltung.php -> Generierte PDF ist leer');
+      error_log('[SecDoc] verwaltung.php -> Generierte PDF ist leer');
+      return FALSE;
+    }
+
+    $filename = $pdf_dir . DIRECTORY_SEPARATOR . 'complete.pdf';
     $fh = fopen($filename, 'w+');
     if ($fh) {
       $written_bytes = fwrite($fh, $pdf_content);
@@ -339,6 +639,18 @@ EOH;
 
     $verfahrensInfo = $dbcon->getVerfahrenInfo($verfahrensId);
     $lastUpdate = date('YmdHi', strtotime($verfahrensInfo['Aktualisierung']));
+    if ($verfahrensInfo['Typ'] == 1)
+    {
+      $verfahrensTyp = "der Verarbeitungstätigkeit";
+    }
+    elseif ($verfahrensInfo['Typ'] == 3)
+    {
+      $verfahrensTyp = "der Fachapplikation";
+    }
+    elseif ($verfahrensInfo['Typ'] == 2)
+    {
+      $verfahrensTyp = "des IT-Verfahrens";
+    }
 
     $personen = array(
       "Ersteller" => array(
@@ -363,7 +675,7 @@ EOH;
     $mail->CharSet = "UTF-8";
     $mail->setFrom($eMail_config['fromEmail'], $eMail_config['fromName']);
     $mail->addReplyTo($eMail_config['replyEmail'], $eMail_config['replyName']);
-    $mail->Subject = "Secdoc Dokumentation Nr. $verfahrensId abgeschlossen";
+    $mail->Subject = "[SecDoc] Dokumentation $verfahrensTyp abgeschlossen (Nr. $verfahrensId)";
     $mail->addAttachment($pdf_dir.DIRECTORY_SEPARATOR."$verfahrensId.pdf", "Dokumentation_{$verfahrensId}_{$lastUpdate}.pdf");
 
     # Überprüft ob smtp genutzt werden soll und holt entsprechend die Einstellungen
@@ -414,6 +726,7 @@ EOH;
     foreach($personen as $key => $value) {
       $emailText = str_replace('$role', $key, $eMail_config['text']);
       $emailText = str_replace('$verfahrensId', $verfahrensId, $emailText);
+      $emailText = str_replace('$verfahrensTyp', $verfahrensTyp, $emailText);
       $emailText = str_replace('$title', $verfahrensInfo['Bezeichnung'], $emailText);
       $emailText = str_replace('\n', "\n", $emailText);
       $emailText = strip_tags($emailText);
@@ -424,8 +737,8 @@ EOH;
         $currSuccess = $mail->send();
         $mailSuccess = $mailSuccess && $currSuccess;
         if (!$currSuccess) {
-          trigger_error("[SecDoc] Verwaltung.php -> Fehler beim Senden der eMail. $mail->ErrorInfo");
-          error_log("[SecDoc] Verwaltung.php -> Fehler beim Senden der e-mail. $mail->ErrorInfo ");
+          trigger_error("[SecDoc] Verwaltung.php -> Fehler beim Senden der E-Mail. $mail->ErrorInfo");
+          error_log("[SecDoc] Verwaltung.php -> Fehler beim Senden der E-Mail. $mail->ErrorInfo ");
           break;
         }
       }
@@ -639,6 +952,27 @@ EOH;
       break;
     }
 
+    # Durchsucht die für den aktuellen Nutzer einsehbaren übergreifenden Massnahmen
+    case 'searchmassnahmen': {
+      if($userIsDSB) {
+        $list = $dbcon->listVerfahrenDSB($search);
+      }
+      else {
+        $list = $dbcon->listVerfahrenOwn($userId, $userGroups, $search);
+        $list = array_merge($list, $dbcon->listVerfahrenShared($userId, $userGroups, $search));
+      }
+
+      $result = array();
+      foreach($list as $entry) {
+        if(intval($entry['Typ']) === 4) array_push($result, array('value' => $entry['ID'], 'label' => $entry['Bezeichnung'] . " [" . $entry['Fachabteilung'] . "]"));
+      }
+
+      $output['data'] = $result;
+      $output['count'] = count($result);
+      $output['success'] = TRUE;
+      break;
+    }
+
     # Durchsucht die für den aktuellen Nutzer einsehbaren Fachapplikationen
     case 'searchfachapp': {
       if($userIsDSB) {
@@ -722,6 +1056,11 @@ EOH;
         if(!isset($data[$reqVar]) || empty($data[$reqVar])) {
           returnError('Ein oder mehrere notwendige Parameter fehlen - Aktuell: ' . $reqVar);
         }
+      }
+
+      if(intval($data['allgemein_typ']) === 4 && !$userIsDSB) {
+        returnError('Nur Nutzer mit DSB-Berechtigung können übergreifende Massnahmen anlegen!');
+        break;
       }
 
       # HTML Symbole ersetzen
@@ -876,6 +1215,13 @@ EOH;
 
       if(isset($data['verarbeitung_abhaengigkeit_id']) && is_array($data['verarbeitung_abhaengigkeit_id'])) {
         foreach($data['verarbeitung_abhaengigkeit_id'] as $dependency) {
+          $dependency = intval($dependency);
+          if($dependency !== 0) array_push($newDependencies, $dependency);
+        }
+      }
+
+      if(isset($data['massnahmen_abhaengigkeit_id']) && is_array($data['massnahmen_abhaengigkeit_id'])) {
+        foreach($data['massnahmen_abhaengigkeit_id'] as $dependency) {
           $dependency = intval($dependency);
           if($dependency !== 0) array_push($newDependencies, $dependency);
         }
@@ -1265,6 +1611,92 @@ EOH;
       break;
     }
 
+    case 'gencompletepdf': {
+      if(!$userIsDSB) {
+        returnError('Sie haben keine Berechtigung diese Funktion aufzurufen!');
+      }
+
+      if(empty($verfahrensId)) {
+        returnError('Keine ID für ein Verfahren wurde übergeben!');
+      }
+
+      $mainDoc = $dbcon->getVerfahrenInfo($verfahrensId);
+
+      if(empty($mainDoc)) returnError('Dokumentation existiert nicht');
+
+      # Abhängigkeiten rekursiv durchsuchen
+      $checkIDs     = [$verfahrensId];
+      $doneIDS      = [];
+      $dependencies = [];
+
+      while(!empty($checkIDs)) {
+        $currID = array_pop($checkIDs);
+        array_push($doneIDS, $currID);
+        $currDeps = $dbcon->getDependenciesOf($currID, $userId, $userGroups, $userIsDSB);
+
+        if(!empty($currDeps)) {
+          $dependencies = array_merge($dependencies, $currDeps);
+          foreach($currDeps as $dep) {
+            if(!in_array($dep['id'], $doneIDS)) array_push($checkIDs, $dep['id']); # Alle neuen IDs für die Abhängigkeiten-Suche einreihen, falls nicht schon zuvor verarbeitet
+          }
+        }
+      }
+
+      # Abhängigkeiten nach Typ sortieren
+      $addedIDs    = [$verfahrensId];
+      $procDep     = [];
+      $appDep      = [];
+      $itDep       = [];
+      $measuresDep = [];
+
+      foreach($dependencies as $dep) {
+        if(in_array($dep['id'], $addedIDs)) continue;
+
+        switch($dep['type']) {
+          case 1:
+            array_push($procDep, $dep);
+            break;
+
+          case 2:
+            array_push($itDep, $dep);
+            break;
+
+          case 3:
+            array_push($appDep, $dep);
+            break;
+
+          case 4:
+            array_push($measuresDep, $dep);
+            break;
+        }
+
+        array_push($addedIDs, $dep['id']);
+      }
+
+      if(!generateCompletePDF($mainDoc, $procDep, $appDep, $itDep, $measuresDep)) {
+        returnError('Interner Fehler beim Erstellen der kombinierten PDF!');
+      }
+
+      $filename = $pdf_dir . DIRECTORY_SEPARATOR . 'complete.pdf';
+      $fh = fopen($filename, 'r');
+
+      if($fh) {
+        $filesize = filesize($filename);
+        $pdfContent = file_get_contents($filename);
+        $output['count'] = $filesize;
+        $output['data']['pdf'] = base64_encode($pdfContent);
+        $output['success'] = TRUE;
+      }
+      else {
+        trigger_error('[SecDoc] verwaltung.php -> Kann PDF-Datei nicht öffnen');
+        error_log('[SecDoc] verwaltung.php -> Kann PDF-Datei nicht öffnen');
+        returnError('Die Komplett-PDF existiert nicht.');
+      }
+
+      if(!unlink($filename)) error_log("[SecDoc] verwaltung.php -> Konnte komplette PDF '$filename' nicht löschen!");
+      break;
+    }
+
     case 'login': {
       $output['data']['msg'] = 'Erfolgreich eingeloggt';
       break;
@@ -1309,3 +1741,4 @@ EOH;
   ob_end_flush();
   exit(0);
 ?>
+

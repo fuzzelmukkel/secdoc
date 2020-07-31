@@ -37,7 +37,7 @@ var version = '';
  * @global
  * @type {String}
  */
-var page = ['dsbview', 'home', 'login', 'wizit', 'wizproc', 'wizapp'].includes(GetURLParameter('page')) ? GetURLParameter('page') : 'home';
+var page = ['dsbview', 'home', 'login', 'wizit', 'wizproc', 'wizapp', 'wizmeasures'].includes(GetURLParameter('page')) ? GetURLParameter('page') : 'home';
 
 /**
  * ID der Dokumentation, die geladen werden soll
@@ -208,7 +208,6 @@ function setSaveLabel(action, currDate = new Date()) {
     case 'saved':
       $('#saveTime').text(saveTime);
       $('#successLabel').removeClass('hidden');
-      $('input[name="meta_lastupdate"]').val(saveTime);
       break;
 
     case 'failed':
@@ -249,6 +248,9 @@ function showError(action, message = false, httperror = false) {
     if(httperror !== false) {
       if(httperror.jqXHR.status === 401) {
         modal.find('.modal-body').html('<div class="alert alert-danger"><h3>Beim ' + action + ' ist ein Fehler aufgetreten!</h3><p><strong>Fehlermeldung:</strong> Sie sind nicht angemeldet! Bitte erneut anmelden: <a class="btn btn-success btn-fill" href="index.html" target="_blank">Anmelden</a></p></div>');
+      }
+      else if(httperror.jqXHR.status === 403) {
+        modal.find('.modal-body').html('<div class="alert alert-danger"><h3>Beim ' + action + ' ist ein Fehler aufgetreten!</h3><p><strong>Fehlermeldung:</strong> Sie besitzen nicht die notwendigen Nutzergruppen, um diese SecDoc-Instanz zu verwenden!</p></div>');
       }
       else {
         modal.find('.modal-body').html('<div class="alert alert-danger"><h3>Beim ' + action + ' ist ein Fehler aufgetreten!</h3><p><strong>Fehlermeldung:</strong> HTTP Code: ' + httperror.jqXHR.status + ' Fehler: ' + httperror.error + ' - ' + httperror.errorThrown + '</p></div>');
@@ -356,11 +358,11 @@ function loadSubpage() {
       userIsDSB = data['data'][0]['userIsDSB'];
       userCanDSB = data['data'][0]['userCanDSB'];
 
-      $('#userLabel').text(data['data'][0]['name'] + (userIsDSB ? ' (Rolle: DSB)' : ' (Rolle: Nutzer)'));
+      $('#userLabel').text(data['data'][0]['name'] + (userIsDSB ? ' (Rolle: DSB/ISB)' : ' (Rolle: Nutzer)'));
       $('#userLabel').attr('title', 'Kennung: ' + data['data'][0]['value']);
 
       if(userCanDSB) {
-        $('#roleLabel').find('span').text(userIsDSB ? 'Nutzer' : 'DSB');
+        $('#roleLabel').find('span').text(userIsDSB ? 'Nutzer' : 'DSB/ISB');
         $('#roleLabel').removeClass('hidden').click(() => {
           document.cookie = version.replace(/\W/g, '_') + '_dsb=' + (userIsDSB ? '0' : '1');
           location.reload(true);
@@ -387,6 +389,7 @@ function loadSubpage() {
         if(parseInt(data['data'][0]['Typ']) === 1) page = 'wizproc';
         if(parseInt(data['data'][0]['Typ']) === 2) page = 'wizit';
         if(parseInt(data['data'][0]['Typ']) === 3) page = 'wizapp';
+        if(parseInt(data['data'][0]['Typ']) === 4) page = 'wizmeasures';
 
         $.get('assets/html/' + page + '.inc.html?' + Date.now()).done((data) => { $('#content').html(data); }).fail((jqXHR, error, errorThrown) => {
           showError('Laden der Unterseite "' + page + '"', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
@@ -445,5 +448,8 @@ $.getJSON(backendPath + '?action=loggedin' + (debug ? '&debug=true' : '')).done(
     setOverlay(false);
   }
 }).fail((jqXHR, error, errorThrown) => {
+  if(jqXHR.status === 403) {
+    showError('Laden', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+  }
   loadLogin();
 });

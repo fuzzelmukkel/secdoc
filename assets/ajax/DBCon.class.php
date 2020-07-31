@@ -21,7 +21,7 @@
    * |PRIMARY KEY|   |            |            |            |           |             |            |           |           |          |                |      |            |    |            |
    * +-----------+---+------------+------------+------------+-----------+-------------+------------+-----------+-----------+----------+----------------+------+------------+----+------------+
    * </pre>
-   * * Typ: 1 = Verarbeitungstätigkeit, 2 = IT-Verfahren, 3 = Fachapplikation
+   * * Typ: 1 = Verarbeitungstätigkeit, 2 = IT-Verfahren, 3 = Fachapplikation, 4 = übergreifende Massnahmen
    * * Risikolevel: 1 = Niedrig, 2 = Mittel, 3 = Hoch
    * * Status: 0 = In Bearbeitung, 2 = Fertiggestellt, 3 = Gelöscht
    * * Sichtbarkeit: 0 = Nur für Bearbeiter (Ersteller, FachKontakt, TechKontakt und Bearbeitergruppe), 3 = Jeder eingeloggte Nutzer
@@ -140,7 +140,7 @@
     protected $path = '/secdoc/';
 
     /** @var int Aktuelle DB-Version */
-    const DBVERSION = 9; # Version für eine DB-Struktur; zur Überprüfung beim Laden genutzt
+    const DBVERSION = 10; # Version für eine DB-Struktur; zur Überprüfung beim Laden genutzt
 
     /** @var int Maximale Anzahl an Historien-Einträgen */
     const MAXHISTORY = 15; # Nur diese Anzahl an Historien-Einträgen wird behalten
@@ -240,6 +240,14 @@
             PRIMARY KEY (TOMID, RoleID),
             FOREIGN KEY (TOMID) REFERENCES toms(Identifier) ON UPDATE CASCADE ON DELETE CASCADE,
             FOREIGN KEY (RoleID) REFERENCES rollen(RoleID) ON UPDATE CASCADE ON DELETE CASCADE
+        );",
+        "CREATE TABLE toms_desc ( -- Beschreibungen zu Bausteinen
+            Identifier TEXT,      -- ID des Bausteins
+            Description TEXT,     -- Beschreibung
+            Objective TEXT,       -- Zielsetzung
+            Delimit TEXT,         -- Abgrenzung
+            URL TEXT DEFAULT '',  -- URL
+            PRIMARY KEY (Identifier)
         );"
     ];
 
@@ -365,6 +373,15 @@
             PRIMARY KEY (TOMID, RoleID),
             FOREIGN KEY (TOMID) REFERENCES toms(Identifier) ON UPDATE CASCADE ON DELETE CASCADE,
             FOREIGN KEY (RoleID) REFERENCES rollen(RoleID) ON UPDATE CASCADE ON DELETE CASCADE
+        );",
+        # 16
+        "CREATE TABLE toms_desc ( -- Beschreibungen zu Bausteinen
+            Identifier TEXT,      -- ID des Bausteins
+            Description TEXT,     -- Beschreibung
+            Objective TEXT,       -- Zielsetzung
+            Delimit TEXT,         -- Abgrenzung
+            URL TEXT DEFAULT '',  -- URL
+            PRIMARY KEY (Identifier)
         );"
     ];
 
@@ -554,6 +571,15 @@
           $this->pdo->exec("PRAGMA user_version = 9;");
           $this->pdo->commit();
         }
+        else if($db_version == 9) {
+          trigger_error("[SecDoc] DBCon.class.php -> Aktualisiere Datenbank von Version $db_version zu " . self::DBVERSION . "!");
+          error_log("[SecDoc] DBCon.class.php -> Aktualisiere Datenbank von Version $db_version zu " . self::DBVERSION . "!");
+
+          $this->pdo->beginTransaction();
+          $this->pdo->exec(self::TABLES[16]);
+          $this->pdo->exec("PRAGMA user_version = 10;");
+          $this->pdo->commit();
+        }
         else {
           throw new Exception("Datenbank kann nicht genutzt werden, da die Version nicht übereinstimmt und nicht aktualisiert werden kann! (Ist: $db_version - Soll: " . self::DBVERSION . ")");
         }
@@ -697,11 +723,11 @@
      * Holt Meta-Informationen zu einem Verfahren.
      *
      * @param  int $verfahrensId ID eines Verfahrens
-     * @return array Generelle Infos über eine Dokumentation ['ID' => 123, 'Typ' => 1, 'Bezeichnung' => 'Test Verfahren', 'Beschreibung' => 'Das ist ein Verfahren zum Testen']
+     * @return array Generelle Infos über eine Dokumentation ['ID' => 123, 'Typ' => 1, 'Status' => 0, 'Bezeichnung' => 'Test Verfahren', 'Beschreibung' => 'Das ist ein Verfahren zum Testen']
      */
      public function getVerfahrenInfo($verfahrensId) {
        if($this->isConnected()) {
-         $sth = $this->pdo->prepare("SELECT ID, Typ, Bezeichnung, Beschreibung, MAX(Datum) AS Aktualisierung FROM verfahren LEFT JOIN verfahren_historie ON verfahren.ID = verfahren_historie.Verfahrens_Id  WHERE ID = ? GROUP BY ID LIMIT 1;");
+         $sth = $this->pdo->prepare("SELECT ID, Typ, Status, Bezeichnung, Beschreibung, MAX(Datum) AS Aktualisierung FROM verfahren LEFT JOIN verfahren_historie ON verfahren.ID = verfahren_historie.Verfahrens_Id  WHERE ID = ? GROUP BY ID LIMIT 1;");
          $sth->execute([$verfahrensId]);
 
          ob_start();
@@ -1157,6 +1183,10 @@
           return FALSE;
         }
 
+        if(!$userIsDSB && $this->getVerfahrenInfo()['Typ'] === 4) {
+          return FALSE;
+        }
+
         # Abhängigkeiten entfernen
         if(!$this->updateDependency($verfahrensId, [], $userId, $userGroups, $userIsDSB)) return FALSE;
 
@@ -1451,18 +1481,29 @@
       $tomRows = [];
 
       if($tier !== 0) {
-        $sth = $this->pdo->prepare("SELECT DISTINCT Identifier, Category, Subcategory, Title, Description, Url, Risklevel FROM ebene_rollen INNER JOIN tom_rollen ON ebene_rollen.RoleID = tom_rollen.RoleID INNER JOIN toms ON tom_rollen.TOMID = toms.Identifier WHERE EbeneID = ? ORDER BY Identifier ASC;");
+        $sth = $this->pdo->prepare("SELECT DISTINCT toms.Identifier AS Identifier, Category, Subcategory, Title, toms.Description AS Description, Risklevel, toms_desc.Description AS CatDesc, Objective AS CatObjective, Delimit AS CatDelimit, toms_desc.URL AS CatURL
+          FROM ebene_rollen
+          INNER JOIN tom_rollen ON ebene_rollen.RoleID = tom_rollen.RoleID
+          INNER JOIN toms ON tom_rollen.TOMID = toms.Identifier
+          LEFT OUTER JOIN toms_desc ON toms.Identifier LIKE toms_desc.Identifier || '%'
+          WHERE EbeneID = ? ORDER BY toms.Identifier ASC;");
         $sth->execute([$tier]);
         $tomRows = $sth->fetchAll();
 
         if(count($tomRows) === 0) {
-          $sth = $this->pdo->prepare("SELECT * FROM toms ORDER BY Identifier ASC;");
+          $sth = $this->pdo->prepare("SELECT DISTINCT toms.Identifier AS Identifier, Category, Subcategory, Title, toms.Description AS Description, Risklevel, toms_desc.Description AS CatDesc, Objective AS CatObjective, Delimit AS CatDelimit, toms_desc.URL AS CatURL
+            FROM toms
+            LEFT OUTER JOIN toms_desc ON toms.Identifier LIKE toms_desc.Identifier || '%'
+            ORDER BY toms.Identifier ASC;");
           $sth->execute();
           $tomRows = $sth->fetchAll();
         }
       }
       else {
-        $sth = $this->pdo->prepare("SELECT * FROM toms ORDER BY Identifier ASC;");
+        $sth = $this->pdo->prepare("SELECT DISTINCT toms.Identifier AS Identifier, Category, Subcategory, Title, toms.Description AS Description, Risklevel, toms_desc.Description AS CatDesc, Objective AS CatObjective, Delimit AS CatDelimit, toms_desc.URL AS CatURL
+          FROM toms
+          LEFT OUTER JOIN toms_desc ON toms.Identifier LIKE toms_desc.Identifier || '%'
+          ORDER BY toms.Identifier ASC;");
         $sth->execute();
         $tomRows = $sth->fetchAll();
       }
@@ -1612,6 +1653,46 @@
     }
 
     /**
+     * Fragt ab, von welchen Verfahren $verfahrensId abhängt.
+     *
+     * @param  int      $verfahrensId ID des Verfahrens
+     * @param  string   $userId       Nutzerkennung
+     * @param  string[] $userGroups   Gruppen des ausführenden Nutzers
+     * @param  bool     $userIsDSB    (optional) Gibt an, ob der ausführende Nutzer ein DSB ist (Zugriff auf alle Verfahren)
+     * @return int[] Gibt eine Liste mit den IDs von abhängigen Verfahren an
+     * @throws PDOException
+     * @throws Exception
+     */
+    public function getDependenciesOf($verfahrensId, $userId, $userGroups, $userIsDSB = FALSE) {
+      if(!$this->isConnected()) {
+        throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
+      }
+
+      if(!$userIsDSB && $this->getPermissionLevel($verfahrensId, $userId, $userGroups) < 2) {
+        return FALSE;
+      }
+
+      $dependencies = [];
+
+      $sql = 'SELECT Dependency, Bezeichnung, Typ, Status FROM dependency LEFT JOIN verfahren ON dependency.Dependency = verfahren.ID WHERE Dependent = ? ORDER BY Bezeichnung ASC;';
+
+      $sth = $this->pdo->prepare($sql);
+
+      $sth->execute(array($verfahrensId));
+
+      ob_start();
+      $sth->debugDumpParams();
+      $sqlDump = ob_get_clean();
+      print "DBCon.class.php -> getDependenciesOf() Execute: $sqlDump";
+
+      foreach($sth->fetchAll() as $entry) {
+        array_push($dependencies, ['id' => intval($entry['Dependency']), 'name' => $entry['Bezeichnung'], 'type' => intval($entry['Typ']), 'status' => intval($entry['Status'])]);
+      }
+
+      return $dependencies;
+    }
+
+    /**
      * Gibt die Berechtigungsstufe für einen Nutzer und ein Verfahren zurück.
      *
      * @param  int      $verfahrensId ID des Verfahrens
@@ -1626,9 +1707,10 @@
         throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
       }
 
-      $permLevel = 0;
+      $permLevel = 0; # Standardmäßig keine Berechtigung
 
       # Prüfe Leseberechtigung
+      # Gibt keine Reihe zurück bei keinen Berechtigungen; gibt 0 als Perm zurück bei Leseberechtigung und 1 bei Schreibberechtigung
       $sql = 'SELECT Perm FROM (
         SELECT 1 as Perm FROM verfahren WHERE ID = ? AND (Ersteller = ? OR FachKontakt = ? OR Techkontakt = ?)
         UNION SELECT CanEdit AS Perm FROM permissions WHERE Process_ID = ? AND ((IsGroup = 0 AND ID = ?) OR (IsGroup = 1 AND ID in (' . implode(', ', array_fill(0, count($userGroups), '?')) . '))))
@@ -1652,6 +1734,8 @@
 
       $result = $sth->fetch();
 
+      # Wenn keine Rückgabe existiert wird $permLevel 0 behalten
+      # Bei Rückgabe mit 1 existiert Schreibgerechtigung, sonst nur Leseberechtigung
       if(!empty($result)) {
         $permLevel = ((int) $result['Perm']) === 1 ? 2 : 1;
       }

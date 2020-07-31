@@ -1,7 +1,7 @@
 #!/usr/local/bin/php
 <?php
   /**
-   * tom-update.php - Wandelt eine TOM Liste in SQL um
+   * tom-update.php - Beispielskript zur Umwandlung einer TOM Liste in SQL.
    *
    * @author Dustin Gawron <dustin.gawron@uni-muenster.de>
    * @copyright (c) 2019 Westfälische Wilhelms-Universität Münster

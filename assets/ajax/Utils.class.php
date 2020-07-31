@@ -144,7 +144,7 @@
        }
        return sprintf(
          '<em><i>%s</i></em>',
-         gettext("Nicht angegeben")
+         "Nicht angegeben"
        );
     }
 
@@ -311,10 +311,8 @@
       if(is_array($result) && array_key_exists('count', $result) && $result['count'] > 0) {
         $foundGroups = [];
 
-        foreach($result as $group) {
-          if(is_array($group) && array_key_exists($ldap_configs['usergroups']['ldap_attributes'][0], $group)) {
-            array_push($foundGroups, $group[$ldap_configs['usergroups']['ldap_attributes'][0]][0]);
-          }
+        foreach($result[0]['memberof'] as $group) {
+          if(is_string($group)) array_push($foundGroups, explode('=', explode(',', $group)[0])[1]);
         }
 
         return $foundGroups;
@@ -358,7 +356,7 @@
 
         foreach($result as $group) {
           if(is_array($group) && array_key_exists($ldap_configs['groups']['ldap_attributes'][0], $group) && array_key_exists($ldap_configs['groups']['ldap_attributes'][1], $group)) {
-            array_push($foundGroups, ['value' => $group[$ldap_configs['groups']['ldap_attributes'][0]][0], 'label' => $group['cn'][0] . ': ' . $group['description'][0]]);
+            array_push($foundGroups, ['value' => $group[$ldap_configs['groups']['ldap_attributes'][0]][0], 'label' => $group[$ldap_configs['groups']['ldap_attributes'][0]][0] . ': ' . $group[$ldap_configs['groups']['ldap_attributes'][1]][0]]);
           }
         }
 

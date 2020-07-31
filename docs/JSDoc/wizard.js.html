@@ -77,7 +77,7 @@ var canEdit = true;
  * @global
  * @type {String}
  */
-var mode = ['wizit', 'wizproc', 'wizapp'].includes(page) ? page : 'wizproc';
+var mode = ['wizit', 'wizproc', 'wizapp', 'wizmeasures'].includes(page) ? page : 'wizproc';
 
 /**
  * Interne Nummerierung für die Dokumentations-Modi
@@ -85,9 +85,10 @@ var mode = ['wizit', 'wizproc', 'wizapp'].includes(page) ? page : 'wizproc';
  * @type {Number}
  */
 let modeNum = 0;
-if(mode === 'wizproc') modeNum = 1;
-if(mode === 'wizapp')  modeNum = 3;
-if(mode === 'wizit')   modeNum = 2;
+if(mode === 'wizproc')       modeNum = 1;
+if(mode === 'wizapp')        modeNum = 3;
+if(mode === 'wizit')         modeNum = 2;
+if(mode === 'wizmeasures')   modeNum = 4;
 
 /**
  * Lesbarer Name des Modus; genutzt für die Ersetzung in Texten
@@ -95,8 +96,9 @@ if(mode === 'wizit')   modeNum = 2;
  * @type {Array}
  */
 var modeName = ['Verarbeitungstätigkeit', 'Verarbeitungstätigkeiten'];
-if(mode === 'wizapp') modeName = ['Fachapplikation', 'Fachapplikationen'];
-if(mode === 'wizit')  modeName = ['IT-Verfahren', 'IT-Verfahren'];
+if(mode === 'wizapp')      modeName = ['Fachapplikation', 'Fachapplikationen'];
+if(mode === 'wizit')       modeName = ['IT-Verfahren', 'IT-Verfahren'];
+if(mode === 'wizmeasures') modeName = ['Übergreifende Massnahmen', 'Übergreifende Massnahmen'];
 
 /**
  * Gibt an, ob Eingaben geändert wurden seit dem letzten Laden/Speichern
@@ -106,6 +108,13 @@ if(mode === 'wizit')  modeName = ['IT-Verfahren', 'IT-Verfahren'];
 var changedValues = false;
 
 /**
+ * Liste der IDs aller veränderten Felder seit dem letzten Speichern
+ * @global
+ * @type {Array}
+ */
+var changedFields = [];
+
+/**
  * Gibt an, ob das Verfahren als abgeschlossen markiert wurde
  * @global
  * @type {Boolean}
@@ -113,11 +122,32 @@ var changedValues = false;
 var markedAsFinished = false;
 
 /**
+ * Gibt an, welchen Status das Verfahren hat
+ * @global
+ * @type {Number}
+ */
+var status = 0;
+
+/**
  * Sammlung von Promises für AJAX-Anfragen, die zu Beginn durchgeführt werden müssen
  * @global
  * @type {Array}
  */
 var promises = [];
+
+/**
+ * JS Interval Timer für regelmäßigen Autosave
+ * @global
+ * @type {Number}
+ */
+var autoSaveTimer = 0;
+
+/**
+ * Zeit zwischen Autosaves
+ * @global
+ * @type {Number}
+ */
+var autoSaveWait = 600000;
 
 // Mappings
 /**
@@ -335,6 +365,12 @@ function myFinish() {
           return;
         }
         markedAsFinished = true;
+        status = 2;
+
+        let statusSymbol = status in statusSymbolMapping ? ' &lt;i data-toggle="tooltip" class="fa ' + statusSymbolMapping[status] + '" title="' + statusMapping[status]  + '">&lt;/i>' : '';
+        $('#title').find('i').replaceWith(statusSymbol);
+        $('#title').find('i').tooltip();
+
         modal.find('.modal-title').text('Dokumentation abgeschlossen');
         var modalBody = modal.find('.modal-body');
         modalBody.html('&lt;p>Hiermit wurde die Dokumentation als abgeschlossen gekennzeichnet.&lt;/p>');
@@ -394,14 +430,16 @@ function showVerfahrensliste(startup = false) {
     for(var c=0; c &lt; data['count']; c++) {
       // Filter nach Ebene
       let currType = parseInt(data['data'][c]['Typ']);
-      if(currType === 1 &amp;&amp; mode !== 'wizproc') continue;
-      if(currType === 2 &amp;&amp; mode !== 'wizit') continue;
-      if(currType === 3 &amp;&amp; mode !== 'wizapp') continue;
+      if(currType === 1 &amp;&amp; mode !== 'wizproc')     continue;
+      if(currType === 2 &amp;&amp; mode !== 'wizit')       continue;
+      if(currType === 3 &amp;&amp; mode !== 'wizapp')      continue;
+      if(currType === 4 &amp;&amp; mode !== 'wizmeasures') continue;
 
       modeCount++;
 
-      var currId = parseInt(data['data'][c]['ID']);
-      var newEntry = $('&lt;tr>&lt;/tr>');
+      let currId = parseInt(data['data'][c]['ID']);
+      let newEntry = $('&lt;tr>&lt;/tr>');
+      let statusSymbol = data['data'][c]['Status'] in statusSymbolMapping ? ' &lt;i class="fa ' + statusSymbolMapping[data['data'][c]['Status']] + '">&lt;/i>' : '';
       data['data'][c]['Status'] = data['data'][c]['Status'] in statusMapping ? statusMapping[data['data'][c]['Status']] : statusMapping['9'];
 
       // Editierbare/Eigene Verfahren
@@ -409,7 +447,7 @@ function showVerfahrensliste(startup = false) {
         newEntry.append('&lt;td style="width: 16px;">&lt;/td>');
         newEntry.append('&lt;td>' + data['data'][c]['Bezeichnung'] + ' &lt;i data-toggle="tooltip" class="fa fa-info-circle" title="' + data['data'][c]['Beschreibung'] + '">&lt;/i>&lt;/td>');
         newEntry.append('&lt;td>' + data['data'][c]['Fachabteilung']  + '&lt;/td>');
-        newEntry.append('&lt;td>' + data['data'][c]['Status'] + '&lt;/td>');
+        newEntry.append('&lt;td>' + data['data'][c]['Status'] + statusSymbol + '&lt;/td>');
         newEntry.append('&lt;td>' + data['data'][c]['LetzterBearbeiter'] + ' &lt;i data-toggle="tooltip" class="fa fa-info-circle" title="' + (data['data'][c]['BearbeiterDetails'] ? data['data'][c]['BearbeiterDetails'] : '&lt;Keine Details vorhanden>') + '">&lt;/i>&lt;/td>');
         newEntry.append('&lt;td>' + data['data'][c]['Aktualisierung'] + '&lt;/td>');
         newEntry.append('&lt;td>&lt;div class="btn-group inline">&lt;a class="btn" href="?id=' + currId + (debug ? '&amp;debug=true' : '') + '" target="_blank">&lt;i class="fa fa-edit">&lt;/i> Bearbeiten&lt;/a>&lt;a class="btn" href="?copy=' + currId + '" target="_blank">&lt;i class="fa fa-copy">&lt;/i> Kopieren&lt;/a>&lt;button type="button" title="Die PDF-Version repräsentiert das zuletzt abgeschlossene Verfahren!" data-id="' + currId + '" class="btn pdfdownload" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '>PDF anzeigen&lt;/button>&lt;/div> &lt;button type="button" data-id="' + currId +'" data-name="' + data['data'][c]['Bezeichnung'] +'" class="btn del btn-danger" ' + (data['data'][c]['Löschbar'] === true ? '' : 'disabled')  + '>&lt;i class="fa fa-minus">&lt;/i> Löschen&lt;/button>&lt;/td>');
@@ -419,7 +457,7 @@ function showVerfahrensliste(startup = false) {
         newEntry.append('&lt;td style="width: 16px;">&lt;/td>');
         newEntry.append('&lt;td>' + data['data'][c]['Bezeichnung'] + ' &lt;i data-toggle="tooltip" class="fa fa-info-circle" title="' + data['data'][c]['Beschreibung'] + '">&lt;/i>&lt;/td>');
         newEntry.append('&lt;td>' + data['data'][c]['Fachabteilung']  + '&lt;/td>');
-        newEntry.append('&lt;td>' + data['data'][c]['Status'] + '&lt;/td>');
+        newEntry.append('&lt;td>' + data['data'][c]['Status'] + statusSymbol + '&lt;/td>');
         newEntry.append('&lt;td>' + data['data'][c]['Aktualisierung'] + '&lt;/td>');
         newEntry.append('&lt;td>&lt;div class="btn-group inline">&lt;a class="btn" href="?id=' + currId + (debug ? '&amp;debug=true' : '') + '" target="_blank">&lt;i class="fa fa-edit">&lt;/i> Anzeigen&lt;/a>&lt;a class="btn" href="?copy=' + currId + '" target="_blank">&lt;i class="fa fa-copy">&lt;/i> Kopieren&lt;/a>&lt;button type="button" data-id="' + currId + '" class="btn pdfdownload" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '>PDF anzeigen&lt;/button>&lt;/div>&lt;/td>');
         modalBody.find('#readableprocesses tbody').append(newEntry);
@@ -509,6 +547,10 @@ function loadEmpty() {
   loadId = 0;
   $('input[name=meta_id]').val(loadId);
 
+  // Status zurücksetzen
+  status = 0;
+  markedAsFinished = false;
+
   // Felder wieder bearbeitbar machen
   $('#content').find('input, textarea, select, button[id!="showVerfahrensliste"]').prop('disabled', false);
   canEdit = true;
@@ -528,9 +570,11 @@ function loadEmpty() {
   // Clear title
   document.title = document.title.split(' - ').slice(-1)[0];
   let emptyTitle = 'Dokumentation einer Verarbeitungstätigkeit';
-  if(mode === 'wizapp') emptyTitle = 'Dokumentation einer Fachapplikation';
-  if(mode === 'wizit')  emptyTitle = ' Dokumentation eines IT-Verfahrens';
-  $('#title').text(emptyTitle);
+  if(mode === 'wizapp')       emptyTitle = 'Dokumentation einer Fachapplikation';
+  if(mode === 'wizit')        emptyTitle = ' Dokumentation eines IT-Verfahrens';
+  if(mode === 'wizmeasures')  emptyTitle = ' Dokumentation von übergreifenden Massnahmen';
+  let statusSymbol = status in statusSymbolMapping ? ' &lt;i data-toggle="tooltip" class="fa ' + statusSymbolMapping[status] + '" title="' + statusMapping[status]  + '">&lt;/i>' : '';
+  $('#title').text(emptyTitle).append(statusSymbol).find('i').tooltip();
 
   setSaveLabel('failed');
   setOverlay(false);
@@ -597,17 +641,15 @@ function loadFromJSON(values, keepAccess = false) {
   }
 
   // Fallback für fehlende TOM Kategorie Auswahlfelder
-  if(Object.keys(values).filter((elem) => (elem.search('tom_toggle_') >= 0)).length === 0) {
-    let tomFields = Object.keys(values).filter((elem) => (elem.search('massnahmen_') >= 0));
-    tomFields.forEach((id) => {
-      id = id.split('_')[1];
-      if(['risiko', 'vertraulichkeit', 'integritaet', 'verfuegbarkeit'].includes(id)) return;
-      let tomEntry = tomsMapping.filter((elem) => (elem.Identifier === id));
-      if(tomEntry.length === 0) return;
-      let targetSubcategory = ('tom_toggle_' + tomEntry[0]['Category'].trim() + '_' + (tomEntry[0]['Subcategory'].trim() ? tomEntry[0]['Subcategory'].trim() : 'all')).replace(/\W/g, '_');
-      $('input[name="' + targetSubcategory + '"]:not(:checked)').prop('checked', true).trigger('change');
-    });
-  }
+  let tomFields = Object.keys(values).filter((elem) => (elem.search('massnahmen_') >= 0));
+  tomFields.forEach((id) => {
+    id = id.split('_')[1];
+    if(['risiko', 'vertraulichkeit', 'integritaet', 'verfuegbarkeit'].includes(id)) return;
+    let tomEntry = tomsMapping.filter((elem) => (elem.Identifier === id));
+    if(tomEntry.length === 0) return;
+    let targetSubcategory = ('tom_toggle_' + tomEntry[0]['Category'].trim() + '_' + (tomEntry[0]['Subcategory'].trim() ? tomEntry[0]['Subcategory'].trim() : 'all')).replace(/\W/g, '_');
+    $('input[name="' + targetSubcategory + '"]:not(:checked)').prop('checked', true).trigger('change');
+  });
 
   var extendedTables = [];
   Object.keys(values).forEach(function(val, idx) {
@@ -624,18 +666,18 @@ function loadFromJSON(values, keepAccess = false) {
 
       if(inputs.length === 0) {
         debugLog('Konnte keine Eingabefelder mit Namen "' + val + '" finden! Überspringe...');
-        missingFields.push(val);
+        missingFields.push(htmlEncode(val));
         return true;
       }
 
       for(let c = 0; c &lt; values[val].length; c++) {
         if(inputs[c].type === 'checkbox') {
-          if(values[val][c] !== '0') $(inputs[c]).prop('checked', true).trigger('change');
+          if(values[val][c] !== '0' &amp;&amp; !$(inputs[c]).prop('checked')) $(inputs[c]).prop('checked', true).trigger('change');
         }
         else if(inputs[c].type === 'radio') {
           let fieldsPerValue = inputs.length / values[val].length;
           for(let d = 0; d &lt; fieldsPerValue; d++) {
-            if(inputs[c * fieldsPerValue + d].value === values[val][c]) $(inputs[c * fieldsPerValue + d]).prop('checked', true).trigger('change');
+            if(inputs[c * fieldsPerValue + d].value === values[val][c] &amp;&amp; !$(inputs[c * fieldsPerValue + d]).prop('checked')) $(inputs[c * fieldsPerValue + d]).prop('checked', true).trigger('change');
           }
         }
         else {
@@ -648,7 +690,7 @@ function loadFromJSON(values, keepAccess = false) {
       var inp = $('[name="' + val + '"]');
       if(inp.length === 1) {
         if(inp[0].type === 'checkbox') {
-          if(values[val] !== '0') inp.prop('checked', true).trigger('change');
+          if(values[val] !== '0' &amp;&amp; !inp.prop('checked')) inp.prop('checked', true).trigger('change');
         }
         else {
           if(!Array.isArray(values[val])) values[val] = htmlDecode(values[val]);
@@ -657,12 +699,12 @@ function loadFromJSON(values, keepAccess = false) {
       }
       else if(inp.length > 1 &amp;&amp; inp[0].type === 'radio') {
         for(let c = 0; c &lt; inp.length; c++) {
-          if(inp[c].value === values[val]) $(inp[c]).prop('checked', true).trigger('change');
+          if(inp[c].value === values[val] &amp;&amp; !$(inp[c]).prop('checked')) $(inp[c]).prop('checked', true).trigger('change');
         }
       }
       else {
         debugLog('Keine passenden oder mehrere Eingabefelder mit Namen "' + val + '" gefunden! Überspringe...');
-        missingFields.push(val);
+        missingFields.push(htmlEncode(val));
       }
     }
   });
@@ -718,8 +760,10 @@ function saveOnServer() {
         loadId = parseInt(data['data']['ID']);
         idField.val(loadId);
         history.replaceState({}, document.title, window.location.href.split('?')[0] + '?id=' + loadId);
-        setSaveLabel('saved', new Date(data['data']['Date']));
+        setSaveLabel('saved', new Date(data['data']['Date'].replace(' ', 'T')));  // Safari benötigt das Format YYYY-MM-DDTHH:MM:SS (mit T)
+        $('input[name="meta_lastupdate"]').val(data['data']['Date']);
         changedValues = false;
+        changedFields = [];
       }
       else {
         showError('Anlegen der Dokumentation', data['error']);
@@ -743,13 +787,70 @@ function saveOnServer() {
 
     return $.post(backendPath, JSON.stringify({'action':'update', 'debug': debug, 'id': loadId, 'data': currentState})).done(function(data) {
       if(!data['success']) {
-        showError('Speichern der Dokumentation', data['error']);
+        let errorText = data['error'];
+
+        if(errorText.includes('bearbeitet')) {
+          let unsavedChanges = $('&lt;div>&lt;/div>').append('&lt;p>&lt;h4>Übersicht der ungespeicherten Änderungen&lt;/h4>&lt;table class="table table-bordered bg-info">&lt;thead>&lt;tr>&lt;th>Feld&lt;/th>&lt;th>Inhalt&lt;/th>&lt;/tr>&lt;/thead>&lt;tbody>&lt;/tbody>&lt;/table>&lt;/p>');
+          let changedFieldsCopy = [...new Set(changedFields)];
+          let changedFieldsRest = [];
+
+          changedFieldsCopy.forEach((x, idx) => {
+            let fieldName = $('[name="' + x + '"]').first().closest('div.form-group').find('label').text();
+            if(!fieldName) fieldName = $('[name="' + x + '"]').first().closest('table').closest('div').prev().find('h1, h2, h3, h4, h5, h6, .info-text').text();
+
+            if(fieldName) {
+              let val = htmlEncode($('[name="' + x + '"]').val());
+
+              if(x.includes('[]')) val = 'Tabelle verändert';
+
+              unsavedChanges.find('tbody').append('&lt;tr>&lt;td>' + htmlEncode(fieldName) + '&lt;/td>&lt;td>' + val + '&lt;/td>&lt;/tr>');
+            }
+            else {
+              changedFieldsRest.push(x);
+            }
+          });
+
+          changedFieldsRest.forEach((x, idx) => {
+            if(x.includes('tom_toggle_')) {
+              if($('[name="' + x + '"]').prop('checked')) {
+                unsavedChanges.find('tbody').append('&lt;tr>&lt;td>TOM Kategorie ausgewählt&lt;/td>&lt;td>' + htmlEncode($('[name="' + x + '"]').parent().text()) + '&lt;/td>&lt;/tr>');
+              }
+              else {
+                unsavedChanges.find('tbody').append('&lt;tr>&lt;td>TOM Kategorie abgewählt&lt;/td>&lt;td>' + htmlEncode($('[name="' + x + '"]').parent().text()) + '&lt;/td>&lt;/tr>');
+              }
+            }
+            else if(x.includes('massnahmen_') &amp;&amp; x !== 'massnahmen_risiko') {
+              if($('[name="' + x + '"]').prop('nodeName') === 'SELECT') {
+                let val = 'Nein';
+                switch($('[name="' + x + '"]').val()) {
+                  case '1': val = 'Ja'; break;
+                  case '0': val = 'Nein'; break;
+                  case '2': val = 'Teilweise'; break;
+                  case '4': val = 'Entbehrlich'; break;
+                }
+                unsavedChanges.find('tbody').append('&lt;tr>&lt;td>Umsetzung Massnahme ' + htmlEncode($('[name="' + x + '"]').closest('tr').find('td').first().text()) + '&lt;/td>&lt;td>' + val + '&lt;/td>&lt;/tr>');
+              }
+              else {
+                unsavedChanges.find('tbody').append('&lt;tr>&lt;td>Kommentar Massnahme ' + htmlEncode($('[name="' + x + '"]').closest('tr').find('td').first().text()) + '&lt;/td>&lt;td>' + htmlEncode($('[name="' + x + '"]').val()) + '&lt;/td>&lt;/tr>');
+              }
+            }
+            else {
+              unsavedChanges.find('tbody').append('&lt;tr>&lt;td>' + htmlEncode(x) + '&lt;/td>&lt;td>' + htmlEncode($('[name="' + x + '"]').val()) + '&lt;/td>&lt;/tr>');
+            }
+          });
+
+          errorText = errorText + '&lt;br />' + unsavedChanges.html();
+        }
+
+        showError('Speichern der Dokumentation', errorText);
         setSaveLabel('failed');
       }
       else {
         setSaveLabel('saved', new Date(data['data']['Date'].replace(' ', 'T')));  // Safari benötigt das Format YYYY-MM-DDTHH:MM:SS (mit T)
+        $('input[name="meta_lastupdate"]').val(data['data']['Date']);
         history.replaceState({}, document.title, window.location.href.split('?')[0] + '?id=' + loadId);
         changedValues = false;
+        changedFields = [];
 
         // Hinweis anzeigen, falls Status zurückgesetzt wurde
         if(markedAsFinished) {
@@ -758,6 +859,13 @@ function saveOnServer() {
           modal.find('.modal-body').append('&lt;p>&lt;button type="button" class="center-block btn btn-primary" data-dismiss="modal" aria-label="Close">Schließen&lt;/button>&lt;/p>');
           modal.modal();
           markedAsFinished = false;
+
+          // Status aktualisieren
+          status = 0;
+          let statusText = status in statusMapping ? statusMapping[status] : statusMapping['9'];
+          let statusSymbol = status in statusSymbolMapping ? ' &lt;i data-toggle="tooltip" class="fa ' + statusSymbolMapping[status] + '" title="' + statusText + '">&lt;/i>' : '';
+          $('#title').find('i').replaceWith(statusSymbol);
+          $('#title').find('i').tooltip();
         }
       }
     }).fail((jqXHR, error, errorThrown) => {
@@ -784,12 +892,16 @@ function loadFromServer(id) {
       }
       loadFromJSON(data['data'][0]['JSON']);
       markedAsFinished = (parseInt(data['data'][0]['Status']) === 2);
+      status = parseInt(data['data'][0]['Status']);
       loadId = parseInt(data['data'][0]['ID']);
       $('input[name="meta_id"]').val(loadId);
 
       if(!data['data'][0]['Editierbar']) {
         canEdit = false;
         $('#content').find('input, textarea, select, button[id!="showVerfahrensliste"]').prop('disabled', true);
+        $('#content > .tab-content > .tab-pane > div').appendTo('#content > .tab-content > .tab-pane:first()');
+        $('#content > .wizard-navigation, #content > .wizard-footer div').remove();
+        $('#content > .tab-content').css('padding-top', '0px');
       }
 
       lastSaveDate = data['data'][0]['Aktualisierung'];
@@ -801,9 +913,11 @@ function loadFromServer(id) {
       $('input[name="meta_lastupdate"]').val(lastSaveDate);
       setSaveLabel('saved', new Date(lastSaveDate.replace(' ', 'T')));  // Safari benötigt das Format YYYY-MM-DDTHH:MM:SS (mit T)
 
-      document.title = data['data'][0]['Bezeichnung'] + ' - ' + document.title.split(' - ').slice(-1)[0];
-      $('#title').text('Dokumentation von ' + data['data'][0]['Bezeichnung']);
+      document.title = htmlDecode(data['data'][0]['Bezeichnung']) + ' - ' + document.title.split(' - ').slice(-1)[0];
+      let statusSymbol = status in statusSymbolMapping ? ' &lt;i data-toggle="tooltip" class="fa ' + statusSymbolMapping[status] + '" title="' + statusMapping[status]  + '">&lt;/i>' : '';
+      $('#title').text('Dokumentation von ' + htmlDecode(data['data'][0]['Bezeichnung'])).append(statusSymbol).find('i').tooltip();
       changedValues = false;
+      changedFields = [];
 
       // Abhängigkeiten bei IT-Verfahren anzeigen
       if(userIsDSB) {
@@ -815,11 +929,18 @@ function loadFromServer(id) {
           }
 
           data['data'].forEach(dependant => {
-            dependantType = 'Verarbeitungstätigkeit';
+            let dependantType = 'Verarbeitungstätigkeit';
             if(dependant['type'] === 2) dependantType = 'IT-Verfahren';
             if(dependant['type'] === 3) dependantType = 'Fachapplikation';
-            $('#abschluss_vonabhaengig tbody').append('&lt;tr>&lt;td>' + htmlDecode(dependant['name']) + '&lt;/td>&lt;td>' + dependantType + '&lt;/td>&lt;td>&lt;a class="btn" href="?id=' + dependant['id'] + '" target="_blank">Anzeigen&lt;/a>&lt;/td>&lt;/tr>');
+            if(dependant['type'] === 4) dependantType = 'Übergreifende Massnahmen';
+
+            let statusText = dependant['status'] in statusMapping ? statusMapping[dependant['status']] : statusMapping['9'];
+            let statusSymbol = dependant['status'] in statusSymbolMapping ? ' &lt;i data-toggle="tooltip" class="fa ' + statusSymbolMapping[dependant['status']] + '" title="' + statusText + '">&lt;/i>' : '';
+
+            $('#abschluss_vonabhaengig tbody').append('&lt;tr>&lt;td>' + htmlDecode(dependant['name']) + statusSymbol + '&lt;/td>&lt;td>' + dependantType + '&lt;/td>&lt;td>&lt;a class="btn" href="?id=' + dependant['id'] + '" target="_blank">Anzeigen&lt;/a>&lt;/td>&lt;/tr>');
           });
+
+          $('#abschluss_vonabhaengig tbody').find('i[data-toggle="tooltip"]').tooltip();
         }).fail((jqXHR, error, errorThrown) => {
           console.error('Fehler beim Abruf von abhängigen Verfahren! HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
         });
@@ -852,6 +973,7 @@ function copyFromServer(id) {
       $('input[name=allgemein_bezeichnung]').val('[Kopie] ' + $('input[name=allgemein_bezeichnung]').val()); /* Kopie vor Bezeichnung setzen */
       history.replaceState({}, document.title, window.location.href.split('?')[0]);
       changedValues = true;
+      changedFields = ['allgemein_bezeichnung'];
     }
     else {
       showError('Kopieren der Dokumentation', data['error']);
@@ -863,9 +985,10 @@ function copyFromServer(id) {
 
 /**
  * Generiert den HTML-Code-Auschnitt für die PDF-Generierung
+ * @param {boolean} draft Zeigt an, ob ein Abschluss- oder Entwurfs-Dokument erstellt wird
  * @returns {String} HTML-Code
  */
-function genHTMLforPDF() {
+function genHTMLforPDF(draft = false) {
   console.time('HTML-Code-Generierung für PDF');
 
   /* Alle leeren Tabellenzeilen entfernen */
@@ -876,7 +999,7 @@ function genHTMLforPDF() {
   var toSend = $('&lt;div>&lt;/div>');
 
   /* Überschrift */
-  toSend.append('&lt;h2 class="text-center">Dokumentation ' + ( mode === 'wizproc' ? 'der Verarbeitungstätigkeit' : 'des IT-Verfahrens' ) + '&lt;/h2>');
+  toSend.append('&lt;h2 class="text-center">Dokumentation ' + ( mode === 'wizproc' ? 'der Verarbeitungstätigkeit' : ( mode === 'wizapp' ? 'der Fachapplikation' : ( mode === 'wizmeasures' ? 'der übergreifenden Massnahmen' : 'des IT-Verfahrens' ) ) ) + '&lt;/h2>');
   toSend.append('&lt;h3 class="text-center">' + htmlEncode($('[name="allgemein_bezeichnung"]').val()) + '&lt;/h3>');
   toSend.append('&lt;h4 class="pull-left" style="color: darkgray;">Letzte Aktualisierung: ' + $('#saveTime').text() + '&lt;/h4>');
   toSend.append('&lt;h4 class="pull-right" style="color: darkgray;">Lfd. Nr.: ' + loadId + '&lt;/h4>');
@@ -910,18 +1033,33 @@ function genHTMLforPDF() {
     if(parseInt($(this).data('risk')) > currRiskLevel) $(this).remove();
   });
 
+  /* Bei Abschluss-PDF Volltexte entfernen */
+  if(!draft) toSend.find('#tom_accordion').find('tbody td:nth-child(2) p.tom_desc').remove();
+  if(!draft) toSend.find('#tom_accordion').find('tbody td:nth-child(2) p').removeClass('strong');
+  if(!draft) toSend.find('#tom_accordion').find('.panel-body > p, .panel-body > a').remove();
+
+  /* Hinweis-Text bei keinen ausgewählten TOMs */
+  if(toSend.find('#toggletoms').find('input[type=checkbox]:checked').length === 0 || toSend.find('#tom_accordion').find('tr').length === 0) {
+    toSend.find('#tom_accordion').append('&lt;h5 class="text-center">&lt;strong>Es wurden keine Technischen und Organisatorischen Maßnahmen ausgewählt.&lt;/strong>&lt;/h5>');
+  }
+
   /* Link hinzufügen */
   let baseURL = window.location.href.split('?')[0].replace(/x?sso/i, 'www');
   let link = baseURL + '?id=' + loadId;
   toSend.append('&lt;div class="text-center">&lt;h5 class="info-text text-ul">Dokumentation online einsehen&lt;/h5>&lt;p>&lt;a href="' + link + '">' + link + '&lt;/a>&lt;/p>&lt;/div>');
 
   /* Links in Abhängigkeiten anpassen */
-  toSend.find('table#abschluss_vonabhaengig tr, table#abschluss_abhaengigkeit tr, table#itverfahren_abhaengigkeit tr').each(function(idx) {
+  toSend.find('table#abschluss_vonabhaengig tr, table#abschluss_abhaengigkeit tr, table#itverfahren_abhaengigkeit tr, table#verarbeitung_abhaengigkeit tr, table#massnahmen_abhaengigkeit tr').each(function(idx) {
     let abhLnk = $(this).find('td:last a');
-    abhLnk.attr('href', baseURL + abhLnk.attr('href'));
+    if(abhLnk.attr('href') === undefined) {
+      abhLnk.detach();
+    }
+    else {
+      abhLnk.attr('href', baseURL + abhLnk.attr('href'));
+    }
   });
 
-  toSend.find('table#abschluss_abhaengigkeit tr, table#itverfahren_abhaengigkeit tr').each(function(idx) {
+  toSend.find('table#abschluss_abhaengigkeit tr, table#itverfahren_abhaengigkeit tr, table#verarbeitung_abhaengigkeit tr, table#massnahmen_abhaengigkeit tr').each(function(idx) {
     $(this).find('td:last button').remove();
     $(this).append($(this).find('td:last, th:last').clone());
   });
@@ -934,8 +1072,13 @@ function genHTMLforPDF() {
   toSend.find('table[data-tool="endlessTable"]').each(function(idx){
     var tbl = $(this);
     if(tbl.find('tr').length &lt; 2) {
-      tbl.parent().prev().remove();
-      tbl.parent().remove();
+      if(['abschluss_abhaengigkeit', 'itverfahren_abhaengigkeit', 'verarbeitung_abhaengigkeit', 'massnahmen_abhaengigkeit'].includes(this.id)) {
+        tbl.parent().replaceWith('&lt;div class="col-sm-offset-1 col-sm-10">&lt;p>Es wurden keine Abhängigkeiten angegeben.&lt;/p>&lt;/div>');
+      }
+      else {
+        tbl.parent().prev().remove();
+        tbl.parent().remove();
+      }
     }
   });
 
@@ -1007,6 +1150,7 @@ function exportJSON() {
     'abschluss_abhaengigkeit_id',
     'itverfahren_abhaengigkeit_id',
     'verarbeitung_abhaengigkeit_id',
+    'massnahmen_abhaengigkeit_id',
     'meta_gruppen_kennung',
     'meta_gruppen_name',
     'meta_gruppen_schreiben',
@@ -1020,6 +1164,7 @@ function exportJSON() {
     'abschluss_abhaengigkeit_name',
     'itverfahren_abhaengigkeit_name',
     'verarbeitung_abhaengigkeit_name',
+    'massnahmen_abhaengigkeit_name',
     'allgemein_fachlich_name',
     'allgemein_technisch_name'
   ];
@@ -1080,7 +1225,7 @@ function importJSON(file) {
 
     if(loadId !== 0) {
       modal.find('.modal-title').text('Import einer Dokumentation');
-      modal.find('.modal-body').html('&lt;div class="alert alert-warning">Sie haben bereits eine Dokumentation geladen. Soll eine neue Dokumentation angelegt oder die aktuell geladene Dokumentation überschrieben werden? Gesetzte Zugriffsberechtigungen auf der letzten Seite werden beim Überschreiben beibehalten.&lt;/div>');
+      modal.find('.modal-body').html('&lt;div class="alert alert-warning">Sie haben bereits eine Dokumentation geladen. Soll eine neue Dokumentation angelegt oder die aktuell geladene Dokumentation überschrieben werden? (Hinweis: Evtl. gesetzte Zugriffsberechtigungen auf der letzten Seite werden nicht überschrieben.)&lt;/div>');
       modal.find('.modal-body').append('&lt;div class="text-center">&lt;button id="importEmptyBtn" class="btn btn-success">Neue Dokumentation&lt;/button>&lt;button id="importCurrBtn" class="btn btn-danger ml">Vorhandene überschreiben&lt;/button>&lt;/div>');
       modal.modal();
 
@@ -1138,7 +1283,7 @@ function showImportDialog() {
   modal.find('.modal-title').text('Import einer Dokumentation');
   let modalBody = modal.find('.modal-body');
   modalBody.html('&lt;div class="text-center form-group">&lt;label for="importFile">JSON Datei zum Importieren auswählen&lt;/label>&lt;input type="file" id="importFile" accept=".json,application/json" class="btn center-block hidden" />&lt;div id="dropFile" class="text-center alert alert-info">&lt;/div>&lt;/div>');
-  modalBody.find('#dropFile').append('&lt;p class="text-center">&lt;i class="fa fa-file fa-2x">&lt;/i>&lt;/p>&lt;p class="text-center">Klicken für Auswahldialog oder Datei hineinziehen...&lt;/p>');
+  modalBody.find('#dropFile').append('&lt;p class="text-center">&lt;i class="fa fa-file fa-2x">&lt;/i>&lt;/p>&lt;p class="text-center">Klicken für Auswahldialog oder Datei per Drag&amp;Drop hineinziehen...&lt;/p>');
 
   modalBody.find('#dropFile').on('dragover', (evt) => {
     evt.preventDefault();
@@ -1237,6 +1382,10 @@ function initTypeahead(node) {
     var itemKeys = Object.keys(item);
     var split = lowcaseQuery.split(' ');
     var found = undefined;
+
+    // Aktuelle Dokumentation aus Auswahllisten filtern
+    if(Number.parseInt(item.value) === loadId) return undefined;
+
     for(let c=0; c &lt; itemKeys.length; c++) {
       if(item[itemKeys[c]] !== null &amp;&amp; item[itemKeys[c]].toLowerCase().search(lowcaseQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&amp;')) > -1) {
         found = true;
@@ -1446,6 +1595,9 @@ function addTableRow(table) {
     initTypeahead(value);
   });
 
+  // Tooltips initialisieren
+  clone.find('i[data-toggle="tooltip"]').tooltip();
+
   // Fall 1: Die aktuelle Tabelle wird nicht automatisch durchnummeriert
   if(clone.find('input[name="' + table + '_nummer[]"]').length !== 1) {
     // Delete Funktion an den neuen Button binden
@@ -1573,18 +1725,19 @@ function generateTOMList() {
   tempTOMs.forEach(function(row) {
     // Auswahlliste für Kategorien erstellen
     let targetToggleCategory = ('tom_toggle_' + row['Category'].trim()).replace(/\W/g, '_');
+    let catDelimit = row['CatDelimit'] ? '&lt;i data-toggle="tooltip" title="' + row['CatDelimit'] + '" class="fa fa-question-circle-o fa-lg">&lt;/i>' : '';
 
     if($('#' + targetToggleCategory).length !== 1) {
       toggleHeading.append('&lt;li role="presentation">&lt;a href="#' + targetToggleCategory + '" aria-controls="technical" role="tab" data-toggle="tab">' + row['Category'].trim() + '&lt;/a>&lt;/li>');
       toggleTab.append('&lt;div role="tabpanel" class="tab-pane" id="' + targetToggleCategory + '">&lt;/div>');
-      $('#' + targetToggleCategory).append('&lt;div class="checkbox">&lt;label>&lt;input type="checkbox" data-category="' + row['Category'] + '" data-subcategory="' + row['Subcategory'] + '" data-target="tom_category_' + row['Category'].trim().replace(/\W/g, '_') + '" name="' + targetToggleCategory + '_all" value="1">Gesamte Kategorie&lt;/label>&lt;/div>');
+      $('#' + targetToggleCategory).append('&lt;div class="checkbox">&lt;label>&lt;input type="checkbox" data-category="' + row['Category'] + '" data-subcategory="' + row['Subcategory'] + '" data-target="tom_category_' + row['Category'].trim().replace(/\W/g, '_') + '" name="' + targetToggleCategory + '_all" value="1">Gesamte Kategorie ' + catDelimit + '&lt;/label>&lt;/div>');
     }
 
     if(row['Subcategory'].trim() !== '') {
       let targetSubcategory = ('tom_toggle_' + row['Category'].trim() + '_' + row['Subcategory'].trim()).replace(/\W/g, '_');
 
       if($('input[name="' + targetSubcategory + '"]').length !== 1) {
-        $('#' + targetToggleCategory).append('&lt;div class="checkbox">&lt;label>&lt;input type="checkbox" data-category="' + row['Category'] + '" data-subcategory="' + row['Subcategory'] + '" data-target="tom_category_' + (row['Category'].trim() + ' - ' + row['Subcategory'].trim()).replace(/\W/g, '_') + '" name="' + targetSubcategory + '" value="1">' + row['Subcategory'].trim() + '&lt;/label>&lt;/div>');
+        $('#' + targetToggleCategory).append('&lt;div class="checkbox">&lt;label>&lt;input type="checkbox" data-category="' + row['Category'] + '" data-subcategory="' + row['Subcategory'] + '" data-target="tom_category_' + (row['Category'].trim() + ' - ' + row['Subcategory'].trim()).replace(/\W/g, '_') + '" name="' + targetSubcategory + '" value="1">' + row['Subcategory'].trim() + ' ' + catDelimit + '&lt;/label>&lt;/div>');
         $('#' + targetToggleCategory).find('input[name="' + targetToggleCategory + '_all"]').closest('div').detach();
       }
     }
@@ -1595,7 +1748,21 @@ function generateTOMList() {
   toggleTab.find('div').first().addClass('active');
 
   // Listener für toggleTOMList()
-  toggleTab.find('input[type="checkbox"]').change((evt) => { toggleTOMList(evt); });
+  toggleTab.find('input[type="checkbox"]').change((evt) => { return toggleTOMList(evt); });
+
+  // Listener zum Aufklappen von Accordions (zur Anpassung der Textarea Höhe)
+  $('#tom_accordion').on('shown.bs.collapse', (evt) => {
+    $(evt.target).find('textarea').each((idx, elem) => {
+      let targetCat = $(elem);
+      targetCat.height(targetCat.parent().innerHeight() - 16 - (idx === 0 ? 23 : 22));
+    });
+  });
+
+  // Tooltips aktivieren
+  $('#toggletoms').find('[data-toggle="tooltip"]').tooltip({
+    placement: 'auto',
+    html: true
+  });
 }
 
 /**
@@ -1633,51 +1800,66 @@ function toggleTOMList(evt) {
 
       let targetID = 'tom_accordion';
       let targetElem = $('#' + targetID);
-      let category = row['Category'].trim() + (row['Subcategory'] ? ' - ' + row['Subcategory'].trim() : '');
-      let targetCategory = 'tom_category_' + category.replace(/\W/g, '_');
+      let tomCategory = row['Category'].trim() + (row['Subcategory'] ? ' - ' + row['Subcategory'].trim() : '');
+      let targetCategory = 'tom_category_' + tomCategory.replace(/\W/g, '_');
+      let tomUrl = row['URL'] ? row['URL'] : '';
 
       if($('#' + targetCategory).length !== 1) {
         let inserted = false;
+        // Alphabetisch an der richtigen Stelle einfügen (anhand Kategorie + Subkategorie)
         targetElem.find('.panel-heading').each(function(idx, elem) {
           if(elem.id.localeCompare('heading_' + targetCategory) === 1) {
-            $(elem).parent('div').prev('h6').before('&lt;span class="snip">&lt;/span>&lt;h6 class="info-text text-ul-dot printOnly hidden">' + category + '&lt;/h6>');
-            $(elem).parent('div').prev('h6').before('&lt;div class="panel panel-default printHide">&lt;div class="panel-heading" role="tab" id="heading_' + targetCategory + '">&lt;h4 class="panel-title">&lt;a role="button" data-toggle="collapse" data-parent="#' + targetID + '" href="#' + targetCategory + '" aria-expanded="true" aria-controls="' + targetCategory + '">' + category + '&lt;/a>&lt;/h4>&lt;/div>&lt;/div>');
+            // Hinweis: &lt;span class="snip">&lt;/span> ist Platzhalter für Aufteilung des HTMLs bei der PDF-Generierung (MPDF hat ein Limit für die HTML Länge)
+            $(elem).parent('div').prev('h6').before('&lt;span class="snip">&lt;/span>&lt;h6 class="info-text text-ul-dot printOnly hidden">&lt;a href="' + tomUrl + '" target="_blank" rel="noopener noreferrer">' + tomCategory + '&lt;/a>&lt;/h6>');
+            $(elem).parent('div').prev('h6').before('&lt;div class="panel panel-default printHide">&lt;div class="panel-heading" role="tab" id="heading_' + targetCategory + '">&lt;h4 class="panel-title">&lt;a role="button" data-toggle="collapse" data-parent="#' + targetID + '" href="#' + targetCategory + '" aria-expanded="true" aria-controls="' + targetCategory + '">' + tomCategory + '&lt;/a>&lt;/h4>&lt;/div>&lt;/div>');
             inserted = true;
             return false;
           }
         });
 
+        // Unten einfügen falls korrekte Stelle zum Einfügen nicht gefunden
         if(!inserted) {
-          targetElem.append('&lt;span class="snip">&lt;/span>&lt;h6 class="info-text text-ul-dot printOnly hidden">' + category + '&lt;/h6>');
-          targetElem.append('&lt;div class="panel panel-default printHide">&lt;div class="panel-heading" role="tab" id="heading_' + targetCategory + '">&lt;h4 class="panel-title">&lt;a role="button" data-toggle="collapse" data-parent="#' + targetID + '" href="#' + targetCategory + '" aria-expanded="true" aria-controls="' + targetCategory + '">' + category + '&lt;/a>&lt;/h4>&lt;/div>&lt;/div>');
+          // Hinweis: &lt;span class="snip">&lt;/span> ist Platzhalter für Aufteilung des HTMLs bei der PDF-Generierung (MPDF hat ein Limit für die HTML Länge)
+          targetElem.append('&lt;span class="snip">&lt;/span>&lt;h6 class="info-text text-ul-dot printOnly hidden">&lt;a href="' + tomUrl + '" target="_blank" rel="noopener noreferrer">' + tomCategory + '&lt;/a>&lt;/h6>');
+          targetElem.append('&lt;div class="panel panel-default printHide">&lt;div class="panel-heading" role="tab" id="heading_' + targetCategory + '">&lt;h4 class="panel-title">&lt;a role="button" data-toggle="collapse" data-parent="#' + targetID + '" href="#' + targetCategory + '" aria-expanded="true" aria-controls="' + targetCategory + '">' + tomCategory + '&lt;/a>&lt;/h4>&lt;/div>&lt;/div>');
         }
 
-        let statusDesc = "Als Antworten bezüglich des Umsetzungsstatus der einzelnen Anforderungen kommen folgende Aussagen in Betracht:" +
-          "&lt;ul style='text-align: left;'>" +
-            "&lt;li>&lt;strong>Ja&lt;/strong> - Zu der Anforderung wurden geeignete Maßnahmen vollständig, wirksam und angemessen umgesetzt.&lt;/li>" +
-            "&lt;li>&lt;strong>Teilweise&lt;/strong> - Die Anforderung wurde nur teilweise umgesetzt.&lt;/li>" +
-            "&lt;li>&lt;strong>Nein&lt;/strong> - Die Anforderung wurde noch nicht erfüllt, also geeignete Maßnahmen sind größtenteils noch nicht umgesetzt worden.&lt;/li>" +
-            "&lt;li>&lt;strong>Entbehrlich&lt;/strong> - Die Erfüllung der Anforderung ist in der vorgeschlagenen Art nicht notwendig, weil die Anforderung im betrachteten Informationsverbund nicht relevant ist (z. B. weil Dienste nicht aktiviert wurden) oder bereits durch Alternativmaßnahmen erfüllt wurde. Wird der Umsetzungsstatus einer Anforderung auf „entbehrlich“ gesetzt, müssen über die Kreuzreferenztabelle des jeweiligen Bausteins die zugehörigen elementaren Gefährdungen identifiziert werden. Wurden Alternativmaßnahmen ergriffen, muss begründet werden, dass das Risiko, das von allen betreffenden elementaren Gefährdungen ausgeht, angemessen minimiert wurde. Wenn Basisanforderungen nicht erfüllt werden, bleibt grundsätzlich ein erhöhtes Risiko bestehen. Anforderungen dürfen nicht auf „entbehrlich“ gesetzt werden, indem das Risiko für eine im Baustein identifizierte elementare Gefährdung über die Kreuzreferenztabelle pauschal akzeptiert oder ausgeschlossen wird." +
-          "&lt;/ul>";
+        // Tabelle vorbereiten und einfügen
+        let anforderungDesc = 'Als &lt;em>Sicherheitsanforderung&lt;/em> werden Anforderungen für den organisatorischen, personellen, infrastrukturellen und technischen Bereich bezeichnet, deren Erfüllung zur Erhöhung der Informationssicherheit notwendig ist bzw. dazu beiträgt. Eine Sicherheitsanforderung beschreibt also, was getan werden muss, um ein bestimmtes Niveau bezüglich der Informationssicherheit zu erreichen. Wie die Anforderungen im konkreten Fall erfüllt werden, muss in der entsprechenden Sicherheitsmaßnahme beschrieben werden. (&lt;em>Im englischen Sprachraum wird für Sicherheitsanforderungen häufig der Begriff „control“ verwendet.&lt;/em>)&lt;br>Der IT-Grundschutz unterscheidet zwischen Basis-Anforderungen, Standard-Anforderungen und Anforderungen bei erhöhtem Schutzbedarf. &lt;em>Basis-Anforderungen&lt;/em> (grün) sind fundamental und stets umzusetzen, sofern nicht gravierende Gründe dagegen sprechen. &lt;em>Standard-Anforderungen&lt;/em> (gelb) sind für den normalen Schutzbedarf grundsätzlich umzusetzen, sofern sie nicht durch mindestens gleichwertige Alternativen oder die bewusste Akzeptanz des Restrisikos ersetzt werden. &lt;em>Anforderungen bei erhöhtem Schutzbedarf&lt;/em> (rot) sind exemplarische Vorschläge, was bei entsprechendem Schutzbedarf zur Absicherung sinnvoll umzusetzen ist.';
+        let statusDesc = 'Als Antworten bezüglich des &lt;em>Umsetzungsstatus&lt;/em> der einzelnen Anforderungen kommen folgende Aussagen in Betracht:&lt;ul>&lt;li>&lt;strong>Ja&lt;/strong> - Zu der Anforderung wurden geeignete Maßnahmen vollständig, wirksam und angemessen umgesetzt.&lt;/li>&lt;li>&lt;strong>Teilweise&lt;/strong> - Die Anforderung wurde nur teilweise umgesetzt.&lt;/li>&lt;li>&lt;strong>Nein&lt;/strong> - Die Anforderung wurde noch nicht erfüllt, also geeignete Maßnahmen sind größtenteils noch nicht umgesetzt worden.&lt;/li>&lt;li>&lt;strong>Entbehrlich&lt;/strong> - Die Erfüllung der Anforderung ist in der vorgeschlagenen Art nicht notwendig, weil die Anforderung im betrachteten Informationsverbund nicht relevant ist (z. B. weil Dienste nicht aktiviert wurden) oder bereits durch Alternativmaßnahmen erfüllt wurde. Wenn Basisanforderungen nicht erfüllt werden, bleibt grundsätzlich ein erhöhtes Risiko bestehen.&lt;/ul>';
+        let massnahmeDesc = 'Als &lt;em>Sicherheitsmaßnahme&lt;/em> (kurz Maßnahme) werden alle Aktionen bezeichnet, die dazu dienen, um Sicherheitsrisiken zu steuern und um diesen entgegenzuwirken. Dies schließt sowohl organisatorische, als auch personelle, technische oder infrastrukturelle Sicherheitsmaßnahmen ein. Sicherheitsmaßnahmen dienen zur Erfüllung von Sicherheitsanforderungen. Synonym werden auch die Begriffe Sicherheitsvorkehrung oder Schutzmaßnahme benutzt. (&lt;em>Im englischen Sprachraum werden die Begriffe „safeguard“, „security measure“ oder „measure“ verwendet.&lt;/em>)';
+        let catURL = row['CatURL'] ? '&lt;a href="' + row['CatURL'] + '" target="_blank" rel="noopener noreferrer">&lt;i class="fa fa-external-link" style="cursor: pointer;" data-toggle="tooltip" title="Zum BSI Grundschutz-Katalog">&lt;/i>&lt;/a>' : '';
+        let catObjective = row['CatObjective'] ? '&lt;p>' + row['CatObjective'] + ' ' + catURL + '&lt;/p>' : '';
+
         $('#heading_' + targetCategory).after('&lt;div id="' + targetCategory + '" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading_' + targetCategory + '">&lt;div class="panel-body">&lt;/div>&lt;/div>');
-        $('#' + targetCategory).find('.panel-body').append('&lt;table class="table table-striped table-hover">&lt;thead>&lt;tr>&lt;th class="col-sm-1">ID&lt;/th>&lt;th class="col-sm-6">Beschreibung&lt;/th>&lt;th class="col-sm-2">Umgesetzt? &lt;i data-toggle="tooltip" title="' + statusDesc + '" class="fa fa-question-circle-o fa-lg">&lt;/i>&lt;/th>&lt;th class="col-sm-3">Erläuterung bzw. Begründung&lt;/th>&lt;/tr>&lt;/thead>&lt;tbody>&lt;/tbody>&lt;/table>');
+        if(catObjective) $('#' + targetCategory).find('.panel-body').append(catObjective);
+        $('#' + targetCategory).find('.panel-body').append('&lt;table class="table table-striped table-hover">&lt;thead>&lt;tr class="text-nowrap">&lt;th class="col-sm-auto">Anforderung &lt;i data-toggle="tooltip" data-html="true" title="' + anforderungDesc + '" class="fa fa-question-circle-o fa-lg">&lt;/i>&lt;/th>&lt;th class="col-sm-5">Beschreibung&lt;/th>&lt;th class="col-sm-auto">Umsetzung &lt;i data-toggle="tooltip" title="' + statusDesc + '" class="fa fa-question-circle-o fa-lg">&lt;/i>&lt;/th>&lt;th class="col-sm-4">Maßnahme &lt;i data-toggle="tooltip" data-html="true" title="' + massnahmeDesc + '" class="fa fa-question-circle-o fa-lg">&lt;/i>&lt;/th>&lt;/tr>&lt;/thead>&lt;tbody>&lt;/tbody>&lt;/table>');
         $('#heading_' + targetCategory + ', #heading_' + targetCategory + ' a').click((evt) => {
           if(evt.target.nodeName === "A") return;
           $(evt.target).find('a').click();
         });
       }
 
+      // Alle TOMs in die passende Tabelle einfügen
       let className = row['Risklevel'] == 1 ? 'success' : row['Risklevel'] == 2 ? 'warning' : 'danger';
       let tomID = row['Identifier'].trim().replace(/ /g, '_');
-      let tomContent = row['Title'] ? row['Title'] + ' &lt;i data-toggle="tooltip" title="' + row['Description'] + '" class="fa fa-question-circle-o fa-lg">&lt;/i>' : row['Description'];
+      // Titel einblenden, falls vorhanden (bei ENISA gibt es nur die Beschreibung)
+      let tomContent = row['Title'] ? '&lt;p class="strong">' + row['Title'] + ' &lt;/p>&lt;p class="tom_desc">' + row['Description'] + '&lt;/p>' : row['Description'];
       let tableBody = $('#' + targetCategory).find('tbody');
+      // Identifier als Link falls URL vorhanden
+      let tomIdentifier = row['Identifier'];
 
       let tomDropdown = $('&lt;select data-tool="selectpicker" name="massnahmen_' + tomID + '">&lt;/select>')
         .append('&lt;option value="1">Ja&lt;/option>')
         .append('&lt;option value="0" selected>Nein&lt;/option>')
         .append('&lt;option value="2">Teilweise&lt;/option>')
         .append('&lt;option value="4">Entbehrlich&lt;/option>');
-      tableBody.append('&lt;tr data-risk="' + row['Risklevel'] + '" class="' + className + '">&lt;td>' + row['Identifier'] + '&lt;/td>&lt;td>' + tomContent + '&lt;/td>&lt;td>' + tomDropdown[0].outerHTML + '&lt;/td>&lt;td>&lt;textarea name="massnahmen_' + tomID + '_kommentar" class="form-control">&lt;/textarea>&lt;/td>&lt;/tr>');
+      tableBody.append('&lt;tr data-risk="' + row['Risklevel'] + '" class="' + className + '">&lt;td>' + tomIdentifier + '&lt;/td>&lt;td>' + tomContent + '&lt;/td>&lt;td>' + tomDropdown[0].outerHTML + '&lt;/td>&lt;td>&lt;textarea rows="5" name="massnahmen_' + tomID + '_kommentar" class="form-control" placeholder="Beschreibung der Sicherheitsmaßnahme, Erläuterung bzw. Begründung">&lt;/textarea>&lt;/td>&lt;/tr>');
+
+      if(tomContent.includes('ENTFALLEN')) {
+        tableBody.find('tr').last().find('textarea').prop('disabled', true);
+        tableBody.find('tr').last().find('select').replaceWith('ENTFALLEN');
+      }
     });
 
     // Tooltips aktivieren
@@ -1693,8 +1875,45 @@ function toggleTOMList(evt) {
     filterTOMList(parseInt($('[name=massnahmen_risiko]:checked').val()));
   }
   else {
-    $('#' + evtTarget.data('target')).parent('div').prev('h6').detach();
-    $('#' + evtTarget.data('target')).parent('div').detach();
+    // Überprüfen ob Eingaben verloren gehen beim Abwählen
+    let hasContent = false;
+
+    $('#' + evtTarget.data('target')).find('textarea').each(function(idx, elem) {
+      if($(elem).val() !== '') {
+        hasContent = true;
+        return false;
+      }
+    });
+
+    if(!hasContent) {
+      $('#' + evtTarget.data('target')).find('select').each(function(idx, elem) {
+        if($(elem).val() !== '0') {
+          hasContent = true;
+          return false;
+        }
+      });
+    }
+
+    if(!hasContent) {
+      $('#' + evtTarget.data('target')).parent('div').prev('h6').detach();
+      $('#' + evtTarget.data('target')).parent('div').detach();
+    }
+    else {
+      let confirmUncheck = confirm('Im Baustein "' + evtTarget.closest('label').text().trim() + '" wurden bereits Massnahmen bearbeitet, deren Inhalt beim Abwählen verloren geht. Wollen Sie den Baustein wirklich abwählen?');
+
+      if(!confirmUncheck) {
+        evtTarget[0].checked = true;
+        evt.preventDefault();
+        return false;
+      }
+      else {
+        $('#' + evtTarget.data('target')).parent('div').prev('h6').detach();
+        $('#' + evtTarget.data('target')).parent('div').detach();
+      }
+    }
+
+
+
   }
 }
 
@@ -1716,6 +1935,7 @@ Promise.all(promises).then(function() {
   // TOM-Auswahl erzeugen und auf Standard setzen
   generateTOMList();
   filterTOMList(2);
+  if(mode === 'wizmeasures') filterTOMList(3);
 
   // Initialisierung für die Endlos-Tabellen
   initEndlessTables();
@@ -1802,7 +2022,7 @@ Promise.all(promises).then(function() {
   });
 
   // Zeigt die aktuelle Beschreibung der abhängigen Verfahren an
-  $('#abschluss_abhaengigkeit, #itverfahren_abhaengigkeit, #verarbeitung_abhaengigkeit').on('change', 'input[name="abschluss_abhaengigkeit_id[]"], input[name="itverfahren_abhaengigkeit_id[]"], input[name="verarbeitung_abhaengigkeit_id[]"]', function() {
+  $('#abschluss_abhaengigkeit, #itverfahren_abhaengigkeit, #verarbeitung_abhaengigkeit, #massnahmen_abhaengigkeit').on('change', 'input[name="abschluss_abhaengigkeit_id[]"], input[name="itverfahren_abhaengigkeit_id[]"], input[name="verarbeitung_abhaengigkeit_id[]"], input[name="massnahmen_abhaengigkeit_id[]"]', function() {
     var idField = $(this);
     var descText = idField.closest('td').next('td').find('textarea');
     if(idField.val() !== '') {
@@ -1811,18 +2031,54 @@ Promise.all(promises).then(function() {
           showError('Auslesen der Abhängigkeiten', 'Scheinbar existiert eine Abhängigkeit nicht mehr!');
           console.error('Fehler beim Abruf von Abhängigkeiten! Fehler: ' + data['error']);
           descText.val('&lt;Das Verfahren existiert nicht!>');
+          idField.closest('td').find('input[name="abschluss_abhaengigkeit_betreiber[]"], input[name="itverfahren_abhaengigkeit_betreiber[]"], input[name="verarbeitung_abhaengigkeit_betreiber[]"], input[name="massnahmen_abhaengigkeit_betreiber[]"]').val('');
+
+          // Disable Link
+          idField.closest('tr').find('td:last').find('a').removeAttr('href');
+          idField.closest('tr').find('td:last').find('a').attr('disabled', 'disabled');
+
+          // Refresh status
+          idField.closest('td').find('.status span').replaceWith('&lt;span>Unbekannt &lt;i data-toggle="tooltip" class="fa fa-question" title="Unbekannt">&lt;/i>&lt;/span>');
+          idField.closest('td').find('.status i').tooltip();
           return;
         }
-        idField.closest('td').find('input[name="abschluss_abhaengigkeit_name[]"], input[name="itverfahren_abhaengigkeit_name[]"], input[name="verarbeitung_abhaengigkeit_name[]"]').val(htmlDecode(data['data'][0]['Bezeichnung']) + ' [' + htmlDecode(data['data'][0]['Fachabteilung']) + ']');
+        idField.closest('td').find('input[name="abschluss_abhaengigkeit_name[]"], input[name="itverfahren_abhaengigkeit_name[]"], input[name="verarbeitung_abhaengigkeit_name[]"], input[name="massnahmen_abhaengigkeit_name[]"]').val(htmlDecode(data['data'][0]['Bezeichnung']));
+        idField.closest('td').find('input[name="abschluss_abhaengigkeit_betreiber[]"], input[name="itverfahren_abhaengigkeit_betreiber[]"], input[name="verarbeitung_abhaengigkeit_betreiber[]"], input[name="massnahmen_abhaengigkeit_betreiber[]"]').val(htmlDecode(data['data'][0]['Fachabteilung']));
+
+        // Enable Link
         idField.closest('tr').find('a').attr('href', '?id=' + idField.val());
+        idField.closest('tr').find('td:last').find('a').removeAttr('disabled');
+
         descText.val(htmlDecode(data['data'][0]['Beschreibung']));
+
+        // Refresh status
+        let statusText = data['data'][0]['Status'] in statusMapping ? statusMapping[data['data'][0]['Status']] : statusMapping['9'];
+        let statusSymbol = data['data'][0]['Status'] in statusSymbolMapping ? '&lt;span>' + statusText + ' &lt;i data-toggle="tooltip" class="fa ' + statusSymbolMapping[data['data'][0]['Status']] + '" title="' + statusText + '">&lt;/i>&lt;/span>' : '&lt;span>Unbekannt &lt;i data-toggle="tooltip" class="fa fa-question" title="Unbekannt">&lt;/i>&lt;/span>';
+        idField.closest('td').find('.status span').replaceWith(statusSymbol);
+        idField.closest('td').find('.status i').tooltip();
       }).fail((jqXHR, error, errorThrown) => {
         console.error('Fehler beim Abruf von Abhängigkeiten! HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
         descText.val('&lt;Fehler beim Abrufen>');
+        idField.closest('td').find('input[name="abschluss_abhaengigkeit_betreiber[]"], input[name="itverfahren_abhaengigkeit_betreiber[]"], input[name="verarbeitung_abhaengigkeit_betreiber[]"], input[name="massnahmen_abhaengigkeit_betreiber[]"]').val('');
+
+        // Disable Link
+        idField.closest('tr').find('td:last').find('a').removeAttr('href');
+        idField.closest('tr').find('td:last').find('a').attr('disabled', 'disabled');
+
+        // Refresh status
+        idField.closest('td').find('.status span').replaceWith('&lt;span>Unbekannt &lt;i data-toggle="tooltip" class="fa fa-question" title="Unbekannt">&lt;/i>&lt;/span>');
+        idField.closest('td').find('.status i').tooltip();
       });
     }
     else {
       descText.val('');
+      // Disable Link
+      idField.closest('tr').find('td:last').find('a').removeAttr('href');
+      idField.closest('tr').find('td:last').find('a').attr('disabled', 'disabled');
+
+      // Refresh status
+      idField.closest('td').find('.status span').replaceWith('&lt;span>Unbekannt &lt;i data-toggle="tooltip" class="fa fa-question" title="Unbekannt">&lt;/i>&lt;/span>');
+      idField.closest('td').find('.status i').tooltip();
     }
   });
 
@@ -1908,7 +2164,7 @@ Promise.all(promises).then(function() {
 
     if(canEdit) saveOnServer();
 
-    let htmlForPDF = genHTMLforPDF();
+    let htmlForPDF = genHTMLforPDF(true);
 
     $.post(backendPath, JSON.stringify({'action':'gendraftpdf', 'id': loadId, 'data': {'title': $('[name="allgemein_bezeichnung"]').val(), 'pdfCode': htmlForPDF}, 'debug': debug})).done((data) => {
       if(!data['success']) {
@@ -1930,7 +2186,8 @@ Promise.all(promises).then(function() {
   // Titel anhand Bezeichnung aktualisieren
   $('input[name="allgemein_bezeichnung"]').on('input', (e) => {
     document.title = e.target.value + ' - ' + document.title.split(' - ').slice(-1)[0];
-    $('#title').text('Dokumentation von ' + e.target.value);
+    let statusSymbol = status in statusSymbolMapping ? ' &lt;i data-toggle="tooltip" class="fa ' + statusSymbolMapping[status] + '" title="' + statusMapping[status]  + '">&lt;/i>' : '';
+    $('#title').text('Dokumentation von ' + e.target.value).append(statusSymbol).find('i').tooltip();
   });
 
   // Warnung vor dem Schließen der Webseite, falls ungespeicherte Änderungen vorhanden sind
@@ -1946,6 +2203,33 @@ Promise.all(promises).then(function() {
   // Ex-/Import Handler
   $('#exportBtn').removeClass('hidden').click((evt) => {exportJSON()});
   $('#importBtn').removeClass('hidden').click((evt) => {showImportDialog()});
+
+  // Autosave Timer
+  autoSaveTimer = window.setInterval(() => {
+    if(loadId !== 0 &amp;&amp; changedValues) {
+      console.log('Autosaving...');
+      saveOnServer();
+    }
+  }, autoSaveWait);
+  $('#autosaveLabel').html('&lt;i class="fa fa-hourglass">&lt;/i> &lt;span>Automatisches Speichern alle ' + (autoSaveWait / 60000) + ' Mins.&lt;/span>').removeClass('hidden');
+
+  // Toggle für Autosave
+  $('#autosaveLabel').click((evt) => {
+    if(autoSaveTimer) {
+      window.clearInterval(autoSaveTimer);
+      autoSaveTimer = 0;
+      $('#autosaveLabel').html('&lt;i class="fa fa-hourglass-o">&lt;/i> &lt;span>Automatisches Speichern ausgeschaltet&lt;/span>');
+    }
+    else {
+      autoSaveTimer = window.setInterval(() => {
+        if(loadId !== 0 &amp;&amp; changedValues) {
+          console.log('Autosaving...');
+          saveOnServer();
+        }
+      }, autoSaveWait);
+      $('#autosaveLabel').html('&lt;i class="fa fa-hourglass">&lt;/i> &lt;span>Automatisches Speichern alle ' + (autoSaveWait / 60000) + ' Mins.&lt;/span>');
+    }
+  });
 
   console.timeEnd('Spezielle Handler initialisieren');
 
@@ -1964,7 +2248,7 @@ Promise.all(promises).then(function() {
   }
 
   // Überprüpft, ob Angaben geändert wurden
-  $('form').on('change', '[name!=""]', (e) => { changedValues = true; });
+  $('form').on('change', '[name!=""]', (e) => { changedValues = true; changedFields.push(e.target.name); e.stopPropagation() });
 
   // DSB Elemente anzeigen
   if(userIsDSB) {
@@ -1986,13 +2270,13 @@ Promise.all(promises).then(function() {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#addTableRow">addTableRow</a></li><li><a href="global.html#backendPath">backendPath</a></li><li><a href="global.html#canEdit">canEdit</a></li><li><a href="global.html#changedValues">changedValues</a></li><li><a href="global.html#copyFromServer">copyFromServer</a></li><li><a href="global.html#copyId">copyId</a></li><li><a href="global.html#copyIdMain">copyIdMain</a></li><li><a href="global.html#debug">debug</a></li><li><a href="global.html#debugLog">debugLog</a></li><li><a href="global.html#deleteFromServer">deleteFromServer</a></li><li><a href="global.html#endlessCounts">endlessCounts</a></li><li><a href="global.html#endlessTables">endlessTables</a></li><li><a href="global.html#endlessTemplates">endlessTemplates</a></li><li><a href="global.html#exportJSON">exportJSON</a></li><li><a href="global.html#filterTOMList">filterTOMList</a></li><li><a href="global.html#generateTOMList">generateTOMList</a></li><li><a href="global.html#genHTMLforPDF">genHTMLforPDF</a></li><li><a href="global.html#getCombinedPDF">getCombinedPDF</a></li><li><a href="global.html#getPDFFromServer">getPDFFromServer</a></li><li><a href="global.html#GetURLParameter">GetURLParameter</a></li><li><a href="global.html#getUserPromise">getUserPromise</a></li><li><a href="global.html#htmlDecode">htmlDecode</a></li><li><a href="global.html#htmlEncode">htmlEncode</a></li><li><a href="global.html#importJSON">importJSON</a></li><li><a href="global.html#initEndlessTables">initEndlessTables</a></li><li><a href="global.html#initTypeahead">initTypeahead</a></li><li><a href="global.html#loadEmpty">loadEmpty</a></li><li><a href="global.html#loadFromJSON">loadFromJSON</a></li><li><a href="global.html#loadFromServer">loadFromServer</a></li><li><a href="global.html#loadId">loadId</a></li><li><a href="global.html#loadIdMain">loadIdMain</a></li><li><a href="global.html#loadSubpage">loadSubpage</a></li><li><a href="global.html#markedAsFinished">markedAsFinished</a></li><li><a href="global.html#modal">modal</a></li><li><a href="global.html#mode">mode</a></li><li><a href="global.html#modeName">modeName</a></li><li><a href="global.html#modeNum">modeNum</a></li><li><a href="global.html#myFinish">myFinish</a></li><li><a href="global.html#myInit">myInit</a></li><li><a href="global.html#myNext">myNext</a></li><li><a href="global.html#myPrevious">myPrevious</a></li><li><a href="global.html#myTabChange">myTabChange</a></li><li><a href="global.html#myTabClick">myTabClick</a></li><li><a href="global.html#page">page</a></li><li><a href="global.html#promises">promises</a></li><li><a href="global.html#removeTableRows">removeTableRows</a></li><li><a href="global.html#saveAsObject">saveAsObject</a></li><li><a href="global.html#saveOnServer">saveOnServer</a></li><li><a href="global.html#setOverlay">setOverlay</a></li><li><a href="global.html#setSaveLabel">setSaveLabel</a></li><li><a href="global.html#showError">showError</a></li><li><a href="global.html#showImportDialog">showImportDialog</a></li><li><a href="global.html#showVerfahrensliste">showVerfahrensliste</a></li><li><a href="global.html#statusMapping">statusMapping</a></li><li><a href="global.html#toggleTOMList">toggleTOMList</a></li><li><a href="global.html#tomsMapping">tomsMapping</a></li><li><a href="global.html#typeaheadCache">typeaheadCache</a></li><li><a href="global.html#userCanDSB">userCanDSB</a></li><li><a href="global.html#userIsDSB">userIsDSB</a></li><li><a href="global.html#version">version</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#addTableRow">addTableRow</a></li><li><a href="global.html#autoSaveTimer">autoSaveTimer</a></li><li><a href="global.html#autoSaveWait">autoSaveWait</a></li><li><a href="global.html#backendPath">backendPath</a></li><li><a href="global.html#canEdit">canEdit</a></li><li><a href="global.html#changedFields">changedFields</a></li><li><a href="global.html#changedValues">changedValues</a></li><li><a href="global.html#copyFromServer">copyFromServer</a></li><li><a href="global.html#copyId">copyId</a></li><li><a href="global.html#copyIdMain">copyIdMain</a></li><li><a href="global.html#debug">debug</a></li><li><a href="global.html#debugLog">debugLog</a></li><li><a href="global.html#deleteFromServer">deleteFromServer</a></li><li><a href="global.html#endlessCounts">endlessCounts</a></li><li><a href="global.html#endlessTables">endlessTables</a></li><li><a href="global.html#endlessTemplates">endlessTemplates</a></li><li><a href="global.html#exportJSON">exportJSON</a></li><li><a href="global.html#filterTOMList">filterTOMList</a></li><li><a href="global.html#generateTOMList">generateTOMList</a></li><li><a href="global.html#genHTMLforPDF">genHTMLforPDF</a></li><li><a href="global.html#getCombinedPDF">getCombinedPDF</a></li><li><a href="global.html#getCompletePDF">getCompletePDF</a></li><li><a href="global.html#getPDFFromServer">getPDFFromServer</a></li><li><a href="global.html#GetURLParameter">GetURLParameter</a></li><li><a href="global.html#getUserPromise">getUserPromise</a></li><li><a href="global.html#htmlDecode">htmlDecode</a></li><li><a href="global.html#htmlEncode">htmlEncode</a></li><li><a href="global.html#importJSON">importJSON</a></li><li><a href="global.html#initEndlessTables">initEndlessTables</a></li><li><a href="global.html#initTypeahead">initTypeahead</a></li><li><a href="global.html#loadEmpty">loadEmpty</a></li><li><a href="global.html#loadFromJSON">loadFromJSON</a></li><li><a href="global.html#loadFromServer">loadFromServer</a></li><li><a href="global.html#loadId">loadId</a></li><li><a href="global.html#loadIdMain">loadIdMain</a></li><li><a href="global.html#loadSubpage">loadSubpage</a></li><li><a href="global.html#loadTables">loadTables</a></li><li><a href="global.html#markedAsFinished">markedAsFinished</a></li><li><a href="global.html#modal">modal</a></li><li><a href="global.html#mode">mode</a></li><li><a href="global.html#modeName">modeName</a></li><li><a href="global.html#modeNum">modeNum</a></li><li><a href="global.html#myFinish">myFinish</a></li><li><a href="global.html#myInit">myInit</a></li><li><a href="global.html#myNext">myNext</a></li><li><a href="global.html#myPrevious">myPrevious</a></li><li><a href="global.html#myTabChange">myTabChange</a></li><li><a href="global.html#myTabClick">myTabClick</a></li><li><a href="global.html#page">page</a></li><li><a href="global.html#promises">promises</a></li><li><a href="global.html#removeTableRows">removeTableRows</a></li><li><a href="global.html#saveAsObject">saveAsObject</a></li><li><a href="global.html#saveOnServer">saveOnServer</a></li><li><a href="global.html#selectedTier">selectedTier</a></li><li><a href="global.html#setOverlay">setOverlay</a></li><li><a href="global.html#setSaveLabel">setSaveLabel</a></li><li><a href="global.html#showError">showError</a></li><li><a href="global.html#showImportDialog">showImportDialog</a></li><li><a href="global.html#showVerfahrensliste">showVerfahrensliste</a></li><li><a href="global.html#status">status</a></li><li><a href="global.html#statusMapping">statusMapping</a></li><li><a href="global.html#statusSymbolMapping">statusSymbolMapping</a></li><li><a href="global.html#toggleTOMList">toggleTOMList</a></li><li><a href="global.html#tomsMapping">tomsMapping</a></li><li><a href="global.html#typeaheadCache">typeaheadCache</a></li><li><a href="global.html#userCanDSB">userCanDSB</a></li><li><a href="global.html#userIsDSB">userIsDSB</a></li><li><a href="global.html#version">version</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.4</a> on Tue Apr 28 2020 13:02:48 GMT+0200 (Mitteleuropäische Sommerzeit)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.4</a> on Fri Jul 31 2020 09:19:43 GMT+0200 (Mitteleuropäische Sommerzeit)
 </footer>
 
 <script> prettyPrint(); </script>

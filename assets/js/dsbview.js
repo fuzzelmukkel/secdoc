@@ -63,13 +63,56 @@ function getCombinedPDF() {
 }
 
 /**
+ * Erstellt und läd die komplette PDF zu einer Verarbeitungstätigkeit mit allen Abhängigkeiten herunter.
+ * @param  {Number} docId ID der Verarbeitungstätigkeit
+ * @return {undefined}
+ */
+function getCompletePDF(docId) {
+ setOverlay();
+
+ $.post(backendPath, JSON.stringify({'action':'gencompletepdf', 'id': docId, 'debug': debug})).done((data) => {
+   if(!data['success']) {
+     showError('Laden der PDF', data['error']);
+     return;
+   }
+
+   // Base64 Kodierung umkehren und Blob zum Download erstellen
+   let pdfData = atob(data['data']['pdf'].replace(/\s/g, ''));
+   let pdfBuffer = new Uint8Array(new ArrayBuffer(pdfData.length));
+   for(let i=0; i < pdfData.length; i++) {
+     pdfBuffer[i] = pdfData.charCodeAt(i);
+   }
+   let blob = new Blob([pdfBuffer], {type: "application/pdf"});
+   let lastUpdate = new Date();  // Safari benötigt das Format YYYY-MM-DDTHH:MM:SS (mit T)
+
+   // PDF-Anzeige starten (Unterscheidung, ob Edge genutzt wird)
+   if(window.navigator && window.navigator.msSaveOrOpenBlob) {
+     window.navigator.msSaveOrOpenBlob(blob, 'Vollständige_Dokumentation_#' + docId + '_' + lastUpdate.getFullYear() + ('0' + (lastUpdate.getMonth() + 1)).slice(-2) + ('0' + lastUpdate.getDate()).slice(-2) + ('0' + lastUpdate.getHours()).slice(-2) + ('0' + lastUpdate.getMinutes()).slice(-2) + '.pdf');
+   }
+   else {
+     let url = window.URL.createObjectURL(blob);
+     let download = $('<a></a>');
+     download.attr('href', url).attr('download', 'Vollständige_Dokumentation_#' + docId + '_' + lastUpdate.getFullYear() + ('0' + (lastUpdate.getMonth() + 1)).slice(-2) + ('0' + lastUpdate.getDate()).slice(-2) + ('0' + lastUpdate.getHours()).slice(-2) + ('0' + lastUpdate.getMinutes()).slice(-2) + '.pdf').addClass('hidden');;
+     $('body').append(download);
+     download[0].click();
+     window.URL.revokeObjectURL(url);
+     download.remove();
+   }
+ }).fail((jqXHR, error, errorThrown) => {
+   showError('Laden der PDF', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+ }).always(() => {
+   setOverlay(false);
+ });
+}
+
+/**
  * Holt die aktuelle Liste der Dokumentationen und erzeugt die Tabellen.
  * @param  {number} tier Nummer der Ebene
  * @return {undefined}
  */
 function loadTables(tier) {
   setOverlay(true);
-  
+
   $.get(backendPath, { 'action': 'listdsb', 'debug': debug }).done((data) => {
     if(!data['success']) {
       showError('Abrufen der Verfahrensliste', data['error']);
@@ -82,6 +125,8 @@ function loadTables(tier) {
 
     $('#abgeschlossen table').DataTable().destroy();
     $('#inbearbeitung table').DataTable().destroy();
+
+    $('#abgeschlossen table').off();
 
     abgTable.empty();
     inbTable.empty();
@@ -101,6 +146,8 @@ function loadTables(tier) {
       newEntry.append('<td><textarea class="form-control comment" data-id="' + data['data'][c]['ID'] + '" style="resize: both;">' + htmlDecode(data['data'][c]['DSBKommentar']) + '</textarea></td>');
       newEntry.append('<td><div class="btn-group inline"><a class="btn" href="?id=' + data['data'][c]['ID'] + (debug ? '&debug=true' : '') + '" target="_blank">Bearbeiten</a><a class="btn" href="?copy=' + data['data'][c]['ID'] + (debug ? '&debug=true' : '') + '" target="_blank">Kopieren</a><button type="button" class="btn pdfdownload" data-id="' + data['data'][c]['ID'] + '" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '>PDF anzeigen</button></div> <button type="button" data-id="' + data['data'][c]['ID'] +'" data-name="' + data['data'][c]['Bezeichnung'] +'" class="btn del btn-danger"><i class="fa fa-minus"></i> Löschen</button></td>');
 
+      if(parseInt(data['data'][c]['Typ']) === 1) newEntry.find('.pdfdownload').closest('div').append('<button type="button" class="btn completepdf" data-id="' + data['data'][c]['ID'] + '" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '>Vollständige PDF erzeugen</button>');
+
       if(parseInt(data['data'][c]['Status']) === 0) {
         inbTable.append(newEntry);
       }
@@ -110,7 +157,7 @@ function loadTables(tier) {
     }
 
     // Event-Listener zum Speichern von Änderungen an den Kommentaren
-    $('#content').on('input change', 'textarea.comment', function(event) {
+    $('#abgeschlossen table').on('input change', 'textarea.comment', function(event) {
       let tar = $(event.target);
       let timeout = 5000;
       clearTimeout(tar.data('timer'));
@@ -142,12 +189,16 @@ function loadTables(tier) {
     });
 
     // PDF-Download ermöglichen
-    $('#content').on('click', 'button.pdfdownload', function(event) {
+    $('#abgeschlossen table').on('click', 'button.pdfdownload', function(event) {
       getPDFFromServer($(event.target).data('id'));
     });
 
+    $('#abgeschlossen table').on('click', 'button.completepdf', function(event) {
+      getCompletePDF($(event.target).data('id'));
+    });
+
     // Handler für das Löschen von Verfahren
-    $('#content').on('click', 'button.del', function() {
+    $('#abgeschlossen table').on('click', 'button.del', function() {
       var confirmed = confirm('Achtung: Von diesem Verfahren könnten andere Verfahren abhängen! Wollen Sie das Verfahren "' + $(this).data('name') + '" wirklich löschen?');
       if(confirmed) {
         deleteFromServer($(this).data('id'));
