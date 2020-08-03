@@ -3,32 +3,32 @@
     <div class="col-sm-12">
       <h4 class="info-text">Übersicht aller Dokumentationen</h4>
     </div>
+    <div class="col-sm-12 text-center" style="padding-top: 20px !important;">
+      <button id="getCombinedPDF" class="btn btn-fill btn-success" type="button"><i class="fa fa-file-pdf-o"></i> PDF aller abgeschlossenen Dokumentationen (VVT)</button>
+    </div>
     <div class="col-sm-12">
       <h5 class="info-text text-ul">Auswahl der Ebene</h5>
       <div class="col-sm-12 text-center">
         <div class="btn-group">
-          <label class="btn btn-default">
-            <input type="radio" name="select_ebene" value="1" checked=""> Verarbeitungstätigkeit
+          <label class="btn btn-primary">
+            <input type="radio" name="select_ebene" value="1" checked=""> <i class="fa fa-user-circle"></i> Verarbeitungstätigkeit
           </label>
-          <label class="btn btn-default">
-            <input type="radio" name="select_ebene" value="3"> Fachapplikation
+          <label class="btn btn-primary">
+            <input type="radio" name="select_ebene" value="3"> <i class="fa fa-windows"></i> Fachapplikation
           </label>
-          <label class="btn btn-default">
-            <input type="radio" name="select_ebene" value="2"> IT-Verfahren
+          <label class="btn btn-primary">
+            <input type="radio" name="select_ebene" value="2"> <i class="fa fa-server"></i> IT-Verfahren
           </label>
-          <label class="btn btn-default">
-            <input type="radio" name="select_ebene" value="4"> Globale Maßnahmen
+          <label class="btn btn-primary">
+            <input type="radio" name="select_ebene" value="4"> <i class="fa fa-university"></i> Übergreifende Maßnahmen
           </label>
         </div>
       </div>
     </div>
-    <div class="col-sm-12 text-center" style="padding-top: 20px !important;">
-      <button id="getCombinedPDF" class="btn btn-default" type="button">PDF aller abgeschlossenen Dokumentationen</button>
-    </div>
     <ul class="nav nav-tabs">
-      <li class="active"><a data-toggle="tab" href="#abgeschlossen">Abgeschlossen</a></li>
-      <li><a data-toggle="tab" href="#inbearbeitung">In Bearbeitung</a></li>
-      <li><a data-toggle="tab" href="#statistik">Statistik</a></li>
+      <li class="active"><a data-toggle="tab" href="#abgeschlossen"><i class="fa fa-check-square-o"></i> Abgeschlossen</a></li>
+      <li><a data-toggle="tab" href="#inbearbeitung"><i class="fa fa-pencil-square-o"></i> In Bearbeitung</a></li>
+      <li><a data-toggle="tab" href="#statistik"><i class="fa fa-pie-chart"></i> Statistik</a></li>
     </ul>
     <div class="tab-content" style="padding-top: 0px !important;">
       <div id="abgeschlossen" class="tab-pane fade in active">

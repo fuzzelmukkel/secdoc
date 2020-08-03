@@ -70,7 +70,7 @@ if(mode === 'wizmeasures')   modeNum = 4;
 var modeName = ['Verarbeitungstätigkeit', 'Verarbeitungstätigkeiten'];
 if(mode === 'wizapp')      modeName = ['Fachapplikation', 'Fachapplikationen'];
 if(mode === 'wizit')       modeName = ['IT-Verfahren', 'IT-Verfahren'];
-if(mode === 'wizmeasures') modeName = ['Übergreifende Massnahmen', 'Übergreifende Massnahmen'];
+if(mode === 'wizmeasures') modeName = ['Übergreifende Massnahme', 'Übergreifende Massnahmen'];
 
 /**
  * Gibt an, ob Eingaben geändert wurden seit dem letzten Laden/Speichern
@@ -380,7 +380,7 @@ function showVerfahrensliste(startup = false) {
   modal.find('.modal-title').text('Liste bestehender ' + modeName[1]);
   var modalBody = modal.find('.modal-body');
   modalBody.html('<p>Wählen Sie eine Dokumentation aus der Liste, um sie zu bearbeiten oder einzusehen, oder legen Sie eine neue Dokumentation an.</p>');
-  modalBody.append('<ul class="nav nav-tabs" role="tablist"><li role="presentation" class="active"><a href="#listeditable" aria-controls="listeditable" role="tab" data-toggle="tab">Editierbare ' + modeName[1] + '</a></li><li role="presentation"><a href="#listreadable" aria-controls="listreadable" role="tab" data-toggle="tab">Einsehbare ' + modeName[1] + '</a></li></ul>');
+  modalBody.append('<ul class="nav nav-tabs" role="tablist"><li role="presentation" class="active"><a href="#listeditable" aria-controls="listeditable" role="tab" data-toggle="tab"><i class="fa fa-edit"></i> Editierbare ' + modeName[1] + '</a></li><li role="presentation"><a href="#listreadable" aria-controls="listreadable" role="tab" data-toggle="tab"><i class="fa fa-eye"></i> Einsehbare ' + modeName[1] + '</a></li></ul>');
   modalBody.append('<div class="tab-content" style="min-height: auto;"><div role="tabpanel" class="tab-pane active" id="listeditable"><p style="padding-top:10px; padding-left:10px">Hier werden alle ' + modeName[1] + ' gelistet, die Sie bearbeiten können.</p></div><div role="tabpanel" class="tab-pane" id="listreadable"><p style="padding-top:10px; padding-left:10px">Hier werden alle ' + modeName[1] + ' gelistet, auf die Sie nur lesend zugreifen können.</p></div></div>');
   modalBody.find('#listeditable').append('<div class="col-sm-12 table-responsive"><table id="editableprocesses" class="table table-striped table-hover btn-table"><thead><tr><th class="no-sort no-print"></th><th>Bezeichnung</th><th>Organisationseinheit</th><th>Status</th><th>Letzter Bearbeiter</th><th>Letzte Aktualisierung</th><th class="no-sort none"></th></tr></thead><tbody></tbody></table></div>');
   modalBody.find('#listreadable').append('<div class="col-sm-12 table-responsive"><table id="readableprocesses" class="table table-striped table-hover btn-table"><thead><tr><th class="no-sort no-print"></th><th>Bezeichnung</th><th>Organisationseinheit</th><th>Status</th><th>Letzte Aktualisierung</th><th class="no-sort none"></th></tr></thead><tbody></tbody></table></div>');
@@ -422,7 +422,7 @@ function showVerfahrensliste(startup = false) {
         newEntry.append('<td>' + data['data'][c]['Status'] + statusSymbol + '</td>');
         newEntry.append('<td>' + data['data'][c]['LetzterBearbeiter'] + ' <i data-toggle="tooltip" class="fa fa-info-circle" title="' + (data['data'][c]['BearbeiterDetails'] ? data['data'][c]['BearbeiterDetails'] : '<Keine Details vorhanden>') + '"></i></td>');
         newEntry.append('<td>' + data['data'][c]['Aktualisierung'] + '</td>');
-        newEntry.append('<td><div class="btn-group inline"><a class="btn" href="?id=' + currId + (debug ? '&debug=true' : '') + '" target="_blank"><i class="fa fa-edit"></i> Bearbeiten</a><a class="btn" href="?copy=' + currId + '" target="_blank"><i class="fa fa-copy"></i> Kopieren</a><button type="button" title="Die PDF-Version repräsentiert das zuletzt abgeschlossene Verfahren!" data-id="' + currId + '" class="btn pdfdownload" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '>PDF anzeigen</button></div> <button type="button" data-id="' + currId +'" data-name="' + data['data'][c]['Bezeichnung'] +'" class="btn del btn-danger" ' + (data['data'][c]['Löschbar'] === true ? '' : 'disabled')  + '><i class="fa fa-minus"></i> Löschen</button></td>');
+        newEntry.append('<td><div class="btn-group inline"><a class="btn" href="?id=' + currId + (debug ? '&debug=true' : '') + '" target="_blank"><i class="fa fa-edit"></i> Bearbeiten</a><a class="btn" href="?copy=' + currId + '" target="_blank"><i class="fa fa-copy"></i> Kopieren</a><button type="button" title="Die PDF-Version repräsentiert das zuletzt abgeschlossene Verfahren!" data-id="' + currId + '" class="btn pdfdownload" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '><i class="fa fa-file-pdf-o"></i> PDF anzeigen</button></div> <button type="button" data-id="' + currId +'" data-name="' + data['data'][c]['Bezeichnung'] +'" class="btn del btn-danger" ' + (data['data'][c]['Löschbar'] === true ? '' : 'disabled')  + '><i class="fa fa-minus"></i> Löschen</button></td>');
         modalBody.find('#editableprocesses tbody').append(newEntry);
       }
       else {
@@ -431,7 +431,7 @@ function showVerfahrensliste(startup = false) {
         newEntry.append('<td>' + data['data'][c]['Fachabteilung']  + '</td>');
         newEntry.append('<td>' + data['data'][c]['Status'] + statusSymbol + '</td>');
         newEntry.append('<td>' + data['data'][c]['Aktualisierung'] + '</td>');
-        newEntry.append('<td><div class="btn-group inline"><a class="btn" href="?id=' + currId + (debug ? '&debug=true' : '') + '" target="_blank"><i class="fa fa-edit"></i> Anzeigen</a><a class="btn" href="?copy=' + currId + '" target="_blank"><i class="fa fa-copy"></i> Kopieren</a><button type="button" data-id="' + currId + '" class="btn pdfdownload" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '>PDF anzeigen</button></div></td>');
+        newEntry.append('<td><div class="btn-group inline"><a class="btn" href="?id=' + currId + (debug ? '&debug=true' : '') + '" target="_blank"><i class="fa fa-edit"></i> Anzeigen</a><a class="btn" href="?copy=' + currId + '" target="_blank"><i class="fa fa-copy"></i> Kopieren</a><button type="button" data-id="' + currId + '" class="btn pdfdownload" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '><i class="fa fa-file-pdf-o"></i> PDF anzeigen</button></div></td>');
         modalBody.find('#readableprocesses tbody').append(newEntry);
       }
     }
@@ -493,7 +493,7 @@ function showVerfahrensliste(startup = false) {
     setOverlay(false);
     console.timeEnd('Verfahrensliste laden');
     if(show) {
-      modalBody.append('<p><span><button type="button" class="btn loadEmpty btn-success btn-fill">Neue Dokumentation anlegen</button></span></p>');
+      modalBody.append('<p><span><button type="button" class="btn loadEmpty btn-success btn-fill"><i class="fa fa-plus"></i> Neue Dokumentation anlegen</button></span></p>');
       modalBody.find('.loadEmpty').click(function() {
         history.replaceState({}, document.title, window.location.href.split('?')[0]);
         loadEmpty();
