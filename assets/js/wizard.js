@@ -1006,7 +1006,7 @@ function genHTMLforPDF(draft = false) {
   });
 
   /* Bei Abschluss-PDF Volltexte entfernen */
-  if(!draft) toSend.find('#tom_accordion').find('tbody td:nth-child(2) p.tom_desc').remove();
+  if(!draft) toSend.find('#tom_accordion').find('tbody td:nth-child(2) div.tom_desc').remove();
   if(!draft) toSend.find('#tom_accordion').find('tbody td:nth-child(2) p').removeClass('strong');
   if(!draft) toSend.find('#tom_accordion').find('.panel-body > p, .panel-body > a').remove();
 
@@ -1816,7 +1816,7 @@ function toggleTOMList(evt) {
       let className = row['Risklevel'] == 1 ? 'success' : row['Risklevel'] == 2 ? 'warning' : 'danger';
       let tomID = row['Identifier'].trim().replace(/ /g, '_');
       // Titel einblenden, falls vorhanden (bei ENISA gibt es nur die Beschreibung)
-      let tomContent = row['Title'] ? '<p class="strong">' + row['Title'] + ' </p><p class="tom_desc">' + row['Description'] + '</p>' : row['Description'];
+      let tomContent = row['Title'] ? '<p class="strong">' + row['Title'] + ' </p><div class="tom_desc">' + row['Description'] + '</div>' : row['Description'];
       let tableBody = $('#' + targetCategory).find('tbody');
       // Identifier als Link falls URL vorhanden
       let tomIdentifier = row['Identifier'];
