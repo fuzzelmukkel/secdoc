@@ -374,6 +374,7 @@ function loadSubpage() {
       $('#userLabel').text('Unbekannt');
     }
     console.info(version);
+    $('#footer_version').text(version);
   }).fail((jqXHR, error, errorThrown) => {
     console.error('Fehler beim Abruf der Nutzerkennung! HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
     $('#userLabel').text('Unbekannt');
