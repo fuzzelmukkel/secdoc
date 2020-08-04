@@ -79,12 +79,12 @@ class ldapAuth extends Auth {
       return FALSE;
     }
 
-    # Try to login with supplied data
+    # Try to login with supplied credentials
     $ldap_success = @ldap_bind($ldap_handle, $user . $auth_ldap_config['domain'], $pass);
 
     if(!$ldap_success) {
-      trigger_error('[SecDoc] ldapAuth.class.php -> ldap_bind() Fehler: ' . ldap_error($ldap_handle));
-      error_log('[SecDoc] ldapAuth.class.php ->ldap_bind() Fehler: ' . ldap_error($ldap_handle));
+      trigger_error('[SecDoc] ldapAuth.class.php -> ldap_bind() Fehler: ' . ldap_error($ldap_handle) . "(User: $user)");
+      error_log('[SecDoc] ldapAuth.class.php ->ldap_bind() Fehler: ' . ldap_error($ldap_handle) . "(User: $user)");
       return FALSE;
     }
 

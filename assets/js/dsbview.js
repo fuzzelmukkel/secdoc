@@ -144,9 +144,9 @@ function loadTables(tier) {
       newEntry.append('<td>' + data['data'][c]['Erstelldatum'] + '</td>');
       newEntry.append('<td>' + data['data'][c]['Aktualisierung'] + '</td>');
       newEntry.append('<td><textarea class="form-control comment" data-id="' + data['data'][c]['ID'] + '" style="resize: both;">' + htmlDecode(data['data'][c]['DSBKommentar']) + '</textarea></td>');
-      newEntry.append('<td><div class="btn-group inline"><a class="btn" href="?id=' + data['data'][c]['ID'] + (debug ? '&debug=true' : '') + '" target="_blank">Bearbeiten</a><a class="btn" href="?copy=' + data['data'][c]['ID'] + (debug ? '&debug=true' : '') + '" target="_blank">Kopieren</a><button type="button" class="btn pdfdownload" data-id="' + data['data'][c]['ID'] + '" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '>PDF anzeigen</button></div> <button type="button" data-id="' + data['data'][c]['ID'] +'" data-name="' + data['data'][c]['Bezeichnung'] +'" class="btn del btn-danger"><i class="fa fa-minus"></i> Löschen</button></td>');
+      newEntry.append('<td><div class="btn-group inline"><a class="btn" href="?id=' + data['data'][c]['ID'] + (debug ? '&debug=true' : '') + '" target="_blank"><i class="fa fa-edit"></i> Bearbeiten</a><a class="btn" href="?copy=' + data['data'][c]['ID'] + (debug ? '&debug=true' : '') + '" target="_blank"><i class="fa fa-copy"></i> Kopieren</a><button type="button" class="btn pdfdownload" data-id="' + data['data'][c]['ID'] + '" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '><i class="fa fa-file-pdf-o"></i> PDF anzeigen</button></div> <button type="button" data-id="' + data['data'][c]['ID'] +'" data-name="' + data['data'][c]['Bezeichnung'] +'" class="btn del btn-danger"><i class="fa fa-minus"></i> Löschen</button></td>');
 
-      if(parseInt(data['data'][c]['Typ']) === 1) newEntry.find('.pdfdownload').closest('div').append('<button type="button" class="btn completepdf" data-id="' + data['data'][c]['ID'] + '" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '>Vollständige PDF erzeugen</button>');
+      if(parseInt(data['data'][c]['Typ']) === 1) newEntry.find('.pdfdownload').closest('div').append('<button type="button" class="btn completepdf" data-id="' + data['data'][c]['ID'] + '" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '><i class="fa fa-file-pdf-o"></i> Vollständige PDF erzeugen</button>');
 
       if(parseInt(data['data'][c]['Status']) === 0) {
         inbTable.append(newEntry);
@@ -267,7 +267,7 @@ function loadTables(tier) {
       buttons: [{
           extend: 'print',
           title: 'Abgeschlossene Verfahren',
-          text: 'Tabelle drucken',
+          text: '<i class="fa fa-print"> Tabelle drucken',
           exportOptions: {
             stripHtml: false,
             columns: ':not(.no-print)',
@@ -279,7 +279,7 @@ function loadTables(tier) {
         {
           extend: 'pdfHtml5',
           title: 'Abgeschlossene Verfahren',
-          text: 'Tabelle als PDF speichern',
+          text: '<i class="fa fa-file-pdf-o"> Tabelle als PDF speichern',
           orientation: 'landscape',
           exportOptions: {
             stripHtml: false,
@@ -295,7 +295,7 @@ function loadTables(tier) {
       buttons: [{
           extend: 'print',
           title: 'Verfahren in Bearbeitung',
-          text: 'Tabelle drucken',
+          text: '<i class="fa fa-print"> Tabelle drucken',
           exportOptions: {
             stripHtml: false,
             columns: ':not(.no-print)',
@@ -307,7 +307,7 @@ function loadTables(tier) {
         {
           extend: 'pdfHtml5',
           title: 'Verfahren in Bearbeitung',
-          text: 'Tabelle als PDF speichern',
+          text: '<i class="fa fa-file-pdf-o"> Tabelle als PDF speichern',
           orientation: 'landscape',
           exportOptions: {
             stripHtml: false,
