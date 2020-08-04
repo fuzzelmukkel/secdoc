@@ -641,15 +641,19 @@ EOH;
     $lastUpdate = date('YmdHi', strtotime($verfahrensInfo['Aktualisierung']));
     if ($verfahrensInfo['Typ'] == 1)
     {
-      $verfahrensTyp = "der Verarbeitungstätigkeit";
+      $verfahrensTyp = "einer Verarbeitungstätigkeit";
     }
     elseif ($verfahrensInfo['Typ'] == 3)
     {
-      $verfahrensTyp = "der Fachapplikation";
+      $verfahrensTyp = "einer Fachapplikation";
     }
     elseif ($verfahrensInfo['Typ'] == 2)
     {
-      $verfahrensTyp = "des IT-Verfahrens";
+      $verfahrensTyp = "eines IT-Verfahrens";
+    }
+    elseif ($verfahrensInfo['Typ'] == 4)
+    {
+      $verfahrensTyp = "einer übergreifenden Massnahme";
     }
 
     $personen = array(
