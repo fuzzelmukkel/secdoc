@@ -121,6 +121,13 @@ var autoSaveTimer = 0;
  */
 var autoSaveWait = 600000;
 
+/**
+ * Wird auf true gesetzt, wenn der Wizard zurückgesetzt wird (z.B. über "Neue Dokumentation")
+ * @global
+ * @type {Boolean}
+ */
+var globalClear = false;
+
 // Mappings
 /**
  * Mapping für die Liste der TOMs
@@ -514,6 +521,19 @@ function showVerfahrensliste(startup = false) {
 function loadEmpty() {
   console.time('Leeres Verfahren laden');
   setOverlay();
+  globalClear = true;
+
+  if(changedValues) {
+    let confirmClear = confirm('Es sind noch ungespeicherte Änderungen vorhanden, die beim Leeren der Dokumentation verloren gehen. Wollen Sie wirklich fortfahren?');
+
+    if(!confirmClear) {
+      setSaveLabel('failed');
+      setOverlay(false);
+      globalClear = false;
+      console.timeEnd('Leeres Verfahren laden');
+      return;
+    }
+  }
 
   // ID leeren
   loadId = 0;
@@ -550,6 +570,7 @@ function loadEmpty() {
 
   setSaveLabel('failed');
   setOverlay(false);
+  globalClear = false;
   console.timeEnd('Leeres Verfahren laden');
 }
 
@@ -1866,7 +1887,7 @@ function toggleTOMList(evt) {
       });
     }
 
-    if(!hasContent) {
+    if(!hasContent || globalClear) {
       $('#' + evtTarget.data('target')).parent('div').prev('h6').detach();
       $('#' + evtTarget.data('target')).parent('div').detach();
     }
