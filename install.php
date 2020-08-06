@@ -54,15 +54,33 @@
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_PERSISTENT => TRUE,
-            PDO::ATTR_EMULATE_PREPARES => FALSE
+            PDO::ATTR_EMULATE_PREPARES => FALSE,
+            PDO::ATTR_TIMEOUT => 300
         ];
         $pdo = new PDO('sqlite:' . $db_dir . DIRECTORY_SEPARATOR . $db_name, '', '', $opt);
+        $pdo->exec('PRAGMA journal_mode = wal;');
 
         if(!file_exists(__DIR__ . DIRECTORY_SEPARATOR . 'assets/php/Default_Suggestions.sql')) {
           $error = 'Konnte Datei mit Standardvorschlägen (<code>' . __DIR__ . DIRECTORY_SEPARATOR . 'assets/php/Default_Suggestions.sql'. '</code>) nicht finden!';
         }
         else {
-          $pdo->exec(file_get_contents(__DIR__ . DIRECTORY_SEPARATOR . 'assets/php/Default_Suggestions.sql'));
+          $file = new SplFileObject(__DIR__ . DIRECTORY_SEPARATOR . 'assets/php/Default_Suggestions.sql');
+
+          if($file) {
+            while (!$file->eof()) {
+                usleep(1000);
+                $line = trim($file->fgets());
+                if(empty($line)) continue;
+                if($pdo->exec($line) === FALSE) {
+                  $error .= "Fehler beim Ausführen von <code>$line</code>!<br />";
+                }
+            }
+
+            $file = null;
+          }
+          else {
+            $error = 'Konnte Datei mit Standardvorschlägen (<code>' . __DIR__ . DIRECTORY_SEPARATOR . 'assets/php/Default_Suggestions.sql'. '</code>) nicht öffnen!';
+          }
         }
         break;
 
@@ -72,10 +90,10 @@
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_PERSISTENT => TRUE,
             PDO::ATTR_EMULATE_PREPARES => FALSE,
-            PDO::ATTR_TIMEOUT => 120
+            PDO::ATTR_TIMEOUT => 300
         ];
         $pdo = new PDO('sqlite:' . $db_dir . DIRECTORY_SEPARATOR . $db_name, '', '', $opt);
-        $pdo->exec("PRAGMA foreign_keys = ON;");
+        $pdo->exec('PRAGMA journal_mode = wal;');
 
         if(!file_exists(__DIR__ . DIRECTORY_SEPARATOR . 'assets/php/BSI_TOM_List.sql') || !file_exists(__DIR__ . DIRECTORY_SEPARATOR . 'assets/php/ENISA_TOM_List.sql')) {
           $error = 'Konnte TOM Listen in <code>' . __DIR__ . DIRECTORY_SEPARATOR . 'assets/php/</code> nicht finden!';
@@ -83,11 +101,43 @@
         else {
           switch(filter_var($_REQUEST['tomlist'], FILTER_SANITIZE_STRING)) {
             case 'enisa':
-              $pdo->exec(file_get_contents(__DIR__ . DIRECTORY_SEPARATOR . 'assets/php/ENISA_TOM_List.sql'));
+              $file = new SplFileObject(__DIR__ . DIRECTORY_SEPARATOR . 'assets/php/ENISA_TOM_List.sql');
+
+              if($file) {
+                while (!$file->eof()) {
+                  usleep(1000);
+                  $line = trim($file->fgets());
+                  if(empty($line)) continue;
+                  if($pdo->exec($line) === FALSE) {
+                    $error .= "Fehler beim Ausführen von <code>$line</code>!<br />";
+                  }
+                }
+
+                $file = null;
+              }
+              else {
+                $error = 'Konnte Datei mit Standardvorschlägen (<code>' . __DIR__ . DIRECTORY_SEPARATOR . 'assets/php/Default_Suggestions.sql'. '</code>) nicht öffnen!';
+              }
               break;
 
             case 'bsi':
-              $pdo->exec(file_get_contents(__DIR__ . DIRECTORY_SEPARATOR . 'assets/php/BSI_TOM_List.sql'));
+              $file = new SplFileObject(__DIR__ . DIRECTORY_SEPARATOR . 'assets/php/BSI_TOM_List.sql');
+
+              if($file) {
+                while (!$file->eof()) {
+                  usleep(1000);
+                  $line = trim($file->fgets());
+                  if(empty($line)) continue;
+                  if($pdo->exec($line) === FALSE) {
+                    $error .= "Fehler beim Ausführen von <code>$line</code>!<br />";
+                  }
+                }
+
+                $file = null;
+              }
+              else {
+                $error = 'Konnte Datei mit Standardvorschlägen (<code>' . __DIR__ . DIRECTORY_SEPARATOR . 'assets/php/Default_Suggestions.sql'. '</code>) nicht öffnen!';
+              }
               break;
 
             default:
@@ -170,6 +220,7 @@
               <p>
                 Aktualisiert die Datenbank-Version, falls es sich um eine ältere Version handelt. Alle eingetragenen Verfahren bleiben erhalten und werden übernommen.
                 Zur Sicherheit sollte vorher eine Kopie der Datenbank-Datei angelegt werden, um im Zweifelsfall auf die vorherige Version zurückkehren zu können.
+                <strong>Hinweis:</strong> Die Funktion muss ggf. mehrfach aufgerufen werden, da pro Aufruf nur eine Aktualisierung auf die nächst höhere Version stattfindet.
                 <form method="post">
                   <input type="hidden" name="do" value="update_db" />
                   <input class="btn btn-default" type="submit" value="Datenbank aktualisieren" />

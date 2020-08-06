@@ -422,14 +422,16 @@
         trigger_error("[SecDoc] DBCon.class.php -> Datenbank-Datei existiert nicht! Leere Datenbank wird erstellt!");
         error_log("[SecDoc] DBCon.class.php -> Datenbank-Datei existiert nicht! Leere Datenbank wird erstellt!");
         $this->pdo = new PDO('sqlite:' . $this->path . DIRECTORY_SEPARATOR . $this->filename, '', '', $opt);
-        $this->pdo->exec("BEGIN;");
 
         # Schlüsselreferenzen einschalten
         $this->pdo->exec("PRAGMA foreign_keys = ON;");
+        usleep(10000);
+        $this->pdo->exec("BEGIN;");
 
         # Tabellen erstellen
         foreach(self::CURRENT_TABLES as $table) {
           $this->pdo->exec($table);
+          usleep(10000);
         }
 
         $this->pdo->exec("DROP TABLE IF EXISTS rechtsgrundlagen;");
