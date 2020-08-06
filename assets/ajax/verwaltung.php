@@ -671,9 +671,10 @@ EOH;
       ),
     );
 
-    require_once '../vendor/autoload.php';
+
 
     # Create a new PHPMailer instance
+    require_once '../vendor/autoload.php';
     $mail = new PHPMailer;
     $mail->isSendmail();
     $mail->CharSet = "UTF-8";
@@ -705,25 +706,24 @@ EOH;
     }
 
     # Überprüft ob ein Kontakt merhmals eingetragen worden ist
-    if ($personen['Ersteller']['uid'] == $personen['Technischer Ansprechpartner']['uid'] && $personen['Ersteller']['uid'] == $personen['Fachlicher Ansprechpartner']['uid'] ) {
+    if ($personen['Ersteller']['uid'] === $personen['Technischer Ansprechpartner']['uid'] && $personen['Ersteller']['uid'] === $personen['Fachlicher Ansprechpartner']['uid'] ) {
       $personen['Ersteller, Technischer Ansprechpartner, Fachlicher Ansprechpartner'] = $personen['Ersteller'];
       unset($personen['Ersteller']);
       unset($personen['Technischer Ansprechpartner']);
       unset($personen['Fachlicher Ansprechpartner']);
-    } elseif ($personen['Ersteller']['uid'] == $personen['Technischer Ansprechpartner']['uid']) {
+    } elseif ($personen['Ersteller']['uid'] === $personen['Technischer Ansprechpartner']['uid']) {
       $personen['Ersteller, Technischer Ansprechpartner'] = $personen['Ersteller'];
       unset($personen['Ersteller']);
       unset($personen['Technischer Ansprechpartner']);
-    } elseif ($personen['Ersteller']['uid'] == $personen['Fachlicher Ansprechpartner']['uid']) {
+    } elseif ($personen['Ersteller']['uid'] === $personen['Fachlicher Ansprechpartner']['uid']) {
       $personen['Ersteller, Fachlicher Ansprechpartner'] = $personen['Ersteller'];
       unset($personen['Ersteller']);
       unset($personen['Fachlicher Ansprechpartner']);
-    } elseif ($personen['Fachlicher Ansprechpartner']['uid'] == $personen['Technischer Ansprechpartner']['uid']) {
+    } elseif ($personen['Fachlicher Ansprechpartner']['uid'] === $personen['Technischer Ansprechpartner']['uid']) {
       $personen['Fachlicher Ansprechpartner, Technischer Ansprechpartner'] = $personen['Technischer Ansprechpartner'];
-      unset($personen['Fachkontakt']);
-      unset($personen['Techkontakt']);
+      unset($personen['Fachlicher Ansprechpartner']);
+      unset($personen['Technischer Ansprechpartner']);
     }
-    $last_entry = array_keys($personen)[count($personen)-1];
 
     $mailSuccess = TRUE;
 
