@@ -64,6 +64,14 @@ abstract class Auth {
   abstract public function checkDPOPerm();
 
   /**
+   * Überprüft Bereichsleiter-Berechtigung.
+   *
+   * @abstract
+   * @return bool TRUE fallse der Nutzer ein Bereichsleiter ist, sonst FALSE
+   */
+  abstract public function checkManagerPerm();
+
+  /**
    * Gibt die Nutzergruppen der eingeloggten Person zurück.
    *
    * @abstract

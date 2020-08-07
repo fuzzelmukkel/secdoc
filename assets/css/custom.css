@@ -155,6 +155,10 @@ input.customError {
   display: none;
 }
 
+.dsbOrManagerOnly {
+  display: none;
+}
+
 /* Margin Hilfsklasse */
 .mt {
   margin-top: 5px !important;

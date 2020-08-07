@@ -27,10 +27,10 @@ Der Ausdruck „Prozess“ ist in der DS-GVO nicht ausdrücklich enthalten. Jede
   <p class="text-center">
     <strong>Zielgruppe:</strong> Administratoren oder Betreiber von IT-Infrastruktur
   </p>
-  <p class="text-center dsbOnly">
+  <p class="text-center dsbOrManagerOnly">
     <a class="btn btn-fill btn-default btn-wd" href="?page=wizmeasures"><i class="fa fa-university"></i> Übergreifende Massnahmen</a> <i data-toggle="tooltip" title="Die zusätzliche Ebene 4 stellt übergreifende Massnahmen dar, die universitäts- oder bereichsweit umgesetzt wurden und für eine Vielzahl dort eingesetzter IT-Verfahren gültig ist." class="fa fa-question-circle-o fa-lg"></i>
   </p>
-  <p class="text-center dsbOnly">
+  <p class="text-center dsbOrManagerOnly">
     <strong>Zielgruppe:</strong> DSB/ISB/Leitend Verantwortliche
   </p>
   <hr>
@@ -45,6 +45,11 @@ Der Ausdruck „Prozess“ ist in der DS-GVO nicht ausdrücklich enthalten. Jede
     if(userIsDSB) {
       $('#dsbviewBtn').removeClass('hidden');
       $('.dsbOnly').removeClass('dsbOnly');
+      $('.dsbOrManagerOnly').removeClass('dsbOrManagerOnly');
+    }
+
+    if(userIsManager) {
+      $('.dsbOrManagerOnly').removeClass('dsbOrManagerOnly');
     }
   });
 

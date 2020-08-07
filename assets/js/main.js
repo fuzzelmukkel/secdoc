@@ -66,6 +66,13 @@ var userIsDSB = false;
 var userCanDSB = false;
 
 /**
+ * Gibt an, ob der Nutzer ein Bereichsleiter ist
+ * @global
+ * @type {Boolean}
+ */
+var userIsManager = false;
+
+/**
  * Relativer Pfad zur verwaltung.php
  * @global
  * @type {String}
@@ -357,6 +364,7 @@ function loadSubpage() {
       version = data['version'];
       userIsDSB = data['data'][0]['userIsDSB'];
       userCanDSB = data['data'][0]['userCanDSB'];
+      userIsManager = data['data'][0]['userIsManager'];
 
       $('#userLabel').text(data['data'][0]['name'] + (userIsDSB ? ' (Rolle: DSB/ISB)' : ' (Rolle: Nutzer)'));
       $('#userLabel').attr('title', 'Kennung: ' + data['data'][0]['value']);

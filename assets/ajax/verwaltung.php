@@ -860,9 +860,10 @@ EOH;
   # Nutzergruppen holen
   $userGroups = $authClass->getUserGroups();
 
-  # Prüfen, ob der Nutzer ein DSB oder Admin ist
-  $userCanDSB  = in_array($userId, $dsbIDs) || $authClass->checkDPOPerm();
-  $userIsAdmin = $authClass->checkAdminPerm();
+  # Prüfen, ob der Nutzer ein DSB, Admin oder Bereichsleiter ist
+  $userCanDSB    = in_array($userId, $dsbIDs) || $authClass->checkDPOPerm();
+  $userIsAdmin   = $authClass->checkAdminPerm();
+  $userIsManager = $authClass->checkManagerPerm();
 
   $dsbCookie = preg_replace("/\W/", '_', $prog_name . ' ' . $prog_version) . '_dsb';
   if(isset($_COOKIE[$dsbCookie]) && $_COOKIE[$dsbCookie] === '1' && $userCanDSB) {
@@ -1062,8 +1063,8 @@ EOH;
         }
       }
 
-      if(intval($data['allgemein_typ']) === 4 && !$userIsDSB) {
-        returnError('Nur Nutzer mit DSB-Berechtigung können übergreifende Massnahmen anlegen!');
+      if(intval($data['allgemein_typ']) === 4 && !$userIsDSB && !$userIsManager) {
+        returnError('Nur Nutzer mit DSB- oder Bereichsleiter-Berechtigung können übergreifende Massnahmen anlegen!');
         break;
       }
 
@@ -1434,8 +1435,9 @@ EOH;
       }
 
       if($search == $userId) {
-        $result[0]['userIsDSB']  = $userIsDSB;
-        $result[0]['userCanDSB'] = $userCanDSB;
+        $result[0]['userIsDSB']      = $userIsDSB;
+        $result[0]['userCanDSB']     = $userCanDSB;
+        $result[0]['userIsManager']  = $userIsManager;
       }
       $output['data'] = $result;
       $output['count'] = count($result);

@@ -89,20 +89,20 @@ class ssoAuth extends Auth {
    * @return bool TRUE falls der Nutzer zur Verwendung berechtigt ist, sonst FALSE
    */
   public function checkUsePerm() {
-    global $useGroups;
+    global $userGroups;
 
     # Check if login exists
     if(!$this->checkSession()) return FALSE;
 
-    if(empty($useGroups)) return TRUE;
+    if(empty($userGroups)) return TRUE;
 
-    $userGroups = $this->getUserGroups();
+    $currentGroups = $this->getUserGroups();
 
-    if(empty($userGroups)) return FALSE;
+    if(empty($currentGroups)) return FALSE;
 
     require_once 'Utils.class.php';
 
-    return Utils::checkUserGroups($userGroups, $useGroups);
+    return Utils::checkUserGroups($currentGroups, $userGroups);
   }
 
   /**
@@ -119,13 +119,13 @@ class ssoAuth extends Auth {
 
     if(empty($adminGroups)) return FALE;
 
-    $userGroups = $this->getUserGroups();
+    $currentGroups = $this->getUserGroups();
 
-    if(empty($userGroups)) return FALSE;
+    if(empty($currentGroups)) return FALSE;
 
     require_once 'Utils.class.php';
 
-    return Utils::checkUserGroups($userGroups, $adminGroups);
+    return Utils::checkUserGroups($currentGroups, $adminGroups);
   }
 
   /**
@@ -142,13 +142,36 @@ class ssoAuth extends Auth {
 
     if(empty($dpoGroups)) return FALSE;
 
-    $userGroups = $this->getUserGroups();
+    $currentGroups = $this->getUserGroups();
 
-    if(empty($userGroups)) return FALSE;
+    if(empty($currentGroups)) return FALSE;
 
     require_once 'Utils.class.php';
 
-    return Utils::checkUserGroups($userGroups, $dpoGroups);
+    return Utils::checkUserGroups($currentGroups, $dpoGroups);
+  }
+
+  /**
+   * Überprüft Bereichsleiter-Berechtigung.
+   *
+   * @global array Nutzergruppen von Bereichsleitern
+   * @return bool TRUE fallse der Nutzer ein Bereichsleiter ist, sonst FALSE
+   */
+  public function checkManagerPerm() {
+    global $managerGroups;
+
+    # Check if login exists
+    if(!$this->checkSession()) return FALSE;
+
+    if(empty($managerGroups)) return FALSE;
+
+    $currentGroups = $this->getUserGroups();
+
+    if(empty($currentGroups)) return FALSE;
+
+    require_once 'Utils.class.php';
+
+    return Utils::checkUserGroups($currentGroups, $managerGroups);
   }
 
   /**
