@@ -55,7 +55,9 @@
      'check_user_agent' => TRUE,
      'refresh_token' => FALSE,
      'cookie_lifetime' => 1800,
-     'cookie_secure' => FALSE
+     'cookie_secure' => FALSE,         # Im Betrieb auf TRUE setzen
+     'cookie_domain' => '',            # (optional) Domain Beschränkung für Cookies; leer nutzt die aktuelle Domain
+     'cookie_path' => ''               # (optional) Domain Beschränkung auf Pfad 
    ];
 
    # Besondere Nutzergruppen für Zugriffskonfiguration

@@ -31,6 +31,8 @@ class ldapAuth extends Auth {
       'cookie_secure' => $auth_ldap_config['cookie_secure'],
       'cookie_httponly' => TRUE,
       'cookie_samesite' => 'Strict',
+      'cookie_domain' => (!empty($auth_ldap_config['cookie_domain']) ? $auth_ldap_config['cookie_domain'] : ''),
+      'cookie_path' => (!empty($auth_ldap_config['cookie_path']) ? $auth_ldap_config['cookie_path'] : ''),
       'use_strict_mode' => TRUE
     ]);
 
