@@ -259,6 +259,9 @@
     $mpdf->SetAuthor($author);
     $mpdf->SetCreator($prog_name . ' v' . $prog_version);
 
+    # Überschriften zu Bookmarks machen
+    $mpdf->h2bookmarks = ['H3' => 0, 'H5' => 1];
+
     # Wasserzeichen setzen?
     #$mpdf->SetWatermarkText('DRAFT');
     #$mpdf->showWatermarkText = false;
@@ -365,7 +368,7 @@ EOH;
 
     # MPDF initialisieren
     $mpdf = new \Mpdf\Mpdf(['debug' => false, 'CSSselectMedia' => 'screen', 'mode' => 'utf-8', 'format' => 'A4']);
-    $mpdf->SetTitle('Verzeichnis der Verarbeitungstätigkeiten');
+    $mpdf->SetTitle('Verzeichnis abgeschlossener Dokumentationen');
     $mpdf->SetAuthor($author);
     $mpdf->SetCreator($prog_name . ' v' . $prog_version);
 
@@ -381,6 +384,7 @@ EOH;
     # Titelseite einfügen
     $titlePage = file_get_contents('../html/pdf_titlepage.inc.html');
     $titlePage .= '<pagebreak resetpagenum="1" pagenumstyle="1" suppress="off" />';
+    $mpdf->Bookmark(htmlspecialchars("Verzeichnis abgeschlossener Dokumentationen", ENT_QUOTES), 0);
     $mpdf->WriteHTML($titlePage);
 
     # TOC einfügen (ein Eintrag pro Verfahren)
@@ -393,6 +397,7 @@ EOH;
       'toc_preHTML' => "<h2>Inhaltsverzeichnis</h2>",
       'toc_ohvalue' => 'off',
       'toc_ofvalue' => 'off',
+      'toc_bookmarkText' => 'Inhaltsverzeichnis'
     ]);
 
     $procCount = count($processes);
@@ -406,6 +411,7 @@ EOH;
       if(file_exists($filePath)) {
         $mpdf->setFooter(htmlspecialchars("#{$processes[$p]['ID']}|{$processes[$p]['Bezeichnung']}") . '|{PAGENO}');
         $mpdf->TOC_Entry(htmlspecialchars("#{$processes[$p]['ID']} - {$processes[$p]['Bezeichnung']}"));
+        $mpdf->Bookmark(htmlspecialchars("#{$processes[$p]['ID']} - {$processes[$p]['Bezeichnung']}", ENT_QUOTES), 0);
 
         $pageCount = $mpdf->SetSourceFile($filePath);
 
@@ -419,6 +425,7 @@ EOH;
       elseif(intval($processes[$p]['Status']) === 2) {
         $mpdf->setFooter(htmlspecialchars("#{$processes[$p]['ID']}|{$processes[$p]['Bezeichnung']}") . '|{PAGENO}');
         $mpdf->TOC_Entry(htmlspecialchars("#{$processes[$p]['ID']} - {$processes[$p]['Bezeichnung']}"));
+        $mpdf->Bookmark(htmlspecialchars("#{$processes[$p]['ID']} - {$processes[$p]['Bezeichnung']}", ENT_QUOTES), 0);
 
         $mpdf->WriteHTML("<h2>PDF für Dokumentation #{$processes[$p]['ID']} - '" . htmlspecialchars("{$processes[$p]['Bezeichnung']}") . "' fehlt</h2><p>Die Dokumentation #{$processes[$p]['ID']} ist als abgeschlossen markiert, aber es ist keine PDF vorhanden!</p><p>Bitte schließen Sie die Dokumentation neu ab, um eine korrekte PDF-Version zu erzeugen.</p><pagebreak />");
       }
@@ -498,6 +505,7 @@ EOH;
     $titlePage = file_get_contents('../html/pdf_titlepage.inc.html');
     $titlePage = preg_replace('/<h1>.*<\/h1>/', "<h1>Gesamtdokumentation</h1><br /><h2>#{$process['ID']} - {$process['Bezeichnung']}</h2>", $titlePage);
     $titlePage .= '<pagebreak resetpagenum="1" pagenumstyle="1" suppress="off" />';
+    $mpdf->Bookmark(htmlspecialchars("Gesamtdokumentation #{$process['ID']} - {$process['Bezeichnung']}", ENT_QUOTES), 0);
     $mpdf->WriteHTML($titlePage);
 
     # TOC einfügen
@@ -510,6 +518,7 @@ EOH;
       'toc_preHTML' => "<h2>Inhaltsverzeichnis</h2>",
       'toc_ohvalue' => 'off',
       'toc_ofvalue' => 'off',
+      'toc_bookmarkText' => 'Inhaltsverzeichnis'
     ]);
 
     # Hauptverarbeitungstätigkeit hinzufügen
@@ -517,6 +526,7 @@ EOH;
     if(file_exists($filePath)) {
       $mpdf->SetFooter(htmlspecialchars("#{$process['ID']}|{$process['Bezeichnung']}") . '|{PAGENO}');
       $mpdf->TOC_Entry(htmlspecialchars("Hauptverarbeitungstätigkeit #{$process['ID']} - {$process['Bezeichnung']}"));
+      $mpdf->Bookmark(htmlspecialchars("Hauptverarbeitungstätigkeit #{$process['ID']} - {$process['Bezeichnung']}", ENT_QUOTES), 0);
 
       $pageCount = $mpdf->SetSourceFile($filePath);
 
@@ -547,6 +557,7 @@ EOH;
 
       # Überschrift im TOC
       $mpdf->TOC_Entry(htmlspecialchars("Abhängigkeiten von $key"));
+      $mpdf->Bookmark(htmlspecialchars("Abhängigkeiten von $key", ENT_QUOTES), 1);
 
       for($doc = 0; $doc < $docCount; $doc++) {
         $filePath = $pdf_dir . DIRECTORY_SEPARATOR . $deps[$doc]['id'] . '.pdf';
@@ -554,6 +565,7 @@ EOH;
         if(file_exists($filePath)) {
           $mpdf->setFooter(htmlspecialchars("#{$deps[$doc]['id']}|{$deps[$doc]['name']}") . '|{PAGENO}');
           $mpdf->TOC_Entry(htmlspecialchars("#{$deps[$doc]['id']} - {$deps[$doc]['name']}"), 1);
+          $mpdf->Bookmark(htmlspecialchars("#{$deps[$doc]['id']} - {$deps[$doc]['name']}", ENT_QUOTES), 1);
 
           $pageCount = $mpdf->SetSourceFile($filePath);
 
@@ -566,6 +578,7 @@ EOH;
         elseif(intval($deps[$doc]['status']) === 2) {
           $mpdf->setFooter(htmlspecialchars("#{$deps[$doc]['id']}|{$deps[$doc]['name']}") . '|{PAGENO}');
           $mpdf->TOC_Entry(htmlspecialchars("#{$deps[$doc]['id']} - {$deps[$doc]['name']}"), 1);
+          $mpdf->Bookmark(htmlspecialchars("#{$deps[$doc]['id']} - {$deps[$doc]['name']}", ENT_QUOTES), 1);
 
           $mpdf->WriteHTML("<h2>PDF für Dokumentation #{$deps[$doc]['id']} - '" . htmlspecialchars("{$deps[$doc]['name']}") . "' fehlt</h2><p>Die Dokumentation #{$deps[$doc]['id']} ist als abgeschlossen markiert, aber es ist keine PDF vorhanden!</p><p>Bitte schließen Sie die Dokumentation neu ab, um eine korrekte PDF-Version zu erzeugen.</p><p><a href=\"$prog_url?id={$deps[$doc]['id']}\">Dokumentation online einsehen</a></p><pagebreak />");
         }
@@ -573,6 +586,7 @@ EOH;
         elseif(intval($deps[$doc]['status']) === 0) {
           $mpdf->setFooter(htmlspecialchars("#{$deps[$doc]['id']}|{$deps[$doc]['name']}") . '|{PAGENO}');
           $mpdf->TOC_Entry(htmlspecialchars("#{$deps[$doc]['id']} - {$deps[$doc]['name']}"), 1);
+          $mpdf->Bookmark(htmlspecialchars("#{$deps[$doc]['id']} - {$deps[$doc]['name']}", ENT_QUOTES), 1);
 
           $mpdf->WriteHTML("<h2>PDF für Dokumentation #{$deps[$doc]['id']} - '" . htmlspecialchars("{$deps[$doc]['name']}") . "' fehlt</h2><p>Die Dokumentation #{$deps[$doc]['id']} ist noch nicht abgeschlossen worden, sodass bisher keine PDF existiert.</p><p>Bitte schließen Sie die Dokumentation ab, um eine korrekte PDF-Version zu erzeugen.</p><p><a href=\"$prog_url?id={$deps[$doc]['id']}\">Dokumentation online einsehen</a></p><pagebreak />");
         }
