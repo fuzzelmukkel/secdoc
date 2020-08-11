@@ -60,12 +60,12 @@
 
   # Basispfade
   $base_dir = dirname($_SERVER['DOCUMENT_ROOT']);
-  $base_dir = $base_dir ? $base_dir : "/var/www";
+  $base_dir = $base_dir ? $base_dir : "/www/data/ZIVtest";
 
-  $secret_dir   = "$base_dir/secdoc";           # Hier liegen Passwörter und Zertifikate
+  $secret_dir   = "$base_dir/secret";           # Hier liegen Passwörter und Zertifikate
   $temp_dir     = "$base_dir/temp";             # Hier landen temporäre Dateien
   $db_dir       = "$base_dir/secdoc";           # Hier liegt die SecDoc SQlite Datenbank
-  $includes_dir = "$base_dir/secdoc/inc";       # Hier liegen die HTML Include-Bausteine
+  $includes_dir = "$base_dir/secdoc/includes";  # Hier liegen die HTML Include-Bausteine
   $pdf_dir      = "$base_dir/secdoc/PDF";       # Hier liegen die PDF-Dateien (temporär für E-Mail-Versand)
   $vendor_dir   = '../vendor/autoload.php';     # Pfad zur Composer autoload.php für MPDF
   $sessions_dir = "$base_dir/secdoc/sessions";  # Pfad für PHP Session Dateien
@@ -168,7 +168,7 @@
   # ----------------------------------------
   # Lokale Konfiguration laden
   # ----------------------------------------
-  include_once("$secret_dir/secdoc.conf.php");
+  include_once("$secret_dir/secdoc-tk.conf.php");
 
   # ----------------------------------------
   # Authentifizierungsklasse laden

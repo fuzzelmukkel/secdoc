@@ -136,7 +136,7 @@ class ldapAuth extends Auth {
       session_destroy();
       $validSession = FALSE;
     }
-
+error_log('[SecDoc] ' . $_SESSION['userIP'] . ' - ' . $_SERVER['REMOTE_ADDR'] . ' - ' . $_SERVER['HTTP_X_FORWARDED_FOR']);
     # Check if user's IP matches previous requests
     if($validSession && $auth_ldap_config['check_user_ip'] && $_SESSION['userIP'] !== $_SERVER['REMOTE_ADDR'] && (!isset($_SERVER['HTTP_X_FORWARDED_FOR']) || $_SESSION['userIP'] !== $_SERVER['HTTP_X_FORWARDED_FOR'])) {
       trigger_error('[SecDoc] ldapAuth.class.php -> checkSession() Fehler: Nutzer IP Adresse stimmt nicht mit Session überein! Session entfernt. - Nutzer: ' . $_SESSION['user']);
