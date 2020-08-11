@@ -302,15 +302,19 @@ function getPDFFromServer(id, draft = false) {
     }
     let blob = new Blob([pdfBuffer], {type: "application/pdf"});
     let lastUpdate = data['data']['lastupdate'] ? new Date(data['data']['lastupdate'].replace(' ', 'T')) : new Date();  // Safari benötigt das Format YYYY-MM-DDTHH:MM:SS (mit T)
+    let typeName = {1: 'Verarbeitungstätigkeit', 2: 'IT-Verfahren', 3: 'Fachapplikation', 4: 'Übergreifende_Massnahme'};
+    let fileTitle = 'SecDoc_' + typeName[data['data']['type']] + '_' + id + '_' + data['data']['title'].substr(0, 30) + '_' + lastUpdate.getFullYear() + ('0' + (lastUpdate.getMonth() + 1)).slice(-2) + ('0' + lastUpdate.getDate()).slice(-2) + ('0' + lastUpdate.getHours()).slice(-2) + ('0' + lastUpdate.getMinutes()).slice(-2) + (draft ? '_DRAFT' : '' );
+    fileTitle = fileTitle.replace(/[/\\?%*:|"<>\.,;=\s]/g, '_');
+    fileTitle += '.pdf';
 
     // PDF-Anzeige starten (Unterscheidung, ob Edge genutzt wird)
     if(window.navigator && window.navigator.msSaveOrOpenBlob) {
-      window.navigator.msSaveOrOpenBlob(blob, 'SecDoc_Dokumentation_' + id + '_' + lastUpdate.getFullYear() + ('0' + (lastUpdate.getMonth() + 1)).slice(-2) + ('0' + lastUpdate.getDate()).slice(-2) + ('0' + lastUpdate.getHours()).slice(-2) + ('0' + lastUpdate.getMinutes()).slice(-2)  + (draft ? '_DRAFT' : '' ) + '.pdf');
+      window.navigator.msSaveOrOpenBlob(blob, fileTitle);
     }
     else {
       let url = window.URL.createObjectURL(blob);
       let download = $('<a></a>');
-      download.attr('href', url).attr('download', 'SecDoc_Dokumentation_' + id + '_' + lastUpdate.getFullYear() + ('0' + (lastUpdate.getMonth() + 1)).slice(-2) + ('0' + lastUpdate.getDate()).slice(-2) + ('0' + lastUpdate.getHours()).slice(-2) + ('0' + lastUpdate.getMinutes()).slice(-2)  + (draft ? '_DRAFT' : '' ) + '.pdf').addClass('hidden');;
+      download.attr('href', url).attr('download', fileTitle).addClass('hidden');;
       $('body').append(download);
       download[0].click();
       window.URL.revokeObjectURL(url);
