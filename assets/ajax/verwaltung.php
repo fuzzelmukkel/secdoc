@@ -249,7 +249,7 @@
 
     require_once '../vendor/autoload.php';
 
-    global $dbcon, $userId, $pdf_dir, $prog_name, $prog_version;
+    global $dbcon, $userId, $pdf_dir, $prog_name, $prog_version, $prog_url;
     $res = Utils::searchUsers($userId, TRUE);
     $author = !empty($res) ? $res[0]['name'] : '';
 
@@ -285,6 +285,13 @@
     $mpdf->WriteHTML($style,1);
     $style = file_get_contents('../css/custom_pdf.css');
     $mpdf->WriteHTML($style,1);
+
+    # Ersetzungen durchführen
+    $lastEditor = $dbcon->getHistorie($verfahrensId)[0];
+    $lastEditor = !empty($lastEditor['Anzeigename']) ? $lastEditor['Anzeigename'] : $lastEditor['Kennung'];
+    $html = str_replace('$lasteditor$', $lastEditor, $html);
+    $html = str_replace('$docurl$', $prog_url . "?id=$verfahrensId", $html);
+    $html = str_replace('$baseurl$', $prog_url, $html);
 
     # HTML aufbauen
     $finalHTML = <<<EOH

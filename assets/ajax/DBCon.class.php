@@ -1228,7 +1228,7 @@
      */
     public function getHistorie($verfahrensId) {
       if($this->isConnected()) {
-        $sth = $this->pdo->prepare('SELECT Verfahrens_Id, Datum, personen.Kennung, personen.Name, personen.Anzeigename FROM verfahren_historie LEFT JOIN personen ON verfahren_historie.Kennung = personen.Kennung WHERE Verfahrens_Id = ? ORDER BY Datum DESC;');
+        $sth = $this->pdo->prepare('SELECT Verfahrens_Id, Datum, verfahren_historie.Kennung, personen.Name, personen.Anzeigename FROM verfahren_historie LEFT JOIN personen ON verfahren_historie.Kennung = personen.Kennung WHERE Verfahrens_Id = ? ORDER BY Datum DESC;');
         $sth->execute([$verfahrensId]);
 
         ob_start();

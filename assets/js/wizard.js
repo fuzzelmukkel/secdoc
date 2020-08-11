@@ -994,8 +994,9 @@ function genHTMLforPDF(draft = false) {
   /* Überschrift */
   toSend.append('<h2 class="text-center">Dokumentation ' + ( mode === 'wizproc' ? 'der Verarbeitungstätigkeit' : ( mode === 'wizapp' ? 'der Fachapplikation' : ( mode === 'wizmeasures' ? 'der übergreifenden Massnahmen' : 'des IT-Verfahrens' ) ) ) + '</h2>');
   toSend.append('<h3 class="text-center">' + htmlEncode($('[name="allgemein_bezeichnung"]').val()) + '</h3>');
-  toSend.append('<h4 class="pull-left" style="color: darkgray;">Letzte Aktualisierung: ' + $('#saveTime').text() + '</h4>');
-  toSend.append('<h4 class="pull-right" style="color: darkgray;">Lfd. Nr.: ' + loadId + '</h4>');
+  toSend.append('<h5 class="pull-left" style="color: darkgray; text-align: left;">Letzte Aktualisierung: ' + $('#saveTime').text() + '</h5>');
+  toSend.append('<h5 class="pull-left" style="color: darkgray; text-align: left;">Letzter Bearbeiter: $lasteditor$</h5>');
+  toSend.append('<h5 class="pull-left" style="color: darkgray; text-align: left;">Nr.: ' + loadId + '</h5>');
 
   /* Daten aus Wizard einsammeln */
   $('#content').children('.tab-content').children('.tab-pane').each(function(idx) {
@@ -1020,6 +1021,21 @@ function genHTMLforPDF(draft = false) {
     $(this).closest('.panel').before($(this));
   });
 
+  if(draft) {
+    toSend.find('#tom_accordion').find('option').each(function() {
+      let selectName = $(this).closest('select')[0].name;
+      let selectedValue = $('select[name="' + selectName + '"]').val();
+
+      if(this.value === selectedValue) {
+        $(this).closest('td').append('<p>&#9746; ' + this.text + '</p>');
+      }
+      else {
+        $(this).closest('td').append('<p>&#9744; ' + this.text + '</p>');
+      }
+    });
+    toSend.find('#tom_accordion').find('div.bootstrap-select').remove();
+  }
+
   /* Nur TOMs in der PDF anzeigen, die dem Risiko entsprechen */
   let currRiskLevel = parseInt($('[name="massnahmen_risiko"]:checked').val());
   toSend.find('#tom_accordion').find('tr').each(function() {
@@ -1039,7 +1055,7 @@ function genHTMLforPDF(draft = false) {
   /* Link hinzufügen */
   let baseURL = window.location.href.split('?')[0].replace(/x?sso/i, 'www');
   let link = baseURL + '?id=' + loadId;
-  toSend.append('<div class="text-center"><h5 class="info-text text-ul">Dokumentation online einsehen</h5><p><a href="' + link + '">' + link + '</a></p></div>');
+  toSend.append('<div class="text-center"><h5 class="info-text text-ul">Dokumentation online einsehen</h5><p><a href="$docurl$">$docurl$</a></p></div>');
 
   /* Links in Abhängigkeiten anpassen */
   toSend.find('table#abschluss_vonabhaengig tr, table#abschluss_abhaengigkeit tr, table#itverfahren_abhaengigkeit tr, table#verarbeitung_abhaengigkeit tr, table#massnahmen_abhaengigkeit tr').each(function(idx) {
@@ -1048,7 +1064,7 @@ function genHTMLforPDF(draft = false) {
       abhLnk.detach();
     }
     else {
-      abhLnk.attr('href', baseURL + abhLnk.attr('href'));
+      abhLnk.attr('href', '$baseurl$' + abhLnk.attr('href'));
     }
   });
 
@@ -1764,7 +1780,17 @@ function generateTOMList() {
  * @return {undefined}
  */
 function filterTOMList(risklevel) {
+  let riskTexts = {
+    '1': 'Der Schutzbedarf ' + (modeNum === 2 ? 'des ' + modeName[0] + 's' : 'der ' + modeName[0]) + ' ist niedrig. Es sind die Basis-Anforderungen umzusetzen.',
+    '2': 'Der Schutzbedarf ' + (modeNum === 2 ? 'des ' + modeName[0] + 's' : 'der ' + modeName[0]) + ' ist normal. Es sind vorrangig die Basis-Anforderungen umzusetzen. Darüber hinaus sollten die Standard-Anforderungen umgesetzt werden.',
+    '3': 'Der Schutzbedarf ' + (modeNum === 2 ? 'des ' + modeName[0] + 's' : 'der ' + modeName[0]) + ' ist hoch. Es sind vorrangig die Basis-Anforderungen umzusetzen. Darüber hinaus sollten die Standard-Anforderungen sowie die Anforderungen bei erhöhtem Schutzbedarf umgesetzt werden.'
+  };
   let tomRows = $('#tom_accordion').find('tbody tr');
+
+  // Risikotext anzeigen
+  $('#riskText').text(riskTexts[risklevel]);
+
+  // TOMs ausblenden
   tomRows.each(function() {
     let tomRisklevel = parseInt($(this).data('risk'));
     if(tomRisklevel <= risklevel) $(this).removeClass('hidden');
