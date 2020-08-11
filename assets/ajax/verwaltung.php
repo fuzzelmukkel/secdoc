@@ -564,7 +564,7 @@ EOH;
 
       # Überschrift im TOC
       $mpdf->TOC_Entry(htmlspecialchars("Abhängigkeiten von $key"));
-      $mpdf->Bookmark(htmlspecialchars("Abhängigkeiten von $key", ENT_QUOTES), 1);
+      $mpdf->Bookmark(htmlspecialchars("Abhängigkeiten von $key", ENT_QUOTES), 0);
 
       for($doc = 0; $doc < $docCount; $doc++) {
         $filePath = $pdf_dir . DIRECTORY_SEPARATOR . $deps[$doc]['id'] . '.pdf';
