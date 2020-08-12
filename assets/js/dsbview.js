@@ -29,7 +29,7 @@ function getCombinedPDF() {
 
  $.post(backendPath, JSON.stringify({'action':'gencombinedpdf', 'debug': debug})).done((data) => {
    if(!data['success']) {
-     showError('Laden der PDF', data['error']);
+     showError('Laden der PDF-Datei', data['error']);
      return;
    }
 
@@ -56,7 +56,7 @@ function getCombinedPDF() {
      download.remove();
    }
  }).fail((jqXHR, error, errorThrown) => {
-   showError('Laden der PDF', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+   showError('Laden der PDF-Datei', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
  }).always(() => {
    setOverlay(false);
  });

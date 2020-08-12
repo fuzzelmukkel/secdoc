@@ -289,7 +289,7 @@ function getPDFFromServer(id, draft = false) {
 
     if(!draft && data['data']['status'] === 0) {
       modal.find('.modal-title').text('Hinweis');
-      modal.find('.modal-body').html('<div class="alert alert-warning"><p>Da sich das Verfahren wieder im Zustand "In Bearbeitung" befindet, stimmen die Angaben in der PDF unter Umständen nicht mehr mit der aktualisierten Version überein! Die PDF wird nur bei einem erneuten Abschluss des Verfahrens aktualisiert.</p></div>');
+      modal.find('.modal-body').html('<div class="alert alert-warning"><p>Da sich das Verfahren wieder im Zustand "In Bearbeitung" befindet, stimmen die Angaben in der PDF-Datei unter Umständen nicht mehr mit der aktualisierten Version überein! Die PDF-Datei wird nur bei einem erneuten Abschluss des Verfahrens aktualisiert.</p></div>');
       modal.find('.modal-body').append('<p><button type="button" class="center-block btn btn-primary" data-dismiss="modal" aria-label="Close">Schließen</button></p>');
       modal.modal();
     }
@@ -317,7 +317,7 @@ function getPDFFromServer(id, draft = false) {
       download.remove();
     }
   }).fail((jqXHR, error, errorThrown) => {
-    showError('Laden der PDF', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+    showError('Laden der PDF-Datei', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
   }).always(() => {
     setOverlay(false);
   });

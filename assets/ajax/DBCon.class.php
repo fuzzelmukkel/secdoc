@@ -255,7 +255,7 @@
     const TABLES = [
         "CREATE TABLE verfahren (
             ID INTEGER PRIMARY KEY,                               -- Eindeutige ID für ein Verfahren (kann automatisch inkrementiert werden oder manuell gesetzt werden)
-            Typ INT NOT NULL DEFAULT 1,                           -- Typ des Eintrags (1 = Verarbeitungstätigkeit, 2 = IT-Verfahren)
+            Typ INT NOT NULL DEFAULT 1,                           -- Typ des Eintrags (1 = Verarbeitungstätigkeit, 2 = IT-Verfahren, 3 = Fachapplikation, 4 = übergreifende Maßnahme)
             Erstelldatum DATE DEFAULT '',                         -- Einführungsdatum des Verfahrens
             Bezeichnung VARCHAR(100) NOT NULL DEFAULT  '',        -- Bezeichnung des Verfahren
             Beschreibung TEXT NOT NULL DEFAULT  '',               -- Ausführlichere Beschreibung des Verfahrens
@@ -361,7 +361,7 @@
         );",
         # 14
         "CREATE TABLE ebene_rollen (           -- Zuweisung von Rollen zu Ebenen
-            EbeneID INT NOT NULL DEFAULT 0,    -- ID der Ebene (1 - Verarbeitungstätigkeit, 2 - Fachapplikation, 3 - IT-Verfahren)
+            EbeneID INT NOT NULL DEFAULT 0,    -- ID der Ebene (1 - Verarbeitungstätigkeit, 2 - Fachapplikation, 3 - IT-Verfahren, 4 - übergreifende Maßnahmen)
             RoleID INT NOT NULL DEFAULT 0,     -- ID der Rolle (siehe Tabelle rollen)
             PRIMARY KEY (EbeneID, RoleID),
             FOREIGN KEY (RoleID) REFERENCES rollen(RoleID) ON UPDATE CASCADE ON DELETE CASCADE
@@ -829,13 +829,16 @@
      * @throws PDOException
      * @throws Exception
      */
-    public function listVerfahrenDSB($search = '') {
+    public function listVerfahrenDSB($search = '', $typ = null) {
       if($this->isConnected()) {
         $result = array();
         $sth = $this->pdo->prepare('SELECT ID, Typ, Bezeichnung, Beschreibung, Erstelldatum, Fachabteilung, IFNULL(person1.Anzeigename, verfahren.FachKontakt) AS FachKontakt, IFNULL(person2.Anzeigename, verfahren.TechKontakt) AS TechKontakt, Status, Sichtbarkeit, DSBKommentar, IFNULL(person3.Name, verfahren_historie.Kennung) AS LetzterBearbeiter, IFNULL(person3.Anzeigename, "") AS BearbeiterDetails, MAX(Datum) AS Aktualisierung '
                 . 'FROM verfahren LEFT JOIN verfahren_historie ON verfahren.ID = verfahren_historie.Verfahrens_Id LEFT JOIN personen AS person1 ON verfahren.FachKontakt = person1.Kennung LEFT JOIN personen AS person2 ON verfahren.TechKontakt = person2.Kennung  LEFT JOIN personen AS person3 ON verfahren_historie.Kennung = person3.Kennung '
-                . 'WHERE NOT Status = 3' . (!empty($search) ? ' AND Bezeichnung LIKE ?' : '') . ' GROUP BY ID ORDER BY Bezeichnung COLLATE NOCASE;');
-        $sth->execute(!empty($search) ? ['%' . $search . '%'] : []);
+                . 'WHERE NOT Status = 3' . (!empty($search) ? ' AND Bezeichnung LIKE ?' : '') . (!empty($typ) ? ' AND Typ = ?' : '') . ' GROUP BY ID ORDER BY Bezeichnung COLLATE NOCASE;');
+        $params = array();
+        if (!empty($search)) array_push($params, "%$search%");
+        if (!empty($typ)) array_push($params, $typ);
+        $sth->execute($params);
 
         ob_start();
         $sth->debugDumpParams();

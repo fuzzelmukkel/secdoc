@@ -359,7 +359,7 @@ EOH;
   }
 
   /**
-   * Generiert eine kombinierte PDF mit allen PDFs von abgeschlossenen Verfahren.
+   * Generiert eine kombinierte PDF-Datei mit allen PDFs von abgeschlossenen Verfahren (VVT).
    *
    * @param  array $processes Array von Verfahren (wie von DBCon->listVerfahrenDSB() zurückgegeben)
    * @return bool             TRUE bei Erfolg (PDF wurde in $pdf_dir abgespeichert), FALSE sonst
@@ -410,7 +410,8 @@ EOH;
     $procCount = count($processes);
 
     # Nach ID sortieren? Oder eher nach Name, Erstelldatum oder Aktualisierungsdatum?
-    usort($processes, function($a, $b) { return (intval($a['ID']) - intval($b['ID'])); });
+    # Am besten alphabetisch nach Name
+    usort($processes, function($a, $b) { return strcmp(strval($a['ID']['Bezeichnung']), strval($b['ID']['Bezeichnung'])); });
 
     for($p = 0; $p < $procCount; $p++) {
       $filePath = $pdf_dir . DIRECTORY_SEPARATOR . $processes[$p]['ID'] . '.pdf';
@@ -434,7 +435,7 @@ EOH;
         $mpdf->TOC_Entry(htmlspecialchars("#{$processes[$p]['ID']} - {$processes[$p]['Bezeichnung']}"));
         $mpdf->Bookmark(htmlspecialchars("#{$processes[$p]['ID']} - {$processes[$p]['Bezeichnung']}", ENT_QUOTES), 0);
 
-        $mpdf->WriteHTML("<h2>PDF für Dokumentation #{$processes[$p]['ID']} - '" . htmlspecialchars("{$processes[$p]['Bezeichnung']}") . "' fehlt</h2><p>Die Dokumentation #{$processes[$p]['ID']} ist als abgeschlossen markiert, aber es ist keine PDF vorhanden!</p><p>Bitte schließen Sie die Dokumentation neu ab, um eine korrekte PDF-Version zu erzeugen.</p><pagebreak />");
+        $mpdf->WriteHTML("<h2>Die PDF-Datei für die Dokumentation #{$processes[$p]['ID']} - '" . htmlspecialchars("{$processes[$p]['Bezeichnung']}") . "' fehlt</h2><p>Die Dokumentation #{$processes[$p]['ID']} ist als abgeschlossen markiert, aber es ist keine PDF-Datei vorhanden!</p><p>Bitte schließen Sie die Dokumentation erneut ab, um eine vollständige PDF-Version zu erzeugen.</p><pagebreak />");
       }
     }
 
@@ -587,7 +588,7 @@ EOH;
           $mpdf->TOC_Entry(htmlspecialchars("#{$deps[$doc]['id']} - {$deps[$doc]['name']}"), 1);
           $mpdf->Bookmark(htmlspecialchars("#{$deps[$doc]['id']} - {$deps[$doc]['name']}", ENT_QUOTES), 1);
 
-          $mpdf->WriteHTML("<h2>PDF für Dokumentation #{$deps[$doc]['id']} - '" . htmlspecialchars("{$deps[$doc]['name']}") . "' fehlt</h2><p>Die Dokumentation #{$deps[$doc]['id']} ist als abgeschlossen markiert, aber es ist keine PDF vorhanden!</p><p>Bitte schließen Sie die Dokumentation neu ab, um eine korrekte PDF-Version zu erzeugen.</p><p><a href=\"$prog_url?id={$deps[$doc]['id']}\">Dokumentation online einsehen</a></p><pagebreak />");
+          $mpdf->WriteHTML("<h2>Die PDF-Datei für die Dokumentation #{$deps[$doc]['id']} - '" . htmlspecialchars("{$deps[$doc]['name']}") . "' fehlt</h2><p>Die Dokumentation #{$deps[$doc]['id']} ist als abgeschlossen markiert, aber es ist keine PDF-Datei vorhanden!</p><p>Bitte schließen Sie die Dokumentation erneut ab, um eine vollständige PDF-Version zu erzeugen.</p><p><a href=\"$prog_url?id={$deps[$doc]['id']}\">Dokumentation online einsehen</a></p><pagebreak />");
         }
         # Fehlende PDF, da noch nicht abgeschlossen
         elseif(intval($deps[$doc]['status']) === 0) {
@@ -595,7 +596,7 @@ EOH;
           $mpdf->TOC_Entry(htmlspecialchars("#{$deps[$doc]['id']} - {$deps[$doc]['name']}"), 1);
           $mpdf->Bookmark(htmlspecialchars("#{$deps[$doc]['id']} - {$deps[$doc]['name']}", ENT_QUOTES), 1);
 
-          $mpdf->WriteHTML("<h2>PDF für Dokumentation #{$deps[$doc]['id']} - '" . htmlspecialchars("{$deps[$doc]['name']}") . "' fehlt</h2><p>Die Dokumentation #{$deps[$doc]['id']} ist noch nicht abgeschlossen worden, sodass bisher keine PDF existiert.</p><p>Bitte schließen Sie die Dokumentation ab, um eine korrekte PDF-Version zu erzeugen.</p><p><a href=\"$prog_url?id={$deps[$doc]['id']}\">Dokumentation online einsehen</a></p><pagebreak />");
+          $mpdf->WriteHTML("<h2>Die PDF-Datei für die Dokumentation #{$deps[$doc]['id']} - '" . htmlspecialchars("{$deps[$doc]['name']}") . "' fehlt</h2><p>Die Dokumentation #{$deps[$doc]['id']} wurde noch nicht abgeschlossen, so dass bisher keine PDF-Datei existiert.</p><p>Bitte schließen Sie die Dokumentation ab, um eine vollständige PDF-Version zu erzeugen.</p><p><a href=\"$prog_url?id={$deps[$doc]['id']}\">Dokumentation online einsehen</a></p><pagebreak />");
         }
       }
     }
@@ -1604,7 +1605,7 @@ EOH;
         $output['success'] = TRUE;
       }
       else {
-        $output['error'] = 'PDF konnte nicht erzeugt werden. Bitte versuchen Sie es später erneut!';
+        $output['error'] = 'Die PDF-Datei konnte nicht erzeugt werden. Bitte versuchen Sie es später erneut!';
       }
       break;
     }
@@ -1614,8 +1615,8 @@ EOH;
         returnError('Sie haben keine Berechtigung diese Funktion aufzurufen!');
       }
 
-      if(!generateCombinedPDF($dbcon->listVerfahrenDSB())) {
-        returnError('Interner Fehler beim Erstellen der kombinierten PDF!');
+      if(!generateCombinedPDF($dbcon->listVerfahrenDSB('', 1))) {
+        returnError('Interner Fehler beim Erstellen der kombinierten PDF-Datei!');
       }
 
       $filename = $pdf_dir . DIRECTORY_SEPARATOR . 'combined.pdf';
@@ -1631,10 +1632,10 @@ EOH;
       else {
         trigger_error('[SecDoc] verwaltung.php -> Kann PDF-Datei nicht öffnen');
         error_log('[SecDoc] verwaltung.php -> Kann PDF-Datei nicht öffnen');
-        returnError('Die PDF zum Verzeichnis von Verarbeitungstätigkeiten existiert nicht.');
+        returnError('Die PDF-Datei zum Verzeichnis von Verarbeitungstätigkeiten existiert nicht.');
       }
 
-      if(!unlink($filename)) error_log("[SecDoc] verwaltung.php -> Konnte kombinierte PDF '$filename' nicht löschen!");
+      if(!unlink($filename)) error_log("[SecDoc] verwaltung.php -> Konnte kombinierte PDF-Datei '$filename' nicht löschen!");
       break;
     }
 

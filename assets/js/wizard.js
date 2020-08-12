@@ -70,7 +70,7 @@ if(mode === 'wizmeasures')   modeNum = 4;
 var modeName = ['Verarbeitungstätigkeit', 'Verarbeitungstätigkeiten'];
 if(mode === 'wizapp')      modeName = ['Fachapplikation', 'Fachapplikationen'];
 if(mode === 'wizit')       modeName = ['IT-Verfahren', 'IT-Verfahren'];
-if(mode === 'wizmeasures') modeName = ['Übergreifende Massnahme', 'Übergreifende Massnahmen'];
+if(mode === 'wizmeasures') modeName = ['übergreifende Massnahme', 'übergreifende Massnahmen'];
 
 /**
  * Gibt an, ob Eingaben geändert wurden seit dem letzten Laden/Speichern
@@ -563,8 +563,8 @@ function loadEmpty() {
   document.title = document.title.split(' - ').slice(-1)[0];
   let emptyTitle = 'Dokumentation einer Verarbeitungstätigkeit';
   if(mode === 'wizapp')       emptyTitle = 'Dokumentation einer Fachapplikation';
-  if(mode === 'wizit')        emptyTitle = ' Dokumentation eines IT-Verfahrens';
-  if(mode === 'wizmeasures')  emptyTitle = ' Dokumentation von übergreifenden Massnahmen';
+  if(mode === 'wizit')        emptyTitle = 'Dokumentation eines IT-Verfahrens';
+  if(mode === 'wizmeasures')  emptyTitle = 'Dokumentation von übergreifenden Massnahmen';
   let statusSymbol = status in statusSymbolMapping ? ' <i data-toggle="tooltip" class="fa ' + statusSymbolMapping[status] + '" title="' + statusMapping[status]  + '"></i>' : '';
   $('#title').text(emptyTitle).append(statusSymbol).find('i').tooltip();
 
@@ -908,7 +908,7 @@ function loadFromServer(id) {
 
       document.title = htmlDecode(data['data'][0]['Bezeichnung']) + ' - ' + document.title.split(' - ').slice(-1)[0];
       let statusSymbol = status in statusSymbolMapping ? ' <i data-toggle="tooltip" class="fa ' + statusSymbolMapping[status] + '" title="' + statusMapping[status]  + '"></i>' : '';
-      $('#title').text('Dokumentation von ' + htmlDecode(data['data'][0]['Bezeichnung'])).append(statusSymbol).find('i').tooltip();
+      $('#title').text(' Dokumentation von ' + htmlDecode(data['data'][0]['Bezeichnung'])).append(statusSymbol).find('i').tooltip();
       changedValues = false;
       changedFields = [];
 
@@ -982,7 +982,7 @@ function copyFromServer(id) {
  * @returns {String} HTML-Code
  */
 function genHTMLforPDF(draft = false) {
-  console.time('HTML-Code-Generierung für PDF');
+  console.time('HTML-Code-Generierung für PDF-Datei');
 
   /* Alle leeren Tabellenzeilen entfernen */
   endlessTables.forEach(function(table) {
@@ -994,9 +994,9 @@ function genHTMLforPDF(draft = false) {
   /* Überschrift */
   toSend.append('<h2 class="text-center">Dokumentation ' + ( mode === 'wizproc' ? 'der Verarbeitungstätigkeit' : ( mode === 'wizapp' ? 'der Fachapplikation' : ( mode === 'wizmeasures' ? 'der übergreifenden Massnahmen' : 'des IT-Verfahrens' ) ) ) + '</h2>');
   toSend.append('<h3 class="text-center">' + htmlEncode($('[name="allgemein_bezeichnung"]').val()) + '</h3>');
-  toSend.append('<h5 class="pull-left" style="color: darkgray; text-align: left;">Letzte Aktualisierung: ' + $('#saveTime').text() + '</h5>');
-  toSend.append('<h5 class="pull-left" style="color: darkgray; text-align: left;">Letzter Bearbeiter: $lasteditor$</h5>');
-  toSend.append('<h5 class="pull-left" style="color: darkgray; text-align: left;">Nr.: ' + loadId + '</h5>');
+  toSend.append('<table class="table"><tbody><tr><td class="info-text text-left">Letzte Aktualisierung: ' + $('#saveTime').text() + '</td>');
+  toSend.append('<td class="text-center">Letzter Bearbeiter: $lasteditor$</td>');
+  toSend.append('<td class="text-right">Nr.: ' + loadId + '</td></tr></tbody></table>');
 
   /* Daten aus Wizard einsammeln */
   $('#content').children('.tab-content').children('.tab-pane').each(function(idx) {
@@ -1096,7 +1096,7 @@ function genHTMLforPDF(draft = false) {
     $(this).val(htmlEncode($(this).val()));
   });
 
-  /* Eingabeelemente durch grau hinterlegten Text ersetzen */
+  /* Eingabeelemente durch gelb hinterlegten Text ersetzen */
   toSend.find('input[type!=checkbox][type!=hidden][type!=radio], textarea, select').replaceWith(function() { if($(this).parents('td').length>0) { return '<p>' + $(this).val() + '</p>'; } else { return '<p style="background-color: lightyellow">' + $(this).val() + '</p>'; }});
 
   /* Radio-Elemente formatieren */
@@ -1138,8 +1138,7 @@ function genHTMLforPDF(draft = false) {
 
   /* Ergebnis-HTML für mpdf holen */
   var htmlCode = toSend[0].outerHTML;
-
-  console.timeEnd('HTML-Code-Generierung für PDF');
+  console.timeEnd('HTML-Code-Generierung für PDF-Datei');
   return htmlCode;
 }
 
@@ -2206,7 +2205,7 @@ Promise.all(promises).then(function() {
   $('input[name="allgemein_bezeichnung"]').on('input', (e) => {
     document.title = e.target.value + ' - ' + document.title.split(' - ').slice(-1)[0];
     let statusSymbol = status in statusSymbolMapping ? ' <i data-toggle="tooltip" class="fa ' + statusSymbolMapping[status] + '" title="' + statusMapping[status]  + '"></i>' : '';
-    $('#title').text('Dokumentation von ' + e.target.value).append(statusSymbol).find('i').tooltip();
+    $('#title').text(' Dokumentation von ' + e.target.value).append(statusSymbol).find('i').tooltip();
   });
 
   // Warnung vor dem Schließen der Webseite, falls ungespeicherte Änderungen vorhanden sind
