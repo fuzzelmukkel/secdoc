@@ -1097,7 +1097,8 @@ function genHTMLforPDF(draft = false) {
   });
 
   /* Eingabeelemente durch grau hinterlegten Text ersetzen */
-  toSend.find('input[type!=checkbox][type!=hidden][type!=radio], textarea, select').replaceWith(function() { if($(this).parents('td').length>0) { return '<p>' + $(this).val() + '</p>'; } else { return '<p style="background-color: lightyellow">' + $(this).val() + '</p>'; }});
+  toSend.find('input[type!=checkbox][type!=hidden][type!=radio], select').replaceWith(function() { if($(this).parents('td').length>0) { return '<p>' + $(this).val() + '</p>'; } else { return '<p style="background-color: lightyellow">' + $(this).val() + '</p>'; }});
+  toSend.find('textarea').replaceWith(function() { if($(this).parents('td').length>0) { return '<p>' + $(this).val().replace(/(?:\r\n|\r|\n)/g, '<br />') + '</p>'; } else { return '<p style="background-color: lightyellow">' + $(this).val().replace(/(?:\r\n|\r|\n)/g, '<br />') + '</p>'; }});
 
   /* Radio-Elemente formatieren */
   toSend.find('input[type=radio]:not(:checked)').closest('label').remove();
@@ -1115,8 +1116,14 @@ function genHTMLforPDF(draft = false) {
     var checkbox = $(this);
 
     checkbox.parent().parent().attr('style', 'margin: 5px;');
-    if(checkbox.prop('checked')) checkbox.replaceWith('<span style="color: green;">&#10004;</span>');
-    //else checkbox.replaceWith('<span style="color: red;">&#10006;</span>');
+    if(checkbox.prop('checked')) {
+      if(checkbox.attr('name') === 'daten_kategorien_besonders[]') {
+        checkbox.replaceWith('<span><span style="color: green;">&#10004;</span> Ja</span>');
+        return;
+      }
+
+      checkbox.replaceWith('<span style="color: green;">&#10004;</span>');
+    }
     else {
       if(checkbox.attr('name').search(/massnahmen/g) > -1) {
         checkbox.replaceWith('<span style="color: red;">&#10006;</span>');
@@ -1125,6 +1132,11 @@ function genHTMLforPDF(draft = false) {
 
       if(checkbox.attr('name') === 'abschluss_datenschutz_folgeabschaetzung') {
         checkbox.parent().replaceWith('<label><span style="color: red;">&#10006;</span> Es ist keine Datenschutzfolgeabschätzung notwendig</label>');
+        return;
+      }
+
+      if(checkbox.attr('name') === 'daten_kategorien_besonders[]') {
+        checkbox.replaceWith('<span>Nein</span>');
         return;
       }
 
