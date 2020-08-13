@@ -48,10 +48,10 @@
     $output['error'] = "Ein interner Fehler ist aufgetreten! Bitte versuchen Sie es später erneut oder wenden Sie sich an einen Administrator.";
 
     # Meldung als HTML ausgeben
-    echo '<br><b>Fatal error</b>:  Exception \'' . get_class($exception) . '\' with message ';
-    echo $exception->getMessage() . '<br>';
+    echo '<br /><b>Fatal error</b>:  Exception \'' . get_class($exception) . '\' with message ';
+    echo $exception->getMessage() . '<br />';
     echo 'Stack trace:<pre>' . $exception->getTraceAsString() . '</pre>';
-    echo 'thrown in <b>' . $exception->getFile() . '</b> on line <b>' . $exception->getLine() . '</b><br>';
+    echo 'thrown in <b>' . $exception->getFile() . '</b> on line <b>' . $exception->getLine() . '</b><br />';
 
     # Meldung zusätzlich in Log schreiben
     error_log("[SecDoc] Exception " . get_class($exception) . ' with message ' . $exception->getMessage() . ' thrown in ' . $exception->getFile() . ' on line ' . $exception->getLine());
@@ -359,7 +359,7 @@ EOH;
   }
 
   /**
-   * Generiert eine kombinierte PDF-Datei mit allen PDFs von abgeschlossenen Verfahren (VVT).
+   * Generiert eine kombinierte PDF-Datei mit allen PDFs von abgeschlossenen Verarbeitungstätigkeiten (VVT).
    *
    * @param  array $processes Array von Verfahren (wie von DBCon->listVerfahrenDSB() zurückgegeben)
    * @return bool             TRUE bei Erfolg (PDF wurde in $pdf_dir abgespeichert), FALSE sonst
@@ -375,7 +375,7 @@ EOH;
 
     # MPDF initialisieren
     $mpdf = new \Mpdf\Mpdf(['debug' => false, 'CSSselectMedia' => 'screen', 'mode' => 'utf-8', 'format' => 'A4']);
-    $mpdf->SetTitle('Verzeichnis abgeschlossener Dokumentationen');
+    $mpdf->SetTitle('Verzeichnis von Verarbeitungstätigkeiten');
     $mpdf->SetAuthor($author);
     $mpdf->SetCreator($prog_name . ' v' . $prog_version);
 
