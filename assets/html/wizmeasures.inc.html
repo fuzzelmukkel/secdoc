@@ -94,19 +94,19 @@
   <!-- Wizard tab content #2 -->
   <div class="tab-pane" id="massnahmen">
     <div class="row">
-      <div class="col-sm-offset-1 col-sm-10 hidden">
-        <h5 class="info-text text-ul">Ergebnis der Risikoanalyse <i data-toggle="tooltip" data-html="true" title="Ergebnis der Risikoanalyse <i data-toggle="tooltip" data-html="true" title="Als <em>Risikoanalyse</em> wird der komplette Prozess bezeichnet, um Risiken zu beurteilen (identifizieren, einschätzen und bewerten) sowie zu behandeln. Risikoanalyse bezeichnet nach den einschlägigen ISO-Normen ISO 31000 und ISO 27005 nur einen Schritt im Rahmen der Risikobeurteilung, die aus den folgenden Schritten besteht:<ul><li>Identifikation von Risiken (Risk Identification)</li><li>Analyse von Risiken (Risk Analysis)</li><li>Evaluation oder Bewertung von Risiken (Risk Evaluation)</li></ul> Die Durchführung einer Risikoanalyse gehört nicht zum Umfang dieses Tools und muss extern erfolgen, vgl. ENISA Guidelines for SMEs on the security of personal data processing, ENISA Handbook on Security of Personal Data Processing oder BSI-Standard 200-3: Risikomanagement, ISO/IEC 27005:2018 Information security risk management." class="fa fa-question-circle-o fa-lg"></i></h5>
+      <div class="col-sm-offset-1 col-sm-10">
+        <h5 class="info-text text-ul">Schutzbedarf</h5>
       </div>
-      <div class="col-sm-12 text-center hidden">
+      <div class="col-sm-12 text-center">
         <div class="btn-group">
           <label class="btn btn-success">
-            <input type="radio" name="massnahmen_risiko" value="1" disabled /> Niedrig
+            <input type="radio" name="massnahmen_risiko" value="1" /> Normal
           </label>
           <label class="btn btn-warning">
-            <input type="radio" name="massnahmen_risiko" value="2" disabled /> Standard
+            <input type="radio" name="massnahmen_risiko" value="2" checked /> Hoch
           </label>
           <label class="btn btn-danger">
-            <input type="radio" name="massnahmen_risiko" value="3" checked disabled /> Hoch
+            <input type="radio" name="massnahmen_risiko" value="3" /> Sehr hoch
           </label>
         </div>
         <p class="mt" id="riskText"></p>
