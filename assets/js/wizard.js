@@ -57,10 +57,10 @@ var mode = ['wizit', 'wizproc', 'wizapp', 'wizmeasures'].includes(page) ? page :
  * @type {Object}
  */
 let modeMapping = {
-  1: ['Verarbeitungstätigkeit', 'Verarbeitungstätigkeiten'],
-  2: ['IT-Verfahren', 'IT-Verfahren'],
-  3: ['Fachapplikation', 'Fachapplikationen'],
-  4: ['übergreifende Massnahme', 'übergreifende Massnahmen']
+  1: ['Verarbeitungstätigkeit', 'Verarbeitungstätigkeiten', 'Die', 'eine', 'einer'],
+  2: ['IT-Verfahren', 'IT-Verfahren', 'Das', 'ein', 'einem'],
+  3: ['Fachapplikation', 'Fachapplikationen', 'Die', 'eine', 'einer'],
+  4: ['übergreifende Massnahme', 'übergreifende Massnahmen', 'Die', 'eine', 'einer']
 };
 
 /**
@@ -2141,7 +2141,7 @@ Promise.all(promises).then(function() {
 
     modal.find('.modal-title').text('Abhängigkeit anlegen');
     modal.find('.modal-body').html('<div></div>');
-    modal.find('.modal-body > div').append('<p>Hier können Sie eine Abhängigkeit (' + modeMapping[targetType][0] + ') vorläufig anlegen, sodass die Verknüpfung direkt angelegt werden kann. Die Dokumentation kann im späteren Verlauf wie jede andere Dokumentation bearbeitet und ergänzt werden.</p>');
+    modal.find('.modal-body > div').append('<p>Hier können Sie die Abhängigkeit von ' + modeMapping[targetType][4] + ' noch nicht existierenden ' + modeMapping[targetType][0] + ' vorläufig anlegen, damit die Verknüpfung direkt angelegt werden kann. ' + modeMapping[targetType][2] + ' ' + modeMapping[targetType][0] + ' kann später wie jede andere Dokumentation bearbeitet und ergänzt werden.</p>');
     modal.find('.modal-body > div').append('<p class="alert alert-danger hidden">Bitte füllen Sie alle Felder aus, um die Abhängigkeit anlegen zu können!</p>');
     modal.find('.modal-body > div').append('<div class="form-group"><label>Bezeichnung <i data-toggle="tooltip" title="Eindeutiges Kürzel" class="fa fa-question-circle-o fa-lg"></i> <sup><i style="color: #EB5E28;" class="fa fa-asterisk" aria-hidden="true"></i></sup></label><input type="text" class="form-control" name="quick_title" placeholder="Bsp.: E-Mail Service" required></div>');
     modal.find('.modal-body > div').append('<div class="form-group"><label>Beschreibung <i data-toggle="tooltip" title="Ausführliche Beschreibung des Verfahrens" class="fa fa-question-circle-o fa-lg"></i> <sup><i style="color: #EB5E28;" class="fa fa-asterisk" aria-hidden="true"></i></sup></label><br><textarea class="form-control" name="quick_desc" placeholder="Bsp.: Stellt Dienste bereit zum Empfang und Versand von E-Mails für Angehörige der WWU" rows="5"></textarea></div>');
