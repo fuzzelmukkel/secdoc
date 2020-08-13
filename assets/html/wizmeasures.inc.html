@@ -63,7 +63,7 @@
       </div>
       <div class="col-sm-10 col-sm-offset-1">
         <div class="form-group">
-          <label>Beschreibung <i data-toggle="tooltip" title="Ausführliche Beschreibung der Massnahmen" class="fa fa-question-circle-o fa-lg"></i></label><br>
+          <label>Beschreibung <i data-toggle="tooltip" title="Ausführliche Beschreibung der Massnahmen" class="fa fa-question-circle-o fa-lg"></i></label><br />
           <textarea class="form-control" name="allgemein_beschreibung" placeholder="Bsp.: Übergreifene Massnahmen für die Absicherung von Server-Räumen" rows="5"></textarea>
         </div>
       </div>
@@ -72,18 +72,18 @@
       </div>
       <div class="col-sm-10 col-sm-offset-1">
         <div class="form-group">
-          <label>Verantwortliche Organisationseinheit</label><br>
+          <label>Verantwortliche Organisationseinheit</label><br />
             <input data-tool="typeahead" data-action="searchabteilung" data-minlength="0" type="text" class="form-control" name="allgemein_abteilung" placeholder="Bsp.: Zentrum für Informationsverarbeitung" required>
         </div>
         <div class="form-group">
-          <label>Betreuende IVV</label><br>
+          <label>Betreuende IVV</label><br />
           <input data-tool="typeahead" data-action="searchivv" data-minlength="0" type="text" class="form-control" name="allgemein_ivv" placeholder="Bsp.: IVV 09  Zentrale Universitätsverwaltung">
         </div>
       </div>
       <div class="col-sm-6 col-sm-offset-3">
         <h6 class="info-text">Ansprechpartner <i data-toggle="tooltip" title="Ansprechpartner für technische Fragen zu den Massnahmen <br /><br /> Es kann ein Mitarbeiter aus der Liste gewählt oder eine Funktionsbezeichnung (z.B. Leiter Abt. 3) eingetragen werden. Der automatische Zugriff bzw. die E-Mail-Benachrichtigungen funktionieren nur bei Auswahl eines Mitarbeiters aus der Liste!" class="fa fa-question-circle-o fa-lg"></i></h6>
         <div class="form-group">
-          <label>Name</label><br>
+          <label>Name</label><br />
           <input data-tool="typeahead" data-action="searchmitarbeiter" data-minlength="0" data-dynamic="true" data-cache="false" data-hiddenfield="allgemein_fachlich_kennung" type="text" class="form-control" name="allgemein_fachlich_name" placeholder="Geben Sie eine Kennung oder einen Namen (min. 4 Zeichen) ein...">
           <input type="hidden" name="allgemein_fachlich_kennung">
         </div>
@@ -94,19 +94,19 @@
   <!-- Wizard tab content #2 -->
   <div class="tab-pane" id="massnahmen">
     <div class="row">
-      <div class="col-sm-offset-1 col-sm-10 hidden">
-        <h5 class="info-text text-ul">Ergebnis der Risikoanalyse <i data-toggle="tooltip" data-html="true" title="Ergebnis der Risikoanalyse <i data-toggle="tooltip" data-html="true" title="Als <em>Risikoanalyse</em> wird der komplette Prozess bezeichnet, um Risiken zu beurteilen (identifizieren, einschätzen und bewerten) sowie zu behandeln. Risikoanalyse bezeichnet nach den einschlägigen ISO-Normen ISO 31000 und ISO 27005 nur einen Schritt im Rahmen der Risikobeurteilung, die aus den folgenden Schritten besteht:<ul><li>Identifikation von Risiken (Risk Identification)</li><li>Analyse von Risiken (Risk Analysis)</li><li>Evaluation oder Bewertung von Risiken (Risk Evaluation)</li></ul> Die Durchführung einer Risikoanalyse gehört nicht zum Umfang dieses Tools und muss extern erfolgen, vgl. ENISA Guidelines for SMEs on the security of personal data processing, ENISA Handbook on Security of Personal Data Processing oder BSI-Standard 200-3: Risikomanagement, ISO/IEC 27005:2018 Information security risk management." class="fa fa-question-circle-o fa-lg"></i></h5>
+      <div class="col-sm-offset-1 col-sm-10">
+        <h5 class="info-text text-ul">Schutzbedarf</h5>
       </div>
-      <div class="col-sm-12 text-center hidden">
+      <div class="col-sm-offset-1 col-sm-10 text-center">
         <div class="btn-group">
           <label class="btn btn-success">
-            <input type="radio" name="massnahmen_risiko" value="1" disabled /> Niedrig
+            <input type="radio" name="massnahmen_risiko" value="1" /> Normal
           </label>
           <label class="btn btn-warning">
-            <input type="radio" name="massnahmen_risiko" value="2" disabled /> Standard
+            <input type="radio" name="massnahmen_risiko" value="2" checked /> Hoch
           </label>
           <label class="btn btn-danger">
-            <input type="radio" name="massnahmen_risiko" value="3" checked disabled /> Hoch
+            <input type="radio" name="massnahmen_risiko" value="3" /> Sehr hoch
           </label>
         </div>
         <p class="mt" id="riskText"></p>

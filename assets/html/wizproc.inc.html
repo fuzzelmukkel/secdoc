@@ -93,20 +93,20 @@
       </div>
       <div class="col-sm-3">
         <div class="form-group">
-          <label>Datum der Einführung <i data-toggle="tooltip" title="Das Datum seit dem die Verarbeitungstätigkeit/das IT-Verfahren aktiv sind. <br /> Sollte das genaue Datum nicht bekannt sein, kann eine grobe Angabe, wie etwa '01.01.2017', eingetragen werden." class="fa fa-question-circle-o fa-lg"></i></label><br>
+          <label>Datum der Einführung <i data-toggle="tooltip" title="Das Datum seit dem die Verarbeitungstätigkeit/das IT-Verfahren aktiv sind. <br /> Sollte das genaue Datum nicht bekannt sein, kann eine grobe Angabe, wie etwa '01.01.2017', eingetragen werden." class="fa fa-question-circle-o fa-lg"></i></label><br />
           <input type="date" class="form-control" name="allgemein_datum">
         </div>
       </div>
       <div class="col-sm-10 col-sm-offset-1">
         <div class="form-group">
-          <label>Zweck der Verarbeitung <i data-toggle="tooltip" title="Kurzbeschreibung des Zwecks" class="fa fa-question-circle-o fa-lg"></i></label><br>
-          <input data-tool="typeahead" data-action="getsuggestions" data-minlength="0" data-dynamic="false" data-cache="true" data-display="entry" data-path="data.allgemein_zweck.de" type="text" class="form-control" name="allgemein_zweck" placeholder="Bsp.: Verwaltung von E-Mails">
+          <label>Zweck der Verarbeitungstätigkeit <i data-toggle="tooltip" title="Kurzbeschreibung des Zwecks" class="fa fa-question-circle-o fa-lg"></i></label><br />
+          <input data-tool="typeahead" data-action="getsuggestions" data-minlength="0" data-dynamic="false" data-cache="true" data-display="entry" data-path="data.allgemein_zweck.de" type="text" class="form-control" name="allgemein_zweck" placeholder="Bsp.: Nutzung von dienstlichen E-Mails">
         </div>
       </div>
       <div class="col-sm-10 col-sm-offset-1">
         <div class="form-group">
-          <label>Beschreibung <i data-toggle="tooltip" title="Ausführliche Beschreibung des Verfahrens" class="fa fa-question-circle-o fa-lg"></i></label><br>
-          <textarea class="form-control" name="allgemein_beschreibung" placeholder="Bsp.: Stellt Dienste bereit zum Empfang und Versand von E-Mails für Angehörige der WWU" rows="5"></textarea>
+          <label>Beschreibung <i data-toggle="tooltip" title="Ausführliche Beschreibung der Verarbeitungstätigkeit" class="fa fa-question-circle-o fa-lg"></i></label><br />
+          <textarea class="form-control" name="allgemein_beschreibung" placeholder="Bsp.: Nutzung eines Dienstes zum Empfang und Versand von E-Mails für Angehörige der WWU" rows="5"></textarea>
         </div>
       </div>
       <div class="col-sm-12">
@@ -114,22 +114,22 @@
       </div>
       <div class="col-sm-10 col-sm-offset-1">
         <div class="form-group">
-          <label>Verantwortliche Organisationseinheit</label><br>
+          <label>Verantwortliche Organisationseinheit</label><br />
             <input data-tool="typeahead" data-action="searchabteilung" data-minlength="0" type="text" class="form-control" name="allgemein_abteilung" placeholder="Bsp.: Zentrum für Informationsverarbeitung" required>
         </div>
       </div>
       <div class="col-sm-5 col-sm-offset-1">
-        <h6 class="info-text">Ansprechpartner Verarbeitungstätigkeit <i data-toggle="tooltip" title="Ansprechpartner für inhaltliche Fragen in der Organisationseinheit zur Verarbeitungstätigkeit <br /><br /> Es kann ein Mitarbeiter aus der Liste gewählt oder eine Funktionsbezeichnung (z.B. Leiter Abt. 3) eingetragen werden. Der automatische Zugriff bzw. die E-Mail-Benachrichtigungen funktionieren nur bei Auswahl eines Mitarbeiters aus der Liste!" class="fa fa-question-circle-o fa-lg"></i></h6>
+        <h6 class="info-text">1. Ansprechpartner <i data-toggle="tooltip" title="Ansprechpartner für inhaltliche Fragen zur Verarbeitungstätigkeit <br /><br /> Es kann ein Mitarbeiter aus der Liste gewählt oder eine Funktionsbezeichnung (z.B. Leiter Abt. 3) eingetragen werden. Der automatische Zugriff bzw. die E-Mail-Benachrichtigungen funktionieren nur bei Auswahl eines Mitarbeiters aus der Liste!" class="fa fa-question-circle-o fa-lg"></i></h6>
         <div class="form-group">
-          <label>Name</label><br>
+          <label>Name</label><br />
           <input data-tool="typeahead" data-action="searchmitarbeiter" data-minlength="0" data-dynamic="true" data-cache="false" data-hiddenfield="allgemein_fachlich_kennung" type="text" class="form-control" name="allgemein_fachlich_name" placeholder="Geben Sie eine Kennung oder einen Namen (min. 4 Zeichen) ein...">
           <input type="hidden" name="allgemein_fachlich_kennung">
         </div>
       </div>
       <div class="col-sm-5">
-        <h6 class="info-text">Ansprechpartner Fachapplikation <i data-toggle="tooltip" title="Ansprechpartner für technische Fragen zur verwendeten Fachapplikation <br /><br /> Es kann ein Mitarbeiter aus der Liste gewählt oder eine Funktionsbezeichnung (z.B. Leiter Abt. 3) eingetragen werden. Der automatische Zugriff bzw. die E-Mail-Benachrichtigungen funktionieren nur bei Auswahl eines Mitarbeiters aus der Liste!" class="fa fa-question-circle-o fa-lg"></i></h6>
+        <h6 class="info-text">2. Ansprechpartner <i data-toggle="tooltip" title="Ansprechpartner für technische Fragen zur Verarbeitungstätigkeit <br /><br /> Es kann ein Mitarbeiter aus der Liste gewählt oder eine Funktionsbezeichnung (z.B. Leiter Abt. 3) eingetragen werden. Der automatische Zugriff bzw. die E-Mail-Benachrichtigungen funktionieren nur bei Auswahl eines Mitarbeiters aus der Liste!" class="fa fa-question-circle-o fa-lg"></i></h6>
         <div class="form-group">
-          <label>Name</label><br>
+          <label>Name</label><br />
           <input data-tool="typeahead" data-action="searchmitarbeiter" data-minlength="0" data-dynamic="true" data-cache="false" data-hiddenfield="allgemein_technisch_kennung" type="text" class="form-control" name="allgemein_technisch_name" placeholder="Geben Sie eine Kennung oder einen Namen (min. 4 Zeichen) ein...">
           <input type="hidden" name="allgemein_technisch_kennung">
         </div>
@@ -142,33 +142,33 @@
     </div>
     <div class="col-sm-5 col-sm-offset-1 hidden">
       <div class="form-group">
-        <label>Ansprechpartner</label><br>
+        <label>Ansprechpartner</label><br />
         <input type="text" class="form-control" name="allgemein_verantwortlich_name" placeholder="">
       </div>
       <div class="form-group">
-        <label>Telefon</label><br>
+        <label>Telefon</label><br />
         <input type="text" class="form-control" name="allgemein_verantwortlich_telefon" placeholder="">
       </div>
       <div class="form-group">
-        <label>E-Mail</label><br>
+        <label>E-Mail</label><br />
         <input type="email" class="form-control" name="allgemein_verantwortlich_email" placeholder="">
       </div>
     </div>
     <div class="col-sm-5 hidden">
       <div class="form-group">
-        <label>Institution</label><br>
+        <label>Institution</label><br />
         <input type="text" class="form-control" name="allgemein_verantwortlich_institution" placeholder="">
       </div>
       <div class="form-group">
-        <label>Straße</label><br>
+        <label>Straße</label><br />
         <input type="text" class="form-control" name="allgemein_verantwortlich_strasse" placeholder="">
       </div>
       <div class="form-group">
-        <label>PLZ, Ort</label><br>
+        <label>PLZ, Ort</label><br />
         <input type="text" class="form-control" name="allgemein_verantwortlich_ort" placeholder="">
       </div>
       <div class="form-group">
-        <label>Land</label><br>
+        <label>Land</label><br />
         <input type="text" class="form-control" name="allgemein_verantwortlich_land" placeholder="">
       </div>
     </div>
@@ -414,18 +414,18 @@
   <div class="tab-pane" id="massnahmen">
     <div class="row">
       <div class="col-sm-offset-1 col-sm-10">
-        <h5 class="info-text text-ul">Ergebnis der Risikoanalyse <i data-toggle="tooltip" data-html="true" title="Als <em>Risikoanalyse</em> wird der komplette Prozess bezeichnet, um Risiken zu beurteilen (identifizieren, einschätzen und bewerten) sowie zu behandeln. Risikoanalyse bezeichnet nach den einschlägigen ISO-Normen ISO 31000 und ISO 27005 nur einen Schritt im Rahmen der Risikobeurteilung, die aus den folgenden Schritten besteht:<ul><li>Identifikation von Risiken (Risk Identification)</li><li>Analyse von Risiken (Risk Analysis)</li><li>Evaluation oder Bewertung von Risiken (Risk Evaluation)</li></ul> Die Durchführung einer Risikoanalyse gehört nicht zum Umfang dieses Tools und muss extern erfolgen, vgl. ENISA Guidelines for SMEs on the security of personal data processing, ENISA Handbook on Security of Personal Data Processing oder BSI-Standard 200-3: Risikomanagement, ISO/IEC 27005:2018 Information security risk management." class="fa fa-question-circle-o fa-lg"></i></h5>
+        <h5 class="info-text text-ul">Ergebnis der Schutzbedarfsfeststellung <i data-toggle="tooltip" data-html="true" title="Ziel der <em>Schutzbedarfsfeststellung</em> ist es, für die <strong>Verarbeitungstätigkeit</strong> zu entscheiden, welchen Schutzbedarf sie bezüglich der Gewährleistungsziele des Datenschutzes (Vertraulichkeit, Integrität, Verfügbarkeit, sowie Datenminmierung, Nichtverkettung, Transparenz und Intervenierbarkeit) besitzt. Dieser Schutzbedarf orientiert sich an den möglichen Schäden, die mit einer Beeinträchtigung des informationellen Selbstbestimmungsrechts verbunden sind." class="fa fa-question-circle-o fa-lg"></i></h5>
       </div>
-      <div class="col-sm-12 text-center">
+      <div class="col-sm-offset-1 col-sm-10 text-center">
         <div class="btn-group">
           <label class="btn btn-success">
-            <input type="radio" name="massnahmen_risiko" value="1" /> Niedrig
+            <input type="radio" name="massnahmen_risiko" value="1" /> Normal
           </label>
           <label class="btn btn-warning">
-            <input type="radio" name="massnahmen_risiko" value="2" checked /> Standard
+            <input type="radio" name="massnahmen_risiko" value="2" checked /> Hoch
           </label>
           <label class="btn btn-danger">
-            <input type="radio" name="massnahmen_risiko" value="3" /> Hoch
+            <input type="radio" name="massnahmen_risiko" value="3" /> Sehr hoch
           </label>
         </div>
         <p class="mt" id="riskText"></p>
@@ -483,7 +483,7 @@ Art. 25 DSGVO Datenschutz durch Technikgestaltung und durch datenschutzfreundlic
                   <span>Unbekannt <i data-toggle="tooltip" class="fa fa-question" title="Unbekannt"></i></span>
                 </div>
                 <div class="form-group">
-                  <label>Betreiber:</label><br>
+                  <label>Betreiber:</label><br />
                   <input type="text" class="form-control" name="abschluss_abhaengigkeit_betreiber[]" readonly />
                 </div>
               </td>
@@ -525,7 +525,7 @@ Art. 25 DSGVO Datenschutz durch Technikgestaltung und durch datenschutzfreundlic
                   <span>Unbekannt <i data-toggle="tooltip" class="fa fa-question" title="Unbekannt"></i></span>
                 </div>
                 <div class="form-group">
-                  <label>Betreiber:</label><br>
+                  <label>Betreiber:</label><br />
                   <input type="text" class="form-control" name="verarbeitung_abhaengigkeit_betreiber[]" readonly />
                 </div>
               </td>
@@ -734,7 +734,7 @@ Art. 35 DSGVO" class="fa fa-question-circle-o fa-lg"></i></h6>
 <!--  Bootstrap Select -->
 <script src="assets/js/bootstrap-select.min.js" type="text/javascript"></script>
 
-<!-- DataTables -->
+<!--  DataTables -->
 <script src="assets/js/datatables.min.js" type="text/javascript"></script>
 
 <!--  Custom WWU JS Files  -->

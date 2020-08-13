@@ -57,10 +57,10 @@ var mode = ['wizit', 'wizproc', 'wizapp', 'wizmeasures'].includes(page) ? page :
  * @type {Object}
  */
 let modeMapping = {
-  1: ['Verarbeitungstätigkeit', 'Verarbeitungstätigkeiten'],
-  2: ['IT-Verfahren', 'IT-Verfahren'],
-  3: ['Fachapplikation', 'Fachapplikationen'],
-  4: ['Übergreifende Massnahme', 'Übergreifende Massnahmen']
+  1: ['Verarbeitungstätigkeit', 'Verarbeitungstätigkeiten', 'Die', 'eine', 'einer'],
+  2: ['IT-Verfahren', 'IT-Verfahren', 'Das', 'ein', 'einem'],
+  3: ['Fachapplikation', 'Fachapplikationen', 'Die', 'eine', 'einer'],
+  4: ['übergreifende Massnahme', 'übergreifende Massnahmen', 'Die', 'eine', 'einer']
 };
 
 /**
@@ -572,8 +572,8 @@ function loadEmpty() {
   document.title = document.title.split(' - ').slice(-1)[0];
   let emptyTitle = 'Dokumentation einer Verarbeitungstätigkeit';
   if(mode === 'wizapp')       emptyTitle = 'Dokumentation einer Fachapplikation';
-  if(mode === 'wizit')        emptyTitle = ' Dokumentation eines IT-Verfahrens';
-  if(mode === 'wizmeasures')  emptyTitle = ' Dokumentation von übergreifenden Massnahmen';
+  if(mode === 'wizit')        emptyTitle = 'Dokumentation eines IT-Verfahrens';
+  if(mode === 'wizmeasures')  emptyTitle = 'Dokumentation von übergreifenden Massnahmen';
   let statusSymbol = status in statusSymbolMapping ? ' <i data-toggle="tooltip" class="fa ' + statusSymbolMapping[status] + '" title="' + statusMapping[status]  + '"></i>' : '';
   $('#title').text(emptyTitle).append(statusSymbol).find('i').tooltip();
 
@@ -917,7 +917,7 @@ function loadFromServer(id) {
 
       document.title = htmlDecode(data['data'][0]['Bezeichnung']) + ' - ' + document.title.split(' - ').slice(-1)[0];
       let statusSymbol = status in statusSymbolMapping ? ' <i data-toggle="tooltip" class="fa ' + statusSymbolMapping[status] + '" title="' + statusMapping[status]  + '"></i>' : '';
-      $('#title').text('Dokumentation von ' + htmlDecode(data['data'][0]['Bezeichnung'])).append(statusSymbol).find('i').tooltip();
+      $('#title').text(' Dokumentation von ' + htmlDecode(data['data'][0]['Bezeichnung'])).append(statusSymbol).find('i').tooltip();
       changedValues = false;
       changedFields = [];
 
@@ -991,7 +991,7 @@ function copyFromServer(id) {
  * @returns {String} HTML-Code
  */
 function genHTMLforPDF(draft = false) {
-  console.time('HTML-Code-Generierung für PDF');
+  console.time('HTML-Code-Generierung für PDF-Datei');
 
   /* Alle leeren Tabellenzeilen entfernen */
   endlessTables.forEach(function(table) {
@@ -1003,9 +1003,9 @@ function genHTMLforPDF(draft = false) {
   /* Überschrift */
   toSend.append('<h2 class="text-center">Dokumentation ' + ( mode === 'wizproc' ? 'der Verarbeitungstätigkeit' : ( mode === 'wizapp' ? 'der Fachapplikation' : ( mode === 'wizmeasures' ? 'der übergreifenden Massnahmen' : 'des IT-Verfahrens' ) ) ) + '</h2>');
   toSend.append('<h3 class="text-center">' + htmlEncode($('[name="allgemein_bezeichnung"]').val()) + '</h3>');
-  toSend.append('<h5 class="pull-left" style="color: darkgray; text-align: left;">Letzte Aktualisierung: ' + $('#saveTime').text() + '</h5>');
-  toSend.append('<h5 class="pull-left" style="color: darkgray; text-align: left;">Letzter Bearbeiter: $lasteditor$</h5>');
-  toSend.append('<h5 class="pull-left" style="color: darkgray; text-align: left;">Nr.: ' + loadId + '</h5>');
+
+  /* Nr. und Änderungsinfo */
+  toSend.append('<table class="table"><tbody><tr><td class="text-left">Nr.: <span style="background-color: lightyellow">' + loadId + '</span></td><td class="text-center">Letzter Bearbeiter: <span style="background-color: lightyellow">$lasteditor$</span></td><td class="text-right">Letzte Aktualisierung: <span style="background-color: lightyellow">' + $('#saveTime').text() + '</span></td></tr></tbody></table>');
 
   /* Daten aus Wizard einsammeln */
   $('#content').children('.tab-content').children('.tab-pane').each(function(idx) {
@@ -1064,7 +1064,7 @@ function genHTMLforPDF(draft = false) {
   /* Link hinzufügen */
   let baseURL = window.location.href.split('?')[0].replace(/x?sso/i, 'www');
   let link = baseURL + '?id=' + loadId;
-  toSend.append('<div class="text-center"><h5 class="info-text text-ul">Dokumentation online einsehen</h5><p><a href="$docurl$">$docurl$</a></p></div>');
+  toSend.append('<div class="text-center"><p class="info-text text-ul">Dokumentation online einsehen</p><p><a href="$docurl$">$docurl$</a></p></div>');
 
   /* Links in Abhängigkeiten anpassen */
   toSend.find('table#abschluss_vonabhaengig tr, table#abschluss_abhaengigkeit tr, table#itverfahren_abhaengigkeit tr, table#verarbeitung_abhaengigkeit tr, table#massnahmen_abhaengigkeit tr').each(function(idx) {
@@ -1105,7 +1105,7 @@ function genHTMLforPDF(draft = false) {
     $(this).val(htmlEncode($(this).val()));
   });
 
-  /* Eingabeelemente durch grau hinterlegten Text ersetzen */
+  /* Eingabeelemente durch gelb hinterlegten Text ersetzen */
   toSend.find('input[type!=checkbox][type!=hidden][type!=radio], select').replaceWith(function() { if($(this).parents('td').length>0) { return '<p>' + $(this).val() + '</p>'; } else { return '<p style="background-color: lightyellow">' + $(this).val() + '</p>'; }});
   toSend.find('textarea').replaceWith(function() { if($(this).parents('td').length>0) { return '<p>' + $(this).val().replace(/(?:\r\n|\r|\n)/g, '<br />') + '</p>'; } else { return '<p style="background-color: lightyellow">' + $(this).val().replace(/(?:\r\n|\r|\n)/g, '<br />') + '</p>'; }});
 
@@ -1159,8 +1159,7 @@ function genHTMLforPDF(draft = false) {
 
   /* Ergebnis-HTML für mpdf holen */
   var htmlCode = toSend[0].outerHTML;
-
-  console.timeEnd('HTML-Code-Generierung für PDF');
+  console.timeEnd('HTML-Code-Generierung für PDF-Datei');
   return htmlCode;
 }
 
@@ -1802,14 +1801,14 @@ function generateTOMList() {
  */
 function filterTOMList(risklevel) {
   let riskTexts = {
-    '1': 'Der Schutzbedarf ' + (modeNum === 2 ? 'des ' + modeName[0] + 's' : 'der ' + modeName[0]) + ' ist niedrig. Es sind die Basis-Anforderungen umzusetzen.',
-    '2': 'Der Schutzbedarf ' + (modeNum === 2 ? 'des ' + modeName[0] + 's' : 'der ' + modeName[0]) + ' ist normal. Es sind vorrangig die Basis-Anforderungen umzusetzen. Darüber hinaus sollten die Standard-Anforderungen umgesetzt werden.',
-    '3': 'Der Schutzbedarf ' + (modeNum === 2 ? 'des ' + modeName[0] + 's' : 'der ' + modeName[0]) + ' ist hoch. Es sind vorrangig die Basis-Anforderungen umzusetzen. Darüber hinaus sollten die Standard-Anforderungen sowie die Anforderungen bei erhöhtem Schutzbedarf umgesetzt werden.'
+    '1': 'Der Schutzbedarf ' + (modeNum === 2 ? 'des ' + modeName[0] + 's' : 'der ' + modeName[0]) + ' ist normal. Es sind die <em>Basis</em>-Anforderungen umzusetzen.',
+    '2': 'Der Schutzbedarf ' + (modeNum === 2 ? 'des ' + modeName[0] + 's' : 'der ' + modeName[0]) + ' ist hoch. Es sind vorrangig die <em>Basis</em>-Anforderungen umzusetzen. Darüber hinaus sollten die <em>Standard</em>-Anforderungen umgesetzt werden.',
+    '3': 'Der Schutzbedarf ' + (modeNum === 2 ? 'des ' + modeName[0] + 's' : 'der ' + modeName[0]) + ' ist sehr hoch. Es sind vorrangig die <em>Basis</em>-Anforderungen umzusetzen. Darüber hinaus sollten die <em>Standard</em>-Anforderungen sowie die Anforderungen bei <em>erhöhtem</em> Schutzbedarf umgesetzt werden.'
   };
   let tomRows = $('#tom_accordion').find('tbody tr');
 
   // Risikotext anzeigen
-  $('#riskText').text(riskTexts[risklevel]);
+  $('#riskText').html(riskTexts[risklevel]);
 
   // TOMs ausblenden
   tomRows.each(function() {
@@ -1865,7 +1864,7 @@ function toggleTOMList(evt) {
         }
 
         // Tabelle vorbereiten und einfügen
-        let anforderungDesc = 'Als <em>Sicherheitsanforderung</em> werden Anforderungen für den organisatorischen, personellen, infrastrukturellen und technischen Bereich bezeichnet, deren Erfüllung zur Erhöhung der Informationssicherheit notwendig ist bzw. dazu beiträgt. Eine Sicherheitsanforderung beschreibt also, was getan werden muss, um ein bestimmtes Niveau bezüglich der Informationssicherheit zu erreichen. Wie die Anforderungen im konkreten Fall erfüllt werden, muss in der entsprechenden Sicherheitsmaßnahme beschrieben werden. (<em>Im englischen Sprachraum wird für Sicherheitsanforderungen häufig der Begriff „control“ verwendet.</em>)<br>Der IT-Grundschutz unterscheidet zwischen Basis-Anforderungen, Standard-Anforderungen und Anforderungen bei erhöhtem Schutzbedarf. <em>Basis-Anforderungen</em> (grün) sind fundamental und stets umzusetzen, sofern nicht gravierende Gründe dagegen sprechen. <em>Standard-Anforderungen</em> (gelb) sind für den normalen Schutzbedarf grundsätzlich umzusetzen, sofern sie nicht durch mindestens gleichwertige Alternativen oder die bewusste Akzeptanz des Restrisikos ersetzt werden. <em>Anforderungen bei erhöhtem Schutzbedarf</em> (rot) sind exemplarische Vorschläge, was bei entsprechendem Schutzbedarf zur Absicherung sinnvoll umzusetzen ist.';
+        let anforderungDesc = 'Als <em>Sicherheitsanforderung</em> werden Anforderungen für den organisatorischen, personellen, infrastrukturellen und technischen Bereich bezeichnet, deren Erfüllung zur Erhöhung der Informationssicherheit notwendig ist bzw. dazu beiträgt. Eine Sicherheitsanforderung beschreibt also, was getan werden muss, um ein bestimmtes Niveau bezüglich der Informationssicherheit zu erreichen. Wie die Anforderungen im konkreten Fall erfüllt werden, muss in der entsprechenden Sicherheitsmaßnahme beschrieben werden. (<em>Im englischen Sprachraum wird für Sicherheitsanforderungen häufig der Begriff „control“ verwendet.</em>)<br />Der IT-Grundschutz unterscheidet zwischen Basis-Anforderungen, Standard-Anforderungen und Anforderungen bei erhöhtem Schutzbedarf. <em>Basis-Anforderungen</em> (grün) sind fundamental und stets umzusetzen, sofern nicht gravierende Gründe dagegen sprechen. <em>Standard-Anforderungen</em> (gelb) sind für den normalen Schutzbedarf grundsätzlich umzusetzen, sofern sie nicht durch mindestens gleichwertige Alternativen oder die bewusste Akzeptanz des Restrisikos ersetzt werden. <em>Anforderungen bei erhöhtem Schutzbedarf</em> (rot) sind exemplarische Vorschläge, was bei entsprechendem Schutzbedarf zur Absicherung sinnvoll umzusetzen ist.';
         let statusDesc = 'Als Antworten bezüglich des <em>Umsetzungsstatus</em> der einzelnen Anforderungen kommen folgende Aussagen in Betracht:<ul><li><strong>Ja</strong> - Zu der Anforderung wurden geeignete Maßnahmen vollständig, wirksam und angemessen umgesetzt.</li><li><strong>Teilweise</strong> - Die Anforderung wurde nur teilweise umgesetzt.</li><li><strong>Nein</strong> - Die Anforderung wurde noch nicht erfüllt, also geeignete Maßnahmen sind größtenteils noch nicht umgesetzt worden.</li><li><strong>Entbehrlich</strong> - Die Erfüllung der Anforderung ist in der vorgeschlagenen Art nicht notwendig, weil die Anforderung im betrachteten Informationsverbund nicht relevant ist (z. B. weil Dienste nicht aktiviert wurden) oder bereits durch Alternativmaßnahmen erfüllt wurde. Wenn Basisanforderungen nicht erfüllt werden, bleibt grundsätzlich ein erhöhtes Risiko bestehen.</ul>';
         let massnahmeDesc = 'Als <em>Sicherheitsmaßnahme</em> (kurz Maßnahme) werden alle Aktionen bezeichnet, die dazu dienen, um Sicherheitsrisiken zu steuern und um diesen entgegenzuwirken. Dies schließt sowohl organisatorische, als auch personelle, technische oder infrastrukturelle Sicherheitsmaßnahmen ein. Sicherheitsmaßnahmen dienen zur Erfüllung von Sicherheitsanforderungen. Synonym werden auch die Begriffe Sicherheitsvorkehrung oder Schutzmaßnahme benutzt. (<em>Im englischen Sprachraum werden die Begriffe „safeguard“, „security measure“ oder „measure“ verwendet.</em>)';
         let catURL = row['CatURL'] ? '<a href="' + row['CatURL'] + '" target="_blank" rel="noopener noreferrer"><i class="fa fa-external-link" style="cursor: pointer;" data-toggle="tooltip" title="Zum BSI Grundschutz-Katalog"></i></a>' : '';
@@ -1883,18 +1882,23 @@ function toggleTOMList(evt) {
       // Alle TOMs in die passende Tabelle einfügen
       let className = row['Risklevel'] == 1 ? 'success' : row['Risklevel'] == 2 ? 'warning' : 'danger';
       let tomID = row['Identifier'].trim().replace(/ /g, '_');
+
       // Titel einblenden, falls vorhanden (bei ENISA gibt es nur die Beschreibung)
-      let tomContent = row['Title'] ? '<p class="strong">' + row['Title'] + ' </p><div class="tom_desc">' + row['Description'] + '</div>' : row['Description'];
+      let tomContent = row['Title'] ? ('<p class="strong">' + row['Title'] + ' </p><div class="tom_desc">' + row['Description'] + '</div>') : (row['Description']);
       let tableBody = $('#' + targetCategory).find('tbody');
+
       // Identifier als Link falls URL vorhanden
       let tomIdentifier = row['Identifier'];
 
+      // Umsetzung
       let tomDropdown = $('<select data-tool="selectpicker" name="massnahmen_' + tomID + '"></select>')
         .append('<option value="1">Ja</option>')
         .append('<option value="0" selected>Nein</option>')
         .append('<option value="2">Teilweise</option>')
         .append('<option value="4">Entbehrlich</option>');
-      tableBody.append('<tr data-risk="' + row['Risklevel'] + '" class="' + className + '"><td>' + tomIdentifier + '</td><td>' + tomContent + '</td><td>' + tomDropdown[0].outerHTML + '</td><td><textarea rows="5" name="massnahmen_' + tomID + '_kommentar" class="form-control" placeholder="Beschreibung der Sicherheitsmaßnahme, Erläuterung bzw. Begründung"></textarea></td></tr>');
+
+      // Tabellenzeile einfügen
+      tableBody.append('<tr data-risk="' + row['Risklevel'] + '" class="' + className + '"><td>' + tomIdentifier + '<br /><em><span class="hidden printOnly">' + (row['Risklevel'] == 1 ? 'Basis' : row['Risklevel'] == 2 ? 'Standard' : 'Erhöht') + '</span><em></td><td>' + tomContent + '</td><td>' + tomDropdown[0].outerHTML + '</td><td><textarea rows="5" name="massnahmen_' + tomID + '_kommentar" class="form-control" placeholder="Beschreibung der Sicherheitsmaßnahme, Erläuterung bzw. Begründung"></textarea></td></tr>');
 
       if(tomContent.includes('ENTFALLEN')) {
         tableBody.find('tr').last().find('textarea').prop('disabled', true);
@@ -1951,9 +1955,6 @@ function toggleTOMList(evt) {
         $('#' + evtTarget.data('target')).parent('div').detach();
       }
     }
-
-
-
   }
 }
 
@@ -2140,7 +2141,7 @@ Promise.all(promises).then(function() {
 
     modal.find('.modal-title').text('Abhängigkeit anlegen');
     modal.find('.modal-body').html('<div></div>');
-    modal.find('.modal-body > div').append('<p>Hier können Sie eine Abhängigkeit (' + modeMapping[targetType][0] + ') vorläufig anlegen, sodass die Verknüpfung direkt angelegt werden kann. Die Dokumentation kann im späteren Verlauf wie jede andere Dokumentation bearbeitet und ergänzt werden.</p>');
+    modal.find('.modal-body > div').append('<p>Hier können Sie die Abhängigkeit von ' + modeMapping[targetType][4] + ' noch nicht existierenden ' + modeMapping[targetType][0] + ' vorläufig anlegen, damit die Verknüpfung direkt angelegt werden kann. ' + modeMapping[targetType][2] + ' ' + modeMapping[targetType][0] + ' kann später wie jede andere Dokumentation bearbeitet und ergänzt werden.</p>');
     modal.find('.modal-body > div').append('<p class="alert alert-danger hidden">Bitte füllen Sie alle Felder aus, um die Abhängigkeit anlegen zu können!</p>');
     modal.find('.modal-body > div').append('<div class="form-group"><label>Bezeichnung <i data-toggle="tooltip" title="Eindeutiges Kürzel" class="fa fa-question-circle-o fa-lg"></i> <sup><i style="color: #EB5E28;" class="fa fa-asterisk" aria-hidden="true"></i></sup></label><input type="text" class="form-control" name="quick_title" placeholder="Bsp.: E-Mail Service" required></div>');
     modal.find('.modal-body > div').append('<div class="form-group"><label>Beschreibung <i data-toggle="tooltip" title="Ausführliche Beschreibung des Verfahrens" class="fa fa-question-circle-o fa-lg"></i> <sup><i style="color: #EB5E28;" class="fa fa-asterisk" aria-hidden="true"></i></sup></label><br><textarea class="form-control" name="quick_desc" placeholder="Bsp.: Stellt Dienste bereit zum Empfang und Versand von E-Mails für Angehörige der WWU" rows="5"></textarea></div>');
@@ -2299,7 +2300,7 @@ Promise.all(promises).then(function() {
   $('input[name="allgemein_bezeichnung"]').on('input', (e) => {
     document.title = e.target.value + ' - ' + document.title.split(' - ').slice(-1)[0];
     let statusSymbol = status in statusSymbolMapping ? ' <i data-toggle="tooltip" class="fa ' + statusSymbolMapping[status] + '" title="' + statusMapping[status]  + '"></i>' : '';
-    $('#title').text('Dokumentation von ' + e.target.value).append(statusSymbol).find('i').tooltip();
+    $('#title').text(' Dokumentation von ' + e.target.value).append(statusSymbol).find('i').tooltip();
   });
 
   // Warnung vor dem Schließen der Webseite, falls ungespeicherte Änderungen vorhanden sind
