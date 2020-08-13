@@ -52,6 +52,18 @@ var canEdit = true;
 var mode = ['wizit', 'wizproc', 'wizapp', 'wizmeasures'].includes(page) ? page : 'wizproc';
 
 /**
+ * Mapping des Typs
+ * @global
+ * @type {Object}
+ */
+let modeMapping = {
+  1: ['Verarbeitungstätigkeit', 'Verarbeitungstätigkeiten'],
+  2: ['IT-Verfahren', 'IT-Verfahren'],
+  3: ['Fachapplikation', 'Fachapplikationen'],
+  4: ['Übergreifende Massnahme', 'Übergreifende Massnahmen']
+};
+
+/**
  * Interne Nummerierung für die Dokumentations-Modi
  * @global
  * @type {Number}
@@ -67,10 +79,7 @@ if(mode === 'wizmeasures')   modeNum = 4;
  * @global
  * @type {Array}
  */
-var modeName = ['Verarbeitungstätigkeit', 'Verarbeitungstätigkeiten'];
-if(mode === 'wizapp')      modeName = ['Fachapplikation', 'Fachapplikationen'];
-if(mode === 'wizit')       modeName = ['IT-Verfahren', 'IT-Verfahren'];
-if(mode === 'wizmeasures') modeName = ['Übergreifende Massnahme', 'Übergreifende Massnahmen'];
+var modeName = modeMapping[modeNum];
 
 /**
  * Gibt an, ob Eingaben geändert wurden seit dem letzten Laden/Speichern
@@ -2087,6 +2096,9 @@ Promise.all(promises).then(function() {
         let statusSymbol = data['data'][0]['Status'] in statusSymbolMapping ? '<span>' + statusText + ' <i data-toggle="tooltip" class="fa ' + statusSymbolMapping[data['data'][0]['Status']] + '" title="' + statusText + '"></i></span>' : '<span>Unbekannt <i data-toggle="tooltip" class="fa fa-question" title="Unbekannt"></i></span>';
         idField.closest('td').find('.status span').replaceWith(statusSymbol);
         idField.closest('td').find('.status i').tooltip();
+
+        // Hide quick add button
+        idField.closest('tr').find('.quick_add_dependency').addClass('hidden');
       }).fail((jqXHR, error, errorThrown) => {
         console.error('Fehler beim Abruf von Abhängigkeiten! HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
         descText.val('<Fehler beim Abrufen>');
@@ -2099,10 +2111,15 @@ Promise.all(promises).then(function() {
         // Refresh status
         idField.closest('td').find('.status span').replaceWith('<span>Unbekannt <i data-toggle="tooltip" class="fa fa-question" title="Unbekannt"></i></span>');
         idField.closest('td').find('.status i').tooltip();
+
+        // Show quick add button
+        idField.closest('tr').find('.quick_add_dependency').removeClass('hidden');
       });
     }
     else {
       descText.val('');
+      idField.closest('td').find('input[name="abschluss_abhaengigkeit_betreiber[]"], input[name="itverfahren_abhaengigkeit_betreiber[]"], input[name="verarbeitung_abhaengigkeit_betreiber[]"], input[name="massnahmen_abhaengigkeit_betreiber[]"]').val('');
+
       // Disable Link
       idField.closest('tr').find('td:last').find('a').removeAttr('href');
       idField.closest('tr').find('td:last').find('a').attr('disabled', 'disabled');
@@ -2110,7 +2127,71 @@ Promise.all(promises).then(function() {
       // Refresh status
       idField.closest('td').find('.status span').replaceWith('<span>Unbekannt <i data-toggle="tooltip" class="fa fa-question" title="Unbekannt"></i></span>');
       idField.closest('td').find('.status i').tooltip();
+
+      // Show quick add button
+      idField.closest('tr').find('.quick_add_dependency').removeClass('hidden');
     }
+  });
+
+  $('#abschluss_abhaengigkeit, #itverfahren_abhaengigkeit, #verarbeitung_abhaengigkeit, #massnahmen_abhaengigkeit').on('click', 'button.quick_add_dependency', function() {
+    let targetIDField = $(this).closest('tr').find('input[type="hidden"]');
+    let targetType    = $(this).data('type');
+    let targetTitle   = $(this).closest('tr').find('input[type="text"]').first().val();
+
+    modal.find('.modal-title').text('Abhängigkeit anlegen');
+    modal.find('.modal-body').html('<div></div>');
+    modal.find('.modal-body > div').append('<p>Hier können Sie eine Abhängigkeit (' + modeMapping[targetType][0] + ') vorläufig anlegen, sodass die Verknüpfung direkt angelegt werden kann. Die Dokumentation kann im späteren Verlauf wie jede andere Dokumentation bearbeitet und ergänzt werden.</p>');
+    modal.find('.modal-body > div').append('<p class="alert alert-danger hidden">Bitte füllen Sie alle Felder aus, um die Abhängigkeit anlegen zu können!</p>');
+    modal.find('.modal-body > div').append('<div class="form-group"><label>Bezeichnung <i data-toggle="tooltip" title="Eindeutiges Kürzel" class="fa fa-question-circle-o fa-lg"></i> <sup><i style="color: #EB5E28;" class="fa fa-asterisk" aria-hidden="true"></i></sup></label><input type="text" class="form-control" name="quick_title" placeholder="Bsp.: E-Mail Service" required></div>');
+    modal.find('.modal-body > div').append('<div class="form-group"><label>Beschreibung <i data-toggle="tooltip" title="Ausführliche Beschreibung des Verfahrens" class="fa fa-question-circle-o fa-lg"></i> <sup><i style="color: #EB5E28;" class="fa fa-asterisk" aria-hidden="true"></i></sup></label><br><textarea class="form-control" name="quick_desc" placeholder="Bsp.: Stellt Dienste bereit zum Empfang und Versand von E-Mails für Angehörige der WWU" rows="5"></textarea></div>');
+    modal.find('.modal-body > div').append('<div class="form-group"><label>Verantwortliche Organisationseinheit <sup><i style="color: #EB5E28;" class="fa fa-asterisk" aria-hidden="true"></i></sup></label><br><input data-tool="typeahead" data-action="searchabteilung" data-minlength="0" type="text" class="form-control" name="quick_department" placeholder="Bsp.: Zentrum für Informationsverarbeitung" required></div>');
+
+    modal.find('input[name="quick_title"]').val(targetTitle);
+
+    modal.find('.modal-body').append('<p class="text-center"><button type="button" class="btn btn-success" id="quickSave">Anlegen & Speichern</button><button type="button" class="ml btn btn-danger" data-dismiss="modal" aria-label="Close">Abbrechen</button></p>');
+
+    // Tooltips, Typeahead und Buttons
+    modal.find('.modal-body i').tooltip();
+    modal.find('input[data-tool="typeahead"]').each(function(key, value) {
+      initTypeahead(value);
+    });
+    modal.find('#quickSave').click(function() {
+      // Werte holen
+      let newDoc = {
+        'allgemein_typ': targetType,
+        'allgemein_bezeichnung': modal.find('input[name="quick_title"]').val(),
+        'allgemein_beschreibung': modal.find('textarea[name="quick_desc"]').val(),
+        'allgemein_abteilung': modal.find('input[name="quick_department"]').val(),
+      };
+
+      debugLog('Quick Create', newDoc);
+
+      if(!newDoc['allgemein_typ'] || !newDoc['allgemein_bezeichnung'] || !newDoc['allgemein_beschreibung'] || !newDoc['allgemein_abteilung']) {
+        modal.find('.alert').removeClass('hidden');
+        return;
+      }
+
+      // Dokumentation anlegen
+      setOverlay(true);
+      $(this).prop('disabled', true);
+
+      $.post(backendPath, JSON.stringify({'action':'create', 'debug': debug, 'data': newDoc})).done(function(data) {
+        if(data['success']) {
+          targetIDField.val(parseInt(data['data']['ID']));
+          targetIDField.trigger('change');
+          modal.modal('hide');
+        }
+        else {
+          showError('Anlegen einer Abhängigkeit', data['error']);
+        }
+        setOverlay(false);
+      }).fail((jqXHR, error, errorThrown) => {
+        showError('Anlegen einer Abhängigkeit', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+        setOverlay(false);
+      });
+    });
+
+    modal.modal();
   });
 
   // Zeigt den aktuellen Aufstellungsort der Endgeräte an
