@@ -1414,6 +1414,8 @@ EOH;
         $output['count'] = $filesize;
         $output['data']['status'] = intval($details[0]['Status']);
         $output['data']['lastupdate'] = $details[0]['Aktualisierung'];
+        $output['data']['title'] = $details[0]['Bezeichnung'];
+        $output['data']['type'] = intval($details[0]['Typ']);
         $output['data']['pdf'] = base64_encode($pdfContent);
         $output['success'] = TRUE;
       }
@@ -1713,6 +1715,8 @@ EOH;
         $pdfContent = file_get_contents($filename);
         $output['count'] = $filesize;
         $output['data']['pdf'] = base64_encode($pdfContent);
+        $output['data']['title'] = $mainDoc['Bezeichnung'];
+        $output['data']['type'] = $mainDoc['Typ'];
         $output['success'] = TRUE;
       }
       else {
