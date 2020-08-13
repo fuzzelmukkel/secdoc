@@ -1627,6 +1627,11 @@ function addTableRow(table) {
   // Tooltips initialisieren
   clone.find('i[data-toggle="tooltip"]').tooltip();
 
+  // DSBOnly Elemente sichtbar machen
+  if(userIsDSB) {
+    clone.find('.dsbOnly').removeClass('dsbOnly');
+  }
+
   // Fall 1: Die aktuelle Tabelle wird nicht automatisch durchnummeriert
   if(clone.find('input[name="' + table + '_nummer[]"]').length !== 1) {
     // Delete Funktion an den neuen Button binden
@@ -2144,8 +2149,8 @@ Promise.all(promises).then(function() {
     modal.find('.modal-body > div').append('<p>Hier können Sie die Abhängigkeit von ' + modeMapping[targetType][4] + ' noch nicht existierenden ' + modeMapping[targetType][0] + ' vorläufig anlegen, damit die Verknüpfung direkt angelegt werden kann. ' + modeMapping[targetType][2] + ' ' + modeMapping[targetType][0] + ' kann später wie jede andere Dokumentation bearbeitet und ergänzt werden.</p>');
     modal.find('.modal-body > div').append('<p class="alert alert-danger hidden">Bitte füllen Sie alle Felder aus, um die Abhängigkeit anlegen zu können!</p>');
     modal.find('.modal-body > div').append('<div class="form-group"><label>Bezeichnung <i data-toggle="tooltip" title="Eindeutiges Kürzel" class="fa fa-question-circle-o fa-lg"></i> <sup><i style="color: #EB5E28;" class="fa fa-asterisk" aria-hidden="true"></i></sup></label><input type="text" class="form-control" name="quick_title" placeholder="Bsp.: E-Mail Service" required></div>');
-    modal.find('.modal-body > div').append('<div class="form-group"><label>Beschreibung <i data-toggle="tooltip" title="Ausführliche Beschreibung des Verfahrens" class="fa fa-question-circle-o fa-lg"></i> <sup><i style="color: #EB5E28;" class="fa fa-asterisk" aria-hidden="true"></i></sup></label><br><textarea class="form-control" name="quick_desc" placeholder="Bsp.: Stellt Dienste bereit zum Empfang und Versand von E-Mails für Angehörige der WWU" rows="5"></textarea></div>');
     modal.find('.modal-body > div').append('<div class="form-group"><label>Verantwortliche Organisationseinheit <sup><i style="color: #EB5E28;" class="fa fa-asterisk" aria-hidden="true"></i></sup></label><br><input data-tool="typeahead" data-action="searchabteilung" data-minlength="0" type="text" class="form-control" name="quick_department" placeholder="Bsp.: Zentrum für Informationsverarbeitung" required></div>');
+    modal.find('.modal-body > div').append('<div class="form-group"><label>1. Ansprechpartner <i data-toggle="tooltip" title="Ansprechpartner für inhaltliche Fragen zur Verarbeitungstätigkeit <br /><br /> Es kann ein Mitarbeiter aus der Liste gewählt oder eine Funktionsbezeichnung (z.B. Leiter Abt. 3) eingetragen werden. Der automatische Zugriff bzw. die E-Mail-Benachrichtigungen funktionieren nur bei Auswahl eines Mitarbeiters aus der Liste!" class="fa fa-question-circle-o fa-lg"></i> <sup><i style="color: #EB5E28;" class="fa fa-asterisk" aria-hidden="true"></i></sup></label><br><input data-tool="typeahead" data-action="searchmitarbeiter" data-minlength="0" data-dynamic="true" data-cache="false" data-hiddenfield="quick_contact_id" type="text" class="form-control" name="quick_contact_name" placeholder="Geben Sie eine Kennung oder einen Namen (min. 4 Zeichen) ein..." required><input type="hidden" name="quick_contact_id"></div>');
 
     modal.find('input[name="quick_title"]').val(targetTitle);
 
@@ -2161,13 +2166,15 @@ Promise.all(promises).then(function() {
       let newDoc = {
         'allgemein_typ': targetType,
         'allgemein_bezeichnung': modal.find('input[name="quick_title"]').val(),
-        'allgemein_beschreibung': modal.find('textarea[name="quick_desc"]').val(),
+        'allgemein_beschreibung': '',
         'allgemein_abteilung': modal.find('input[name="quick_department"]').val(),
+        'allgemein_fachlich_name': modal.find('input[name="quick_contact_name"]').val(),
+        'allgemein_fachlich_kennung': modal.find('input[name="quick_contact_id"]').val(),
       };
 
       debugLog('Quick Create', newDoc);
 
-      if(!newDoc['allgemein_typ'] || !newDoc['allgemein_bezeichnung'] || !newDoc['allgemein_beschreibung'] || !newDoc['allgemein_abteilung']) {
+      if(!newDoc['allgemein_typ'] || !newDoc['allgemein_bezeichnung'] || !newDoc['allgemein_fachlich_name'] || !newDoc['allgemein_abteilung']) {
         modal.find('.alert').removeClass('hidden');
         return;
       }

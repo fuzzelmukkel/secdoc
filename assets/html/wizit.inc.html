@@ -116,7 +116,7 @@
         <h6 class="info-text">1. Ansprechpartner <i data-toggle="tooltip" title="Ansprechpartner für inhaltliche Fragen zum IT-Verfahren <br /><br /> Es kann ein Mitarbeiter aus der Liste gewählt oder eine Funktionsbezeichnung (z.B. Leiter Abt. 3) eingetragen werden. Der automatische Zugriff bzw. die E-Mail-Benachrichtigungen funktionieren nur bei Auswahl eines Mitarbeiters aus der Liste!" class="fa fa-question-circle-o fa-lg"></i></h6>
         <div class="form-group">
           <label>Name</label><br />
-          <input data-tool="typeahead" data-action="searchmitarbeiter" data-minlength="0" data-dynamic="true" data-cache="false" data-hiddenfield="allgemein_fachlich_kennung" type="text" class="form-control" name="allgemein_fachlich_name" placeholder="Geben Sie eine Kennung oder einen Namen (min. 4 Zeichen) ein...">
+          <input data-tool="typeahead" data-action="searchmitarbeiter" data-minlength="0" data-dynamic="true" data-cache="false" data-hiddenfield="allgemein_fachlich_kennung" type="text" class="form-control" name="allgemein_fachlich_name" placeholder="Geben Sie eine Kennung oder einen Namen (min. 4 Zeichen) ein..." required>
           <input type="hidden" name="allgemein_fachlich_kennung">
         </div>
       </div>
@@ -376,7 +376,7 @@ Art. 25 DSGVO Datenschutz durch Technikgestaltung und durch datenschutzfreundlic
               <td class="text-center">
                 <button type="button" class="abschluss_abhaengigkeit_del btn btn-danger" title="Abhängigkeit aus Liste entfernen"><i class="fa fa-minus"></i> Entfernen</button><br />
                 <a class="btn" style="margin-top: 2px;" target="_blank" title="Dokumentation in neuem Fenster öffnen" disabled>Anzeigen</a><br />
-                <button type="button" style="margin-top: 2px;" class="quick_add_dependency btn btn-success" title="Abhängigkeit anlegen" data-type="2"><i class="fa fa-plus"></i> Anlegen</button>
+                <button type="button" style="margin-top: 2px;" class="quick_add_dependency dsbOnly printHide btn btn-success" title="Abhängigkeit anlegen" data-type="2"><i class="fa fa-plus"></i> Anlegen</button>
               </td>
             </tr>
           </tbody>
