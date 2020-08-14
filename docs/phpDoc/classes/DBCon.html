@@ -101,7 +101,7 @@
                         </a>
                         <ul class="dropdown-menu">
                             <li>
-                                <a href="../reports/errors.html">                                    <i class="icon-list-alt"></i>&#160;Errors <span class="label label-info pull-right">11</span>
+                                <a href="../reports/errors.html">                                    <i class="icon-list-alt"></i>&#160;Errors <span class="label label-info pull-right">2</span>
                                 </a>
                             </li>
                             <li>
@@ -126,9 +126,9 @@
 <div id="___" class="container-fluid">    <section class="row-fluid">
         <div class="span2 sidebar">    <div class="accordion" style="margin-bottom: 0">
         <div class="accordion-group">
-            <div class="accordion-heading">                    <a class="accordion-toggle" data-toggle="collapse" data-target="#namespace-100574749"></a>                <a href="../namespaces/default.html" style="margin-left: 30px; padding-left: 0">\</a>
+            <div class="accordion-heading">                    <a class="accordion-toggle" data-toggle="collapse" data-target="#namespace-2057394484"></a>                <a href="../namespaces/default.html" style="margin-left: 30px; padding-left: 0">\</a>
             </div>
-            <div id="namespace-100574749" class="accordion-body collapsein">
+            <div id="namespace-2057394484" class="accordion-body collapsein">
                 <div class="accordion-inner">
                     <ul>                            <li class="class"><a href="../classes/Auth.html">Auth</a></li>                            <li class="class"><a href="../classes/DBCon.html">DBCon</a></li>                            <li class="class"><a href="../classes/demoAuth.html">demoAuth</a></li>                            <li class="class"><a href="../classes/ldapAuth.html">ldapAuth</a></li>                            <li class="class"><a href="../classes/openidAuth.html">openidAuth</a></li>                            <li class="class"><a href="../classes/ssoAuth.html">ssoAuth</a></li>                            <li class="class"><a href="../classes/Utils.html">Utils</a></li>                    </ul>
                 </div>
@@ -666,12 +666,16 @@
             <article class="method">
                 <h3 class="public">listVerfahrenDSB()</h3>
                 <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
-                <pre class="signature" style="margin-right: 54px;">listVerfahrenDSB(string  <span class="argument">$search = &#039;&#039;</span>): array</pre>
+                <pre class="signature" style="margin-right: 54px;">listVerfahrenDSB(string  <span class="argument">$search = &#039;&#039;</span>,integer  <span class="argument">$type = NULL</span>): array</pre>
                 <p><em>Listet alle Verfahren auf für die Datenschutzbeauftragten zur Einsicht.</em></p>                    <h4>Parameters</h4>
                     <table class="table table-condensed table-hover">                            <tr>
                                 <td>string</td>
                                 <td>$search</td>
                                 <td><p>(optional) Filter zur Suche nach bestimmten Verfahren (nutzt Bezeichnung)</p></td>
+                            </tr>                            <tr>
+                                <td>integer</td>
+                                <td>$type</td>
+                                <td><p>(optional) Filtert nach Dokumentationstyp (1 = Verarbeitungstätigkeit, 2 = IT-Verfahren, 3 = Fachapplikation, 4 = übergreifende Maßnahme)</p></td>
                             </tr>                    </table>                    <h4>Throws</h4>
                     <dl>                            <dt>\PDOException</dt>
                             <dd></dd>                            <dt>\Exception</dt>
@@ -1413,7 +1417,7 @@
                 <section class="span10 offset1">
                     <hr />
                     Documentation is powered by <a href="http://www.phpdoc.org/">phpDocumentor </a> and authored
-                    onJuly 31st, 2020 at 07:18.
+                    onAugust 14th, 2020 at 07:49.
                 </section>
             </section>
         </section>

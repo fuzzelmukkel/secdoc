@@ -31,6 +31,8 @@ class ldapAuth extends Auth {
       'cookie_secure' => $auth_ldap_config['cookie_secure'],
       'cookie_httponly' => TRUE,
       'cookie_samesite' => 'Strict',
+      'cookie_domain' => (!empty($auth_ldap_config['cookie_domain']) ? $auth_ldap_config['cookie_domain'] : ''),
+      'cookie_path' => (!empty($auth_ldap_config['cookie_path']) ? $auth_ldap_config['cookie_path'] : ''),
       'use_strict_mode' => TRUE
     ]);
 
@@ -79,12 +81,12 @@ class ldapAuth extends Auth {
       return FALSE;
     }
 
-    # Try to login with supplied data
+    # Try to login with supplied credentials
     $ldap_success = @ldap_bind($ldap_handle, $user . $auth_ldap_config['domain'], $pass);
 
     if(!$ldap_success) {
-      trigger_error('[SecDoc] ldapAuth.class.php -> ldap_bind() Fehler: ' . ldap_error($ldap_handle));
-      error_log('[SecDoc] ldapAuth.class.php ->ldap_bind() Fehler: ' . ldap_error($ldap_handle));
+      trigger_error('[SecDoc] ldapAuth.class.php -> ldap_bind() Fehler: ' . ldap_error($ldap_handle) . "(User: $user)");
+      error_log('[SecDoc] ldapAuth.class.php ->ldap_bind() Fehler: ' . ldap_error($ldap_handle) . "(User: $user)");
       return FALSE;
     }
 
@@ -195,20 +197,20 @@ class ldapAuth extends Auth {
    * @return bool TRUE falls der Nutzer zur Verwendung berechtigt ist, sonst FALSE
    */
   public function checkUsePerm() {
-    global $useGroups;
+    global $userGroups;
 
     # Check if login exists
     if(!$this->checkSession()) return FALSE;
 
-    if(empty($useGroups)) return TRUE;
+    if(empty($userGroups)) return TRUE;
 
-    $userGroups = $this->getUserGroups();
+    $currentGroups = $this->getUserGroups();
 
-    if(empty($userGroups)) return FALSE;
+    if(empty($currentGroups)) return FALSE;
 
     require_once 'Utils.class.php';
 
-    return Utils::checkUserGroups($userGroups, $useGroups);
+    return Utils::checkUserGroups($currentGroups, $userGroups);
   }
 
   /**
@@ -225,13 +227,13 @@ class ldapAuth extends Auth {
 
     if(empty($adminGroups)) return FALSE;
 
-    $userGroups = $this->getUserGroups();
+    $currentGroups = $this->getUserGroups();
 
-    if(empty($userGroups)) return FALSE;
+    if(empty($currentGroups)) return FALSE;
 
     require_once 'Utils.class.php';
 
-    return Utils::checkUserGroups($userGroups, $adminGroups);
+    return Utils::checkUserGroups($currentGroups, $adminGroups);
   }
 
   /**
@@ -248,13 +250,36 @@ class ldapAuth extends Auth {
 
     if(empty($dpoGroups)) return FALSE;
 
-    $userGroups = $this->getUserGroups();
+    $currentGroups = $this->getUserGroups();
 
-    if(empty($userGroups)) return FALSE;
+    if(empty($currentGroups)) return FALSE;
 
     require_once 'Utils.class.php';
 
-    return Utils::checkUserGroups($userGroups, $dpoGroups);
+    return Utils::checkUserGroups($currentGroups, $dpoGroups);
+  }
+
+  /**
+   * Überprüft Bereichsleiter-Berechtigung.
+   *
+   * @global array Nutzergruppen von Bereichsleitern
+   * @return bool TRUE fallse der Nutzer ein Bereichsleiter ist, sonst FALSE
+   */
+  public function checkManagerPerm() {
+    global $managerGroups;
+
+    # Check if login exists
+    if(!$this->checkSession()) return FALSE;
+
+    if(empty($managerGroups)) return FALSE;
+
+    $currentGroups = $this->getUserGroups();
+
+    if(empty($currentGroups)) return FALSE;
+
+    require_once 'Utils.class.php';
+
+    return Utils::checkUserGroups($currentGroups, $managerGroups);
   }
 
   /**

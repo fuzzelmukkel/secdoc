@@ -15,7 +15,7 @@
         </paths>
     </logging>
     <files>
-        <file>*</file>
+        <file>*.php</file>
         <directory>*</directory>
         <ignore>docs/*</ignore>
         <ignore>orga/*</ignore>

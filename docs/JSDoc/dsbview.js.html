@@ -57,7 +57,7 @@ function getCombinedPDF() {
 
  $.post(backendPath, JSON.stringify({'action':'gencombinedpdf', 'debug': debug})).done((data) => {
    if(!data['success']) {
-     showError('Laden der PDF', data['error']);
+     showError('Laden der PDF-Datei', data['error']);
      return;
    }
 
@@ -69,22 +69,23 @@ function getCombinedPDF() {
    }
    let blob = new Blob([pdfBuffer], {type: "application/pdf"});
    let lastUpdate = new Date();  // Safari benötigt das Format YYYY-MM-DDTHH:MM:SS (mit T)
+   let fileTitle = 'SecDoc_VVT_' + lastUpdate.getFullYear() + ('0' + (lastUpdate.getMonth() + 1)).slice(-2) + ('0' + lastUpdate.getDate()).slice(-2) + ('0' + lastUpdate.getHours()).slice(-2) + ('0' + lastUpdate.getMinutes()).slice(-2) + '.pdf';
 
    // PDF-Anzeige starten (Unterscheidung, ob Edge genutzt wird)
    if(window.navigator &amp;&amp; window.navigator.msSaveOrOpenBlob) {
-     window.navigator.msSaveOrOpenBlob(blob, 'VVT_' + '_' + lastUpdate.getFullYear() + ('0' + (lastUpdate.getMonth() + 1)).slice(-2) + ('0' + lastUpdate.getDate()).slice(-2) + ('0' + lastUpdate.getHours()).slice(-2) + ('0' + lastUpdate.getMinutes()).slice(-2) + '.pdf');
+     window.navigator.msSaveOrOpenBlob(blob, fileTitle);
    }
    else {
      let url = window.URL.createObjectURL(blob);
      let download = $('&lt;a>&lt;/a>');
-     download.attr('href', url).attr('download', 'VVT_' + '_' + lastUpdate.getFullYear() + ('0' + (lastUpdate.getMonth() + 1)).slice(-2) + ('0' + lastUpdate.getDate()).slice(-2) + ('0' + lastUpdate.getHours()).slice(-2) + ('0' + lastUpdate.getMinutes()).slice(-2) + '.pdf').addClass('hidden');;
+     download.attr('href', url).attr('download', fileTitle).addClass('hidden');;
      $('body').append(download);
      download[0].click();
      window.URL.revokeObjectURL(url);
      download.remove();
    }
  }).fail((jqXHR, error, errorThrown) => {
-   showError('Laden der PDF', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+   showError('Laden der PDF-Datei', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
  }).always(() => {
    setOverlay(false);
  });
@@ -112,15 +113,19 @@ function getCompletePDF(docId) {
    }
    let blob = new Blob([pdfBuffer], {type: "application/pdf"});
    let lastUpdate = new Date();  // Safari benötigt das Format YYYY-MM-DDTHH:MM:SS (mit T)
+   let typeName = {1: 'Verarbeitungstätigkeit', 2: 'IT-Verfahren', 3: 'Fachapplikation', 4: 'Übergreifende_Massnahme'};
+   let fileTitle = 'SecDoc_' + typeName[data['data']['type']] + '_(komplett)_' + docId + '_' + data['data']['title'].substr(0, 30) + '_' + lastUpdate.getFullYear() + ('0' + (lastUpdate.getMonth() + 1)).slice(-2) + ('0' + lastUpdate.getDate()).slice(-2) + ('0' + lastUpdate.getHours()).slice(-2) + ('0' + lastUpdate.getMinutes()).slice(-2);
+   fileTitle = fileTitle.replace(/[/\\?%*:|"&lt;>\.,;=\s]/g, '_');
+   fileTitle += '.pdf';
 
    // PDF-Anzeige starten (Unterscheidung, ob Edge genutzt wird)
    if(window.navigator &amp;&amp; window.navigator.msSaveOrOpenBlob) {
-     window.navigator.msSaveOrOpenBlob(blob, 'Vollständige_Dokumentation_#' + docId + '_' + lastUpdate.getFullYear() + ('0' + (lastUpdate.getMonth() + 1)).slice(-2) + ('0' + lastUpdate.getDate()).slice(-2) + ('0' + lastUpdate.getHours()).slice(-2) + ('0' + lastUpdate.getMinutes()).slice(-2) + '.pdf');
+     window.navigator.msSaveOrOpenBlob(blob, fileTitle);
    }
    else {
      let url = window.URL.createObjectURL(blob);
      let download = $('&lt;a>&lt;/a>');
-     download.attr('href', url).attr('download', 'Vollständige_Dokumentation_#' + docId + '_' + lastUpdate.getFullYear() + ('0' + (lastUpdate.getMonth() + 1)).slice(-2) + ('0' + lastUpdate.getDate()).slice(-2) + ('0' + lastUpdate.getHours()).slice(-2) + ('0' + lastUpdate.getMinutes()).slice(-2) + '.pdf').addClass('hidden');;
+     download.attr('href', url).attr('download', fileTitle).addClass('hidden');;
      $('body').append(download);
      download[0].click();
      window.URL.revokeObjectURL(url);
@@ -172,9 +177,9 @@ function loadTables(tier) {
       newEntry.append('&lt;td>' + data['data'][c]['Erstelldatum'] + '&lt;/td>');
       newEntry.append('&lt;td>' + data['data'][c]['Aktualisierung'] + '&lt;/td>');
       newEntry.append('&lt;td>&lt;textarea class="form-control comment" data-id="' + data['data'][c]['ID'] + '" style="resize: both;">' + htmlDecode(data['data'][c]['DSBKommentar']) + '&lt;/textarea>&lt;/td>');
-      newEntry.append('&lt;td>&lt;div class="btn-group inline">&lt;a class="btn" href="?id=' + data['data'][c]['ID'] + (debug ? '&amp;debug=true' : '') + '" target="_blank">Bearbeiten&lt;/a>&lt;a class="btn" href="?copy=' + data['data'][c]['ID'] + (debug ? '&amp;debug=true' : '') + '" target="_blank">Kopieren&lt;/a>&lt;button type="button" class="btn pdfdownload" data-id="' + data['data'][c]['ID'] + '" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '>PDF anzeigen&lt;/button>&lt;/div> &lt;button type="button" data-id="' + data['data'][c]['ID'] +'" data-name="' + data['data'][c]['Bezeichnung'] +'" class="btn del btn-danger">&lt;i class="fa fa-minus">&lt;/i> Löschen&lt;/button>&lt;/td>');
+      newEntry.append('&lt;td>&lt;div class="btn-group inline">&lt;a class="btn" href="?id=' + data['data'][c]['ID'] + (debug ? '&amp;debug=true' : '') + '" target="_blank">&lt;i class="fa fa-edit">&lt;/i> Bearbeiten&lt;/a>&lt;a class="btn" href="?copy=' + data['data'][c]['ID'] + (debug ? '&amp;debug=true' : '') + '" target="_blank">&lt;i class="fa fa-copy">&lt;/i> Kopieren&lt;/a>&lt;button type="button" class="btn pdfdownload" data-id="' + data['data'][c]['ID'] + '" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '>&lt;i class="fa fa-file-pdf-o">&lt;/i> PDF anzeigen&lt;/button>&lt;/div> &lt;button type="button" data-id="' + data['data'][c]['ID'] +'" data-name="' + data['data'][c]['Bezeichnung'] +'" class="btn del btn-danger">&lt;i class="fa fa-minus">&lt;/i> Löschen&lt;/button>&lt;/td>');
 
-      if(parseInt(data['data'][c]['Typ']) === 1) newEntry.find('.pdfdownload').closest('div').append('&lt;button type="button" class="btn completepdf" data-id="' + data['data'][c]['ID'] + '" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '>Vollständige PDF erzeugen&lt;/button>');
+      if(parseInt(data['data'][c]['Typ']) === 1 || parseInt(data['data'][c]['Typ']) === 3 || parseInt(data['data'][c]['Typ']) === 2) newEntry.find('.pdfdownload').closest('div').append('&lt;button type="button" class="btn completepdf" data-id="' + data['data'][c]['ID'] + '" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '>&lt;i class="fa fa-file-pdf-o">&lt;/i> Vollständige PDF erzeugen&lt;/button>');
 
       if(parseInt(data['data'][c]['Status']) === 0) {
         inbTable.append(newEntry);
@@ -295,7 +300,7 @@ function loadTables(tier) {
       buttons: [{
           extend: 'print',
           title: 'Abgeschlossene Verfahren',
-          text: 'Tabelle drucken',
+          text: '&lt;i class="fa fa-print"> Tabelle drucken',
           exportOptions: {
             stripHtml: false,
             columns: ':not(.no-print)',
@@ -307,7 +312,7 @@ function loadTables(tier) {
         {
           extend: 'pdfHtml5',
           title: 'Abgeschlossene Verfahren',
-          text: 'Tabelle als PDF speichern',
+          text: '&lt;i class="fa fa-file-pdf-o"> Tabelle als PDF speichern',
           orientation: 'landscape',
           exportOptions: {
             stripHtml: false,
@@ -323,7 +328,7 @@ function loadTables(tier) {
       buttons: [{
           extend: 'print',
           title: 'Verfahren in Bearbeitung',
-          text: 'Tabelle drucken',
+          text: '&lt;i class="fa fa-print"> Tabelle drucken',
           exportOptions: {
             stripHtml: false,
             columns: ':not(.no-print)',
@@ -335,7 +340,7 @@ function loadTables(tier) {
         {
           extend: 'pdfHtml5',
           title: 'Verfahren in Bearbeitung',
-          text: 'Tabelle als PDF speichern',
+          text: '&lt;i class="fa fa-file-pdf-o"> Tabelle als PDF speichern',
           orientation: 'landscape',
           exportOptions: {
             stripHtml: false,
@@ -410,13 +415,13 @@ console.timeEnd('Gesamte Vorbereitungszeit');
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#addTableRow">addTableRow</a></li><li><a href="global.html#autoSaveTimer">autoSaveTimer</a></li><li><a href="global.html#autoSaveWait">autoSaveWait</a></li><li><a href="global.html#backendPath">backendPath</a></li><li><a href="global.html#canEdit">canEdit</a></li><li><a href="global.html#changedFields">changedFields</a></li><li><a href="global.html#changedValues">changedValues</a></li><li><a href="global.html#copyFromServer">copyFromServer</a></li><li><a href="global.html#copyId">copyId</a></li><li><a href="global.html#copyIdMain">copyIdMain</a></li><li><a href="global.html#debug">debug</a></li><li><a href="global.html#debugLog">debugLog</a></li><li><a href="global.html#deleteFromServer">deleteFromServer</a></li><li><a href="global.html#endlessCounts">endlessCounts</a></li><li><a href="global.html#endlessTables">endlessTables</a></li><li><a href="global.html#endlessTemplates">endlessTemplates</a></li><li><a href="global.html#exportJSON">exportJSON</a></li><li><a href="global.html#filterTOMList">filterTOMList</a></li><li><a href="global.html#generateTOMList">generateTOMList</a></li><li><a href="global.html#genHTMLforPDF">genHTMLforPDF</a></li><li><a href="global.html#getCombinedPDF">getCombinedPDF</a></li><li><a href="global.html#getCompletePDF">getCompletePDF</a></li><li><a href="global.html#getPDFFromServer">getPDFFromServer</a></li><li><a href="global.html#GetURLParameter">GetURLParameter</a></li><li><a href="global.html#getUserPromise">getUserPromise</a></li><li><a href="global.html#htmlDecode">htmlDecode</a></li><li><a href="global.html#htmlEncode">htmlEncode</a></li><li><a href="global.html#importJSON">importJSON</a></li><li><a href="global.html#initEndlessTables">initEndlessTables</a></li><li><a href="global.html#initTypeahead">initTypeahead</a></li><li><a href="global.html#loadEmpty">loadEmpty</a></li><li><a href="global.html#loadFromJSON">loadFromJSON</a></li><li><a href="global.html#loadFromServer">loadFromServer</a></li><li><a href="global.html#loadId">loadId</a></li><li><a href="global.html#loadIdMain">loadIdMain</a></li><li><a href="global.html#loadSubpage">loadSubpage</a></li><li><a href="global.html#loadTables">loadTables</a></li><li><a href="global.html#markedAsFinished">markedAsFinished</a></li><li><a href="global.html#modal">modal</a></li><li><a href="global.html#mode">mode</a></li><li><a href="global.html#modeName">modeName</a></li><li><a href="global.html#modeNum">modeNum</a></li><li><a href="global.html#myFinish">myFinish</a></li><li><a href="global.html#myInit">myInit</a></li><li><a href="global.html#myNext">myNext</a></li><li><a href="global.html#myPrevious">myPrevious</a></li><li><a href="global.html#myTabChange">myTabChange</a></li><li><a href="global.html#myTabClick">myTabClick</a></li><li><a href="global.html#page">page</a></li><li><a href="global.html#promises">promises</a></li><li><a href="global.html#removeTableRows">removeTableRows</a></li><li><a href="global.html#saveAsObject">saveAsObject</a></li><li><a href="global.html#saveOnServer">saveOnServer</a></li><li><a href="global.html#selectedTier">selectedTier</a></li><li><a href="global.html#setOverlay">setOverlay</a></li><li><a href="global.html#setSaveLabel">setSaveLabel</a></li><li><a href="global.html#showError">showError</a></li><li><a href="global.html#showImportDialog">showImportDialog</a></li><li><a href="global.html#showVerfahrensliste">showVerfahrensliste</a></li><li><a href="global.html#status">status</a></li><li><a href="global.html#statusMapping">statusMapping</a></li><li><a href="global.html#statusSymbolMapping">statusSymbolMapping</a></li><li><a href="global.html#toggleTOMList">toggleTOMList</a></li><li><a href="global.html#tomsMapping">tomsMapping</a></li><li><a href="global.html#typeaheadCache">typeaheadCache</a></li><li><a href="global.html#userCanDSB">userCanDSB</a></li><li><a href="global.html#userIsDSB">userIsDSB</a></li><li><a href="global.html#version">version</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#addTableRow">addTableRow</a></li><li><a href="global.html#autoSaveTimer">autoSaveTimer</a></li><li><a href="global.html#autoSaveWait">autoSaveWait</a></li><li><a href="global.html#backendPath">backendPath</a></li><li><a href="global.html#canEdit">canEdit</a></li><li><a href="global.html#changedFields">changedFields</a></li><li><a href="global.html#changedValues">changedValues</a></li><li><a href="global.html#copyFromServer">copyFromServer</a></li><li><a href="global.html#copyId">copyId</a></li><li><a href="global.html#copyIdMain">copyIdMain</a></li><li><a href="global.html#debug">debug</a></li><li><a href="global.html#debugLog">debugLog</a></li><li><a href="global.html#deleteFromServer">deleteFromServer</a></li><li><a href="global.html#endlessCounts">endlessCounts</a></li><li><a href="global.html#endlessTables">endlessTables</a></li><li><a href="global.html#endlessTemplates">endlessTemplates</a></li><li><a href="global.html#exportJSON">exportJSON</a></li><li><a href="global.html#filterTOMList">filterTOMList</a></li><li><a href="global.html#generateTOMList">generateTOMList</a></li><li><a href="global.html#genHTMLforPDF">genHTMLforPDF</a></li><li><a href="global.html#getCombinedPDF">getCombinedPDF</a></li><li><a href="global.html#getCompletePDF">getCompletePDF</a></li><li><a href="global.html#getPDFFromServer">getPDFFromServer</a></li><li><a href="global.html#GetURLParameter">GetURLParameter</a></li><li><a href="global.html#getUserPromise">getUserPromise</a></li><li><a href="global.html#globalClear">globalClear</a></li><li><a href="global.html#htmlDecode">htmlDecode</a></li><li><a href="global.html#htmlEncode">htmlEncode</a></li><li><a href="global.html#importJSON">importJSON</a></li><li><a href="global.html#initEndlessTables">initEndlessTables</a></li><li><a href="global.html#initTypeahead">initTypeahead</a></li><li><a href="global.html#loadEmpty">loadEmpty</a></li><li><a href="global.html#loadFromJSON">loadFromJSON</a></li><li><a href="global.html#loadFromServer">loadFromServer</a></li><li><a href="global.html#loadId">loadId</a></li><li><a href="global.html#loadIdMain">loadIdMain</a></li><li><a href="global.html#loadSubpage">loadSubpage</a></li><li><a href="global.html#loadTables">loadTables</a></li><li><a href="global.html#markedAsFinished">markedAsFinished</a></li><li><a href="global.html#modal">modal</a></li><li><a href="global.html#mode">mode</a></li><li><a href="global.html#modeMapping">modeMapping</a></li><li><a href="global.html#modeName">modeName</a></li><li><a href="global.html#modeNum">modeNum</a></li><li><a href="global.html#myFinish">myFinish</a></li><li><a href="global.html#myInit">myInit</a></li><li><a href="global.html#myNext">myNext</a></li><li><a href="global.html#myPrevious">myPrevious</a></li><li><a href="global.html#myTabChange">myTabChange</a></li><li><a href="global.html#myTabClick">myTabClick</a></li><li><a href="global.html#page">page</a></li><li><a href="global.html#promises">promises</a></li><li><a href="global.html#removeTableRows">removeTableRows</a></li><li><a href="global.html#saveAsObject">saveAsObject</a></li><li><a href="global.html#saveOnServer">saveOnServer</a></li><li><a href="global.html#selectedTier">selectedTier</a></li><li><a href="global.html#setOverlay">setOverlay</a></li><li><a href="global.html#setSaveLabel">setSaveLabel</a></li><li><a href="global.html#showError">showError</a></li><li><a href="global.html#showImportDialog">showImportDialog</a></li><li><a href="global.html#showVerfahrensliste">showVerfahrensliste</a></li><li><a href="global.html#status">status</a></li><li><a href="global.html#statusMapping">statusMapping</a></li><li><a href="global.html#statusSymbolMapping">statusSymbolMapping</a></li><li><a href="global.html#toggleTOMList">toggleTOMList</a></li><li><a href="global.html#tomsMapping">tomsMapping</a></li><li><a href="global.html#typeaheadCache">typeaheadCache</a></li><li><a href="global.html#userCanDSB">userCanDSB</a></li><li><a href="global.html#userIsDSB">userIsDSB</a></li><li><a href="global.html#userIsManager">userIsManager</a></li><li><a href="global.html#version">version</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.4</a> on Fri Jul 31 2020 09:19:43 GMT+0200 (Mitteleuropäische Sommerzeit)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.5</a> on Fri Aug 14 2020 09:53:05 GMT+0200 (Mitteleuropäische Sommerzeit)
 </footer>
 
 <script> prettyPrint(); </script>

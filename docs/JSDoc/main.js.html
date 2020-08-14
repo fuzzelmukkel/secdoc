@@ -94,6 +94,13 @@ var userIsDSB = false;
 var userCanDSB = false;
 
 /**
+ * Gibt an, ob der Nutzer ein Bereichsleiter ist
+ * @global
+ * @type {Boolean}
+ */
+var userIsManager = false;
+
+/**
  * Relativer Pfad zur verwaltung.php
  * @global
  * @type {String}
@@ -310,7 +317,7 @@ function getPDFFromServer(id, draft = false) {
 
     if(!draft &amp;&amp; data['data']['status'] === 0) {
       modal.find('.modal-title').text('Hinweis');
-      modal.find('.modal-body').html('&lt;div class="alert alert-warning">&lt;p>Da sich das Verfahren wieder im Zustand "In Bearbeitung" befindet, stimmen die Angaben in der PDF unter Umständen nicht mehr mit der aktualisierten Version überein! Die PDF wird nur bei einem erneuten Abschluss des Verfahrens aktualisiert.&lt;/p>&lt;/div>');
+      modal.find('.modal-body').html('&lt;div class="alert alert-warning">&lt;p>Da sich das Verfahren wieder im Zustand "In Bearbeitung" befindet, stimmen die Angaben in der PDF-Datei unter Umständen nicht mehr mit der aktualisierten Version überein! Die PDF-Datei wird nur bei einem erneuten Abschluss des Verfahrens aktualisiert.&lt;/p>&lt;/div>');
       modal.find('.modal-body').append('&lt;p>&lt;button type="button" class="center-block btn btn-primary" data-dismiss="modal" aria-label="Close">Schließen&lt;/button>&lt;/p>');
       modal.modal();
     }
@@ -323,22 +330,26 @@ function getPDFFromServer(id, draft = false) {
     }
     let blob = new Blob([pdfBuffer], {type: "application/pdf"});
     let lastUpdate = data['data']['lastupdate'] ? new Date(data['data']['lastupdate'].replace(' ', 'T')) : new Date();  // Safari benötigt das Format YYYY-MM-DDTHH:MM:SS (mit T)
+    let typeName = {1: 'Verarbeitungstätigkeit', 2: 'IT-Verfahren', 3: 'Fachapplikation', 4: 'Übergreifende_Massnahme'};
+    let fileTitle = 'SecDoc_' + typeName[data['data']['type']] + '_' + id + '_' + data['data']['title'].substr(0, 30) + '_' + lastUpdate.getFullYear() + ('0' + (lastUpdate.getMonth() + 1)).slice(-2) + ('0' + lastUpdate.getDate()).slice(-2) + ('0' + lastUpdate.getHours()).slice(-2) + ('0' + lastUpdate.getMinutes()).slice(-2) + (draft ? '_DRAFT' : '' );
+    fileTitle = fileTitle.replace(/[/\\?%*:|"&lt;>\.,;=\s]/g, '_');
+    fileTitle += '.pdf';
 
     // PDF-Anzeige starten (Unterscheidung, ob Edge genutzt wird)
     if(window.navigator &amp;&amp; window.navigator.msSaveOrOpenBlob) {
-      window.navigator.msSaveOrOpenBlob(blob, 'SecDoc_Dokumentation_' + id + '_' + lastUpdate.getFullYear() + ('0' + (lastUpdate.getMonth() + 1)).slice(-2) + ('0' + lastUpdate.getDate()).slice(-2) + ('0' + lastUpdate.getHours()).slice(-2) + ('0' + lastUpdate.getMinutes()).slice(-2)  + (draft ? '_DRAFT' : '' ) + '.pdf');
+      window.navigator.msSaveOrOpenBlob(blob, fileTitle);
     }
     else {
       let url = window.URL.createObjectURL(blob);
       let download = $('&lt;a>&lt;/a>');
-      download.attr('href', url).attr('download', 'SecDoc_Dokumentation_' + id + '_' + lastUpdate.getFullYear() + ('0' + (lastUpdate.getMonth() + 1)).slice(-2) + ('0' + lastUpdate.getDate()).slice(-2) + ('0' + lastUpdate.getHours()).slice(-2) + ('0' + lastUpdate.getMinutes()).slice(-2)  + (draft ? '_DRAFT' : '' ) + '.pdf').addClass('hidden');;
+      download.attr('href', url).attr('download', fileTitle).addClass('hidden');;
       $('body').append(download);
       download[0].click();
       window.URL.revokeObjectURL(url);
       download.remove();
     }
   }).fail((jqXHR, error, errorThrown) => {
-    showError('Laden der PDF', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+    showError('Laden der PDF-Datei', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
   }).always(() => {
     setOverlay(false);
   });
@@ -385,6 +396,7 @@ function loadSubpage() {
       version = data['version'];
       userIsDSB = data['data'][0]['userIsDSB'];
       userCanDSB = data['data'][0]['userCanDSB'];
+      userIsManager = data['data'][0]['userIsManager'];
 
       $('#userLabel').text(data['data'][0]['name'] + (userIsDSB ? ' (Rolle: DSB/ISB)' : ' (Rolle: Nutzer)'));
       $('#userLabel').attr('title', 'Kennung: ' + data['data'][0]['value']);
@@ -392,7 +404,7 @@ function loadSubpage() {
       if(userCanDSB) {
         $('#roleLabel').find('span').text(userIsDSB ? 'Nutzer' : 'DSB/ISB');
         $('#roleLabel').removeClass('hidden').click(() => {
-          document.cookie = version.replace(/\W/g, '_') + '_dsb=' + (userIsDSB ? '0' : '1');
+          document.cookie = version.replace(/\W/g, '_') + '_dsb=' + (userIsDSB ? '0' : '1') + '; SameSite=Strict';
           location.reload(true);
         });
       }
@@ -402,6 +414,7 @@ function loadSubpage() {
       $('#userLabel').text('Unbekannt');
     }
     console.info(version);
+    $('#footer_version').text(version);
   }).fail((jqXHR, error, errorThrown) => {
     console.error('Fehler beim Abruf der Nutzerkennung! HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
     $('#userLabel').text('Unbekannt');
@@ -491,13 +504,13 @@ $.getJSON(backendPath + '?action=loggedin' + (debug ? '&amp;debug=true' : '')).d
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#addTableRow">addTableRow</a></li><li><a href="global.html#autoSaveTimer">autoSaveTimer</a></li><li><a href="global.html#autoSaveWait">autoSaveWait</a></li><li><a href="global.html#backendPath">backendPath</a></li><li><a href="global.html#canEdit">canEdit</a></li><li><a href="global.html#changedFields">changedFields</a></li><li><a href="global.html#changedValues">changedValues</a></li><li><a href="global.html#copyFromServer">copyFromServer</a></li><li><a href="global.html#copyId">copyId</a></li><li><a href="global.html#copyIdMain">copyIdMain</a></li><li><a href="global.html#debug">debug</a></li><li><a href="global.html#debugLog">debugLog</a></li><li><a href="global.html#deleteFromServer">deleteFromServer</a></li><li><a href="global.html#endlessCounts">endlessCounts</a></li><li><a href="global.html#endlessTables">endlessTables</a></li><li><a href="global.html#endlessTemplates">endlessTemplates</a></li><li><a href="global.html#exportJSON">exportJSON</a></li><li><a href="global.html#filterTOMList">filterTOMList</a></li><li><a href="global.html#generateTOMList">generateTOMList</a></li><li><a href="global.html#genHTMLforPDF">genHTMLforPDF</a></li><li><a href="global.html#getCombinedPDF">getCombinedPDF</a></li><li><a href="global.html#getCompletePDF">getCompletePDF</a></li><li><a href="global.html#getPDFFromServer">getPDFFromServer</a></li><li><a href="global.html#GetURLParameter">GetURLParameter</a></li><li><a href="global.html#getUserPromise">getUserPromise</a></li><li><a href="global.html#htmlDecode">htmlDecode</a></li><li><a href="global.html#htmlEncode">htmlEncode</a></li><li><a href="global.html#importJSON">importJSON</a></li><li><a href="global.html#initEndlessTables">initEndlessTables</a></li><li><a href="global.html#initTypeahead">initTypeahead</a></li><li><a href="global.html#loadEmpty">loadEmpty</a></li><li><a href="global.html#loadFromJSON">loadFromJSON</a></li><li><a href="global.html#loadFromServer">loadFromServer</a></li><li><a href="global.html#loadId">loadId</a></li><li><a href="global.html#loadIdMain">loadIdMain</a></li><li><a href="global.html#loadSubpage">loadSubpage</a></li><li><a href="global.html#loadTables">loadTables</a></li><li><a href="global.html#markedAsFinished">markedAsFinished</a></li><li><a href="global.html#modal">modal</a></li><li><a href="global.html#mode">mode</a></li><li><a href="global.html#modeName">modeName</a></li><li><a href="global.html#modeNum">modeNum</a></li><li><a href="global.html#myFinish">myFinish</a></li><li><a href="global.html#myInit">myInit</a></li><li><a href="global.html#myNext">myNext</a></li><li><a href="global.html#myPrevious">myPrevious</a></li><li><a href="global.html#myTabChange">myTabChange</a></li><li><a href="global.html#myTabClick">myTabClick</a></li><li><a href="global.html#page">page</a></li><li><a href="global.html#promises">promises</a></li><li><a href="global.html#removeTableRows">removeTableRows</a></li><li><a href="global.html#saveAsObject">saveAsObject</a></li><li><a href="global.html#saveOnServer">saveOnServer</a></li><li><a href="global.html#selectedTier">selectedTier</a></li><li><a href="global.html#setOverlay">setOverlay</a></li><li><a href="global.html#setSaveLabel">setSaveLabel</a></li><li><a href="global.html#showError">showError</a></li><li><a href="global.html#showImportDialog">showImportDialog</a></li><li><a href="global.html#showVerfahrensliste">showVerfahrensliste</a></li><li><a href="global.html#status">status</a></li><li><a href="global.html#statusMapping">statusMapping</a></li><li><a href="global.html#statusSymbolMapping">statusSymbolMapping</a></li><li><a href="global.html#toggleTOMList">toggleTOMList</a></li><li><a href="global.html#tomsMapping">tomsMapping</a></li><li><a href="global.html#typeaheadCache">typeaheadCache</a></li><li><a href="global.html#userCanDSB">userCanDSB</a></li><li><a href="global.html#userIsDSB">userIsDSB</a></li><li><a href="global.html#version">version</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#addTableRow">addTableRow</a></li><li><a href="global.html#autoSaveTimer">autoSaveTimer</a></li><li><a href="global.html#autoSaveWait">autoSaveWait</a></li><li><a href="global.html#backendPath">backendPath</a></li><li><a href="global.html#canEdit">canEdit</a></li><li><a href="global.html#changedFields">changedFields</a></li><li><a href="global.html#changedValues">changedValues</a></li><li><a href="global.html#copyFromServer">copyFromServer</a></li><li><a href="global.html#copyId">copyId</a></li><li><a href="global.html#copyIdMain">copyIdMain</a></li><li><a href="global.html#debug">debug</a></li><li><a href="global.html#debugLog">debugLog</a></li><li><a href="global.html#deleteFromServer">deleteFromServer</a></li><li><a href="global.html#endlessCounts">endlessCounts</a></li><li><a href="global.html#endlessTables">endlessTables</a></li><li><a href="global.html#endlessTemplates">endlessTemplates</a></li><li><a href="global.html#exportJSON">exportJSON</a></li><li><a href="global.html#filterTOMList">filterTOMList</a></li><li><a href="global.html#generateTOMList">generateTOMList</a></li><li><a href="global.html#genHTMLforPDF">genHTMLforPDF</a></li><li><a href="global.html#getCombinedPDF">getCombinedPDF</a></li><li><a href="global.html#getCompletePDF">getCompletePDF</a></li><li><a href="global.html#getPDFFromServer">getPDFFromServer</a></li><li><a href="global.html#GetURLParameter">GetURLParameter</a></li><li><a href="global.html#getUserPromise">getUserPromise</a></li><li><a href="global.html#globalClear">globalClear</a></li><li><a href="global.html#htmlDecode">htmlDecode</a></li><li><a href="global.html#htmlEncode">htmlEncode</a></li><li><a href="global.html#importJSON">importJSON</a></li><li><a href="global.html#initEndlessTables">initEndlessTables</a></li><li><a href="global.html#initTypeahead">initTypeahead</a></li><li><a href="global.html#loadEmpty">loadEmpty</a></li><li><a href="global.html#loadFromJSON">loadFromJSON</a></li><li><a href="global.html#loadFromServer">loadFromServer</a></li><li><a href="global.html#loadId">loadId</a></li><li><a href="global.html#loadIdMain">loadIdMain</a></li><li><a href="global.html#loadSubpage">loadSubpage</a></li><li><a href="global.html#loadTables">loadTables</a></li><li><a href="global.html#markedAsFinished">markedAsFinished</a></li><li><a href="global.html#modal">modal</a></li><li><a href="global.html#mode">mode</a></li><li><a href="global.html#modeMapping">modeMapping</a></li><li><a href="global.html#modeName">modeName</a></li><li><a href="global.html#modeNum">modeNum</a></li><li><a href="global.html#myFinish">myFinish</a></li><li><a href="global.html#myInit">myInit</a></li><li><a href="global.html#myNext">myNext</a></li><li><a href="global.html#myPrevious">myPrevious</a></li><li><a href="global.html#myTabChange">myTabChange</a></li><li><a href="global.html#myTabClick">myTabClick</a></li><li><a href="global.html#page">page</a></li><li><a href="global.html#promises">promises</a></li><li><a href="global.html#removeTableRows">removeTableRows</a></li><li><a href="global.html#saveAsObject">saveAsObject</a></li><li><a href="global.html#saveOnServer">saveOnServer</a></li><li><a href="global.html#selectedTier">selectedTier</a></li><li><a href="global.html#setOverlay">setOverlay</a></li><li><a href="global.html#setSaveLabel">setSaveLabel</a></li><li><a href="global.html#showError">showError</a></li><li><a href="global.html#showImportDialog">showImportDialog</a></li><li><a href="global.html#showVerfahrensliste">showVerfahrensliste</a></li><li><a href="global.html#status">status</a></li><li><a href="global.html#statusMapping">statusMapping</a></li><li><a href="global.html#statusSymbolMapping">statusSymbolMapping</a></li><li><a href="global.html#toggleTOMList">toggleTOMList</a></li><li><a href="global.html#tomsMapping">tomsMapping</a></li><li><a href="global.html#typeaheadCache">typeaheadCache</a></li><li><a href="global.html#userCanDSB">userCanDSB</a></li><li><a href="global.html#userIsDSB">userIsDSB</a></li><li><a href="global.html#userIsManager">userIsManager</a></li><li><a href="global.html#version">version</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.4</a> on Fri Jul 31 2020 09:19:43 GMT+0200 (Mitteleuropäische Sommerzeit)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.5</a> on Fri Aug 14 2020 09:53:05 GMT+0200 (Mitteleuropäische Sommerzeit)
 </footer>
 
 <script> prettyPrint(); </script>

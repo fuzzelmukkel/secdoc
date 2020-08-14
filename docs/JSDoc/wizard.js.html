@@ -80,6 +80,18 @@ var canEdit = true;
 var mode = ['wizit', 'wizproc', 'wizapp', 'wizmeasures'].includes(page) ? page : 'wizproc';
 
 /**
+ * Mapping des Typs
+ * @global
+ * @type {Object}
+ */
+let modeMapping = {
+  1: ['Verarbeitungstätigkeit', 'Verarbeitungstätigkeiten', 'Die', 'eine', 'einer'],
+  2: ['IT-Verfahren', 'IT-Verfahren', 'Das', 'ein', 'einem'],
+  3: ['Fachapplikation', 'Fachapplikationen', 'Die', 'eine', 'einer'],
+  4: ['übergreifende Massnahme', 'übergreifende Massnahmen', 'Die', 'eine', 'einer']
+};
+
+/**
  * Interne Nummerierung für die Dokumentations-Modi
  * @global
  * @type {Number}
@@ -95,10 +107,7 @@ if(mode === 'wizmeasures')   modeNum = 4;
  * @global
  * @type {Array}
  */
-var modeName = ['Verarbeitungstätigkeit', 'Verarbeitungstätigkeiten'];
-if(mode === 'wizapp')      modeName = ['Fachapplikation', 'Fachapplikationen'];
-if(mode === 'wizit')       modeName = ['IT-Verfahren', 'IT-Verfahren'];
-if(mode === 'wizmeasures') modeName = ['Übergreifende Massnahmen', 'Übergreifende Massnahmen'];
+var modeName = modeMapping[modeNum];
 
 /**
  * Gibt an, ob Eingaben geändert wurden seit dem letzten Laden/Speichern
@@ -148,6 +157,13 @@ var autoSaveTimer = 0;
  * @type {Number}
  */
 var autoSaveWait = 600000;
+
+/**
+ * Wird auf true gesetzt, wenn der Wizard zurückgesetzt wird (z.B. über "Neue Dokumentation")
+ * @global
+ * @type {Boolean}
+ */
+var globalClear = false;
 
 // Mappings
 /**
@@ -408,7 +424,7 @@ function showVerfahrensliste(startup = false) {
   modal.find('.modal-title').text('Liste bestehender ' + modeName[1]);
   var modalBody = modal.find('.modal-body');
   modalBody.html('&lt;p>Wählen Sie eine Dokumentation aus der Liste, um sie zu bearbeiten oder einzusehen, oder legen Sie eine neue Dokumentation an.&lt;/p>');
-  modalBody.append('&lt;ul class="nav nav-tabs" role="tablist">&lt;li role="presentation" class="active">&lt;a href="#listeditable" aria-controls="listeditable" role="tab" data-toggle="tab">Editierbare ' + modeName[1] + '&lt;/a>&lt;/li>&lt;li role="presentation">&lt;a href="#listreadable" aria-controls="listreadable" role="tab" data-toggle="tab">Einsehbare ' + modeName[1] + '&lt;/a>&lt;/li>&lt;/ul>');
+  modalBody.append('&lt;ul class="nav nav-tabs" role="tablist">&lt;li role="presentation" class="active">&lt;a href="#listeditable" aria-controls="listeditable" role="tab" data-toggle="tab">&lt;i class="fa fa-edit">&lt;/i> Editierbare ' + modeName[1] + '&lt;/a>&lt;/li>&lt;li role="presentation">&lt;a href="#listreadable" aria-controls="listreadable" role="tab" data-toggle="tab">&lt;i class="fa fa-eye">&lt;/i> Einsehbare ' + modeName[1] + '&lt;/a>&lt;/li>&lt;/ul>');
   modalBody.append('&lt;div class="tab-content" style="min-height: auto;">&lt;div role="tabpanel" class="tab-pane active" id="listeditable">&lt;p style="padding-top:10px; padding-left:10px">Hier werden alle ' + modeName[1] + ' gelistet, die Sie bearbeiten können.&lt;/p>&lt;/div>&lt;div role="tabpanel" class="tab-pane" id="listreadable">&lt;p style="padding-top:10px; padding-left:10px">Hier werden alle ' + modeName[1] + ' gelistet, auf die Sie nur lesend zugreifen können.&lt;/p>&lt;/div>&lt;/div>');
   modalBody.find('#listeditable').append('&lt;div class="col-sm-12 table-responsive">&lt;table id="editableprocesses" class="table table-striped table-hover btn-table">&lt;thead>&lt;tr>&lt;th class="no-sort no-print">&lt;/th>&lt;th>Bezeichnung&lt;/th>&lt;th>Organisationseinheit&lt;/th>&lt;th>Status&lt;/th>&lt;th>Letzter Bearbeiter&lt;/th>&lt;th>Letzte Aktualisierung&lt;/th>&lt;th class="no-sort none">&lt;/th>&lt;/tr>&lt;/thead>&lt;tbody>&lt;/tbody>&lt;/table>&lt;/div>');
   modalBody.find('#listreadable').append('&lt;div class="col-sm-12 table-responsive">&lt;table id="readableprocesses" class="table table-striped table-hover btn-table">&lt;thead>&lt;tr>&lt;th class="no-sort no-print">&lt;/th>&lt;th>Bezeichnung&lt;/th>&lt;th>Organisationseinheit&lt;/th>&lt;th>Status&lt;/th>&lt;th>Letzte Aktualisierung&lt;/th>&lt;th class="no-sort none">&lt;/th>&lt;/tr>&lt;/thead>&lt;tbody>&lt;/tbody>&lt;/table>&lt;/div>');
@@ -450,7 +466,7 @@ function showVerfahrensliste(startup = false) {
         newEntry.append('&lt;td>' + data['data'][c]['Status'] + statusSymbol + '&lt;/td>');
         newEntry.append('&lt;td>' + data['data'][c]['LetzterBearbeiter'] + ' &lt;i data-toggle="tooltip" class="fa fa-info-circle" title="' + (data['data'][c]['BearbeiterDetails'] ? data['data'][c]['BearbeiterDetails'] : '&lt;Keine Details vorhanden>') + '">&lt;/i>&lt;/td>');
         newEntry.append('&lt;td>' + data['data'][c]['Aktualisierung'] + '&lt;/td>');
-        newEntry.append('&lt;td>&lt;div class="btn-group inline">&lt;a class="btn" href="?id=' + currId + (debug ? '&amp;debug=true' : '') + '" target="_blank">&lt;i class="fa fa-edit">&lt;/i> Bearbeiten&lt;/a>&lt;a class="btn" href="?copy=' + currId + '" target="_blank">&lt;i class="fa fa-copy">&lt;/i> Kopieren&lt;/a>&lt;button type="button" title="Die PDF-Version repräsentiert das zuletzt abgeschlossene Verfahren!" data-id="' + currId + '" class="btn pdfdownload" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '>PDF anzeigen&lt;/button>&lt;/div> &lt;button type="button" data-id="' + currId +'" data-name="' + data['data'][c]['Bezeichnung'] +'" class="btn del btn-danger" ' + (data['data'][c]['Löschbar'] === true ? '' : 'disabled')  + '>&lt;i class="fa fa-minus">&lt;/i> Löschen&lt;/button>&lt;/td>');
+        newEntry.append('&lt;td>&lt;div class="btn-group inline">&lt;a class="btn" href="?id=' + currId + (debug ? '&amp;debug=true' : '') + '" target="_blank">&lt;i class="fa fa-edit">&lt;/i> Bearbeiten&lt;/a>&lt;a class="btn" href="?copy=' + currId + '" target="_blank">&lt;i class="fa fa-copy">&lt;/i> Kopieren&lt;/a>&lt;button type="button" title="Die PDF-Version repräsentiert das zuletzt abgeschlossene Verfahren!" data-id="' + currId + '" class="btn pdfdownload" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '>&lt;i class="fa fa-file-pdf-o">&lt;/i> PDF anzeigen&lt;/button>&lt;/div> &lt;button type="button" data-id="' + currId +'" data-name="' + data['data'][c]['Bezeichnung'] +'" class="btn del btn-danger" ' + (data['data'][c]['Löschbar'] === true ? '' : 'disabled')  + '>&lt;i class="fa fa-minus">&lt;/i> Löschen&lt;/button>&lt;/td>');
         modalBody.find('#editableprocesses tbody').append(newEntry);
       }
       else {
@@ -459,7 +475,7 @@ function showVerfahrensliste(startup = false) {
         newEntry.append('&lt;td>' + data['data'][c]['Fachabteilung']  + '&lt;/td>');
         newEntry.append('&lt;td>' + data['data'][c]['Status'] + statusSymbol + '&lt;/td>');
         newEntry.append('&lt;td>' + data['data'][c]['Aktualisierung'] + '&lt;/td>');
-        newEntry.append('&lt;td>&lt;div class="btn-group inline">&lt;a class="btn" href="?id=' + currId + (debug ? '&amp;debug=true' : '') + '" target="_blank">&lt;i class="fa fa-edit">&lt;/i> Anzeigen&lt;/a>&lt;a class="btn" href="?copy=' + currId + '" target="_blank">&lt;i class="fa fa-copy">&lt;/i> Kopieren&lt;/a>&lt;button type="button" data-id="' + currId + '" class="btn pdfdownload" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '>PDF anzeigen&lt;/button>&lt;/div>&lt;/td>');
+        newEntry.append('&lt;td>&lt;div class="btn-group inline">&lt;a class="btn" href="?id=' + currId + (debug ? '&amp;debug=true' : '') + '" target="_blank">&lt;i class="fa fa-edit">&lt;/i> Anzeigen&lt;/a>&lt;a class="btn" href="?copy=' + currId + '" target="_blank">&lt;i class="fa fa-copy">&lt;/i> Kopieren&lt;/a>&lt;button type="button" data-id="' + currId + '" class="btn pdfdownload" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '>&lt;i class="fa fa-file-pdf-o">&lt;/i> PDF anzeigen&lt;/button>&lt;/div>&lt;/td>');
         modalBody.find('#readableprocesses tbody').append(newEntry);
       }
     }
@@ -521,7 +537,7 @@ function showVerfahrensliste(startup = false) {
     setOverlay(false);
     console.timeEnd('Verfahrensliste laden');
     if(show) {
-      modalBody.append('&lt;p>&lt;span>&lt;button type="button" class="btn loadEmpty btn-success btn-fill">Neue Dokumentation anlegen&lt;/button>&lt;/span>&lt;/p>');
+      modalBody.append('&lt;p>&lt;span>&lt;button type="button" class="btn loadEmpty btn-success btn-fill">&lt;i class="fa fa-plus">&lt;/i> Neue Dokumentation anlegen&lt;/button>&lt;/span>&lt;/p>');
       modalBody.find('.loadEmpty').click(function() {
         history.replaceState({}, document.title, window.location.href.split('?')[0]);
         loadEmpty();
@@ -542,6 +558,19 @@ function showVerfahrensliste(startup = false) {
 function loadEmpty() {
   console.time('Leeres Verfahren laden');
   setOverlay();
+  globalClear = true;
+
+  if(changedValues) {
+    let confirmClear = confirm('Es sind noch ungespeicherte Änderungen vorhanden, die beim Leeren der Dokumentation verloren gehen. Wollen Sie wirklich fortfahren?');
+
+    if(!confirmClear) {
+      setSaveLabel('failed');
+      setOverlay(false);
+      globalClear = false;
+      console.timeEnd('Leeres Verfahren laden');
+      return;
+    }
+  }
 
   // ID leeren
   loadId = 0;
@@ -571,13 +600,14 @@ function loadEmpty() {
   document.title = document.title.split(' - ').slice(-1)[0];
   let emptyTitle = 'Dokumentation einer Verarbeitungstätigkeit';
   if(mode === 'wizapp')       emptyTitle = 'Dokumentation einer Fachapplikation';
-  if(mode === 'wizit')        emptyTitle = ' Dokumentation eines IT-Verfahrens';
-  if(mode === 'wizmeasures')  emptyTitle = ' Dokumentation von übergreifenden Massnahmen';
+  if(mode === 'wizit')        emptyTitle = 'Dokumentation eines IT-Verfahrens';
+  if(mode === 'wizmeasures')  emptyTitle = 'Dokumentation von übergreifenden Massnahmen';
   let statusSymbol = status in statusSymbolMapping ? ' &lt;i data-toggle="tooltip" class="fa ' + statusSymbolMapping[status] + '" title="' + statusMapping[status]  + '">&lt;/i>' : '';
   $('#title').text(emptyTitle).append(statusSymbol).find('i').tooltip();
 
   setSaveLabel('failed');
   setOverlay(false);
+  globalClear = false;
   console.timeEnd('Leeres Verfahren laden');
 }
 
@@ -915,7 +945,7 @@ function loadFromServer(id) {
 
       document.title = htmlDecode(data['data'][0]['Bezeichnung']) + ' - ' + document.title.split(' - ').slice(-1)[0];
       let statusSymbol = status in statusSymbolMapping ? ' &lt;i data-toggle="tooltip" class="fa ' + statusSymbolMapping[status] + '" title="' + statusMapping[status]  + '">&lt;/i>' : '';
-      $('#title').text('Dokumentation von ' + htmlDecode(data['data'][0]['Bezeichnung'])).append(statusSymbol).find('i').tooltip();
+      $('#title').text(' Dokumentation von ' + htmlDecode(data['data'][0]['Bezeichnung'])).append(statusSymbol).find('i').tooltip();
       changedValues = false;
       changedFields = [];
 
@@ -989,7 +1019,7 @@ function copyFromServer(id) {
  * @returns {String} HTML-Code
  */
 function genHTMLforPDF(draft = false) {
-  console.time('HTML-Code-Generierung für PDF');
+  console.time('HTML-Code-Generierung für PDF-Datei');
 
   /* Alle leeren Tabellenzeilen entfernen */
   endlessTables.forEach(function(table) {
@@ -1001,8 +1031,9 @@ function genHTMLforPDF(draft = false) {
   /* Überschrift */
   toSend.append('&lt;h2 class="text-center">Dokumentation ' + ( mode === 'wizproc' ? 'der Verarbeitungstätigkeit' : ( mode === 'wizapp' ? 'der Fachapplikation' : ( mode === 'wizmeasures' ? 'der übergreifenden Massnahmen' : 'des IT-Verfahrens' ) ) ) + '&lt;/h2>');
   toSend.append('&lt;h3 class="text-center">' + htmlEncode($('[name="allgemein_bezeichnung"]').val()) + '&lt;/h3>');
-  toSend.append('&lt;h4 class="pull-left" style="color: darkgray;">Letzte Aktualisierung: ' + $('#saveTime').text() + '&lt;/h4>');
-  toSend.append('&lt;h4 class="pull-right" style="color: darkgray;">Lfd. Nr.: ' + loadId + '&lt;/h4>');
+
+  /* Nr. und Änderungsinfo */
+  toSend.append('&lt;table class="table">&lt;tbody>&lt;tr>&lt;td class="text-left">Nr.: &lt;span style="background-color: lightyellow">' + loadId + '&lt;/span>&lt;/td>&lt;td class="text-center">Letzter Bearbeiter: &lt;span style="background-color: lightyellow">$lasteditor$&lt;/span>&lt;/td>&lt;td class="text-right">Letzte Aktualisierung: &lt;span style="background-color: lightyellow">' + $('#saveTime').text() + '&lt;/span>&lt;/td>&lt;/tr>&lt;/tbody>&lt;/table>');
 
   /* Daten aus Wizard einsammeln */
   $('#content').children('.tab-content').children('.tab-pane').each(function(idx) {
@@ -1027,6 +1058,21 @@ function genHTMLforPDF(draft = false) {
     $(this).closest('.panel').before($(this));
   });
 
+  if(draft) {
+    toSend.find('#tom_accordion').find('option').each(function() {
+      let selectName = $(this).closest('select')[0].name;
+      let selectedValue = $('select[name="' + selectName + '"]').val();
+
+      if(this.value === selectedValue) {
+        $(this).closest('td').append('&lt;p>&amp;#9746; ' + this.text + '&lt;/p>');
+      }
+      else {
+        $(this).closest('td').append('&lt;p>&amp;#9744; ' + this.text + '&lt;/p>');
+      }
+    });
+    toSend.find('#tom_accordion').find('div.bootstrap-select').remove();
+  }
+
   /* Nur TOMs in der PDF anzeigen, die dem Risiko entsprechen */
   let currRiskLevel = parseInt($('[name="massnahmen_risiko"]:checked').val());
   toSend.find('#tom_accordion').find('tr').each(function() {
@@ -1034,7 +1080,7 @@ function genHTMLforPDF(draft = false) {
   });
 
   /* Bei Abschluss-PDF Volltexte entfernen */
-  if(!draft) toSend.find('#tom_accordion').find('tbody td:nth-child(2) p.tom_desc').remove();
+  if(!draft) toSend.find('#tom_accordion').find('tbody td:nth-child(2) div.tom_desc').remove();
   if(!draft) toSend.find('#tom_accordion').find('tbody td:nth-child(2) p').removeClass('strong');
   if(!draft) toSend.find('#tom_accordion').find('.panel-body > p, .panel-body > a').remove();
 
@@ -1046,7 +1092,7 @@ function genHTMLforPDF(draft = false) {
   /* Link hinzufügen */
   let baseURL = window.location.href.split('?')[0].replace(/x?sso/i, 'www');
   let link = baseURL + '?id=' + loadId;
-  toSend.append('&lt;div class="text-center">&lt;h5 class="info-text text-ul">Dokumentation online einsehen&lt;/h5>&lt;p>&lt;a href="' + link + '">' + link + '&lt;/a>&lt;/p>&lt;/div>');
+  toSend.append('&lt;div class="text-center">&lt;p class="info-text text-ul">Dokumentation online einsehen&lt;/p>&lt;p>&lt;a href="$docurl$">$docurl$&lt;/a>&lt;/p>&lt;/div>');
 
   /* Links in Abhängigkeiten anpassen */
   toSend.find('table#abschluss_vonabhaengig tr, table#abschluss_abhaengigkeit tr, table#itverfahren_abhaengigkeit tr, table#verarbeitung_abhaengigkeit tr, table#massnahmen_abhaengigkeit tr').each(function(idx) {
@@ -1055,7 +1101,7 @@ function genHTMLforPDF(draft = false) {
       abhLnk.detach();
     }
     else {
-      abhLnk.attr('href', baseURL + abhLnk.attr('href'));
+      abhLnk.attr('href', '$baseurl$' + abhLnk.attr('href'));
     }
   });
 
@@ -1087,8 +1133,9 @@ function genHTMLforPDF(draft = false) {
     $(this).val(htmlEncode($(this).val()));
   });
 
-  /* Eingabeelemente durch grau hinterlegten Text ersetzen */
-  toSend.find('input[type!=checkbox][type!=hidden][type!=radio], textarea, select').replaceWith(function() { if($(this).parents('td').length>0) { return '&lt;p>' + $(this).val() + '&lt;/p>'; } else { return '&lt;p style="background-color: lightyellow">' + $(this).val() + '&lt;/p>'; }});
+  /* Eingabeelemente durch gelb hinterlegten Text ersetzen */
+  toSend.find('input[type!=checkbox][type!=hidden][type!=radio], select').replaceWith(function() { if($(this).parents('td').length>0) { return '&lt;p>' + $(this).val() + '&lt;/p>'; } else { return '&lt;p style="background-color: lightyellow">' + $(this).val() + '&lt;/p>'; }});
+  toSend.find('textarea').replaceWith(function() { if($(this).parents('td').length>0) { return '&lt;p>' + $(this).val().replace(/(?:\r\n|\r|\n)/g, '&lt;br />') + '&lt;/p>'; } else { return '&lt;p style="background-color: lightyellow">' + $(this).val().replace(/(?:\r\n|\r|\n)/g, '&lt;br />') + '&lt;/p>'; }});
 
   /* Radio-Elemente formatieren */
   toSend.find('input[type=radio]:not(:checked)').closest('label').remove();
@@ -1106,8 +1153,14 @@ function genHTMLforPDF(draft = false) {
     var checkbox = $(this);
 
     checkbox.parent().parent().attr('style', 'margin: 5px;');
-    if(checkbox.prop('checked')) checkbox.replaceWith('&lt;span style="color: green;">&amp;#10004;&lt;/span>');
-    //else checkbox.replaceWith('&lt;span style="color: red;">&amp;#10006;&lt;/span>');
+    if(checkbox.prop('checked')) {
+      if(checkbox.attr('name') === 'daten_kategorien_besonders[]') {
+        checkbox.replaceWith('&lt;span>&lt;span style="color: green;">&amp;#10004;&lt;/span> Ja&lt;/span>');
+        return;
+      }
+
+      checkbox.replaceWith('&lt;span style="color: green;">&amp;#10004;&lt;/span>');
+    }
     else {
       if(checkbox.attr('name').search(/massnahmen/g) > -1) {
         checkbox.replaceWith('&lt;span style="color: red;">&amp;#10006;&lt;/span>');
@@ -1116,6 +1169,11 @@ function genHTMLforPDF(draft = false) {
 
       if(checkbox.attr('name') === 'abschluss_datenschutz_folgeabschaetzung') {
         checkbox.parent().replaceWith('&lt;label>&lt;span style="color: red;">&amp;#10006;&lt;/span> Es ist keine Datenschutzfolgeabschätzung notwendig&lt;/label>');
+        return;
+      }
+
+      if(checkbox.attr('name') === 'daten_kategorien_besonders[]') {
+        checkbox.replaceWith('&lt;span>Nein&lt;/span>');
         return;
       }
 
@@ -1129,8 +1187,7 @@ function genHTMLforPDF(draft = false) {
 
   /* Ergebnis-HTML für mpdf holen */
   var htmlCode = toSend[0].outerHTML;
-
-  console.timeEnd('HTML-Code-Generierung für PDF');
+  console.timeEnd('HTML-Code-Generierung für PDF-Datei');
   return htmlCode;
 }
 
@@ -1598,6 +1655,11 @@ function addTableRow(table) {
   // Tooltips initialisieren
   clone.find('i[data-toggle="tooltip"]').tooltip();
 
+  // DSBOnly Elemente sichtbar machen
+  if(userIsDSB) {
+    clone.find('.dsbOnly').removeClass('dsbOnly');
+  }
+
   // Fall 1: Die aktuelle Tabelle wird nicht automatisch durchnummeriert
   if(clone.find('input[name="' + table + '_nummer[]"]').length !== 1) {
     // Delete Funktion an den neuen Button binden
@@ -1771,7 +1833,17 @@ function generateTOMList() {
  * @return {undefined}
  */
 function filterTOMList(risklevel) {
+  let riskTexts = {
+    '1': 'Der Schutzbedarf ' + (modeNum === 2 ? 'des ' + modeName[0] + 's' : 'der ' + modeName[0]) + ' ist normal. Es sind die &lt;em>Basis&lt;/em>-Anforderungen umzusetzen.',
+    '2': 'Der Schutzbedarf ' + (modeNum === 2 ? 'des ' + modeName[0] + 's' : 'der ' + modeName[0]) + ' ist hoch. Es sind vorrangig die &lt;em>Basis&lt;/em>-Anforderungen umzusetzen. Darüber hinaus sollten die &lt;em>Standard&lt;/em>-Anforderungen umgesetzt werden.',
+    '3': 'Der Schutzbedarf ' + (modeNum === 2 ? 'des ' + modeName[0] + 's' : 'der ' + modeName[0]) + ' ist sehr hoch. Es sind vorrangig die &lt;em>Basis&lt;/em>-Anforderungen umzusetzen. Darüber hinaus sollten die &lt;em>Standard&lt;/em>-Anforderungen sowie die Anforderungen bei &lt;em>erhöhtem&lt;/em> Schutzbedarf umgesetzt werden.'
+  };
   let tomRows = $('#tom_accordion').find('tbody tr');
+
+  // Risikotext anzeigen
+  $('#riskText').html(riskTexts[risklevel]);
+
+  // TOMs ausblenden
   tomRows.each(function() {
     let tomRisklevel = parseInt($(this).data('risk'));
     if(tomRisklevel &lt;= risklevel) $(this).removeClass('hidden');
@@ -1825,7 +1897,7 @@ function toggleTOMList(evt) {
         }
 
         // Tabelle vorbereiten und einfügen
-        let anforderungDesc = 'Als &lt;em>Sicherheitsanforderung&lt;/em> werden Anforderungen für den organisatorischen, personellen, infrastrukturellen und technischen Bereich bezeichnet, deren Erfüllung zur Erhöhung der Informationssicherheit notwendig ist bzw. dazu beiträgt. Eine Sicherheitsanforderung beschreibt also, was getan werden muss, um ein bestimmtes Niveau bezüglich der Informationssicherheit zu erreichen. Wie die Anforderungen im konkreten Fall erfüllt werden, muss in der entsprechenden Sicherheitsmaßnahme beschrieben werden. (&lt;em>Im englischen Sprachraum wird für Sicherheitsanforderungen häufig der Begriff „control“ verwendet.&lt;/em>)&lt;br>Der IT-Grundschutz unterscheidet zwischen Basis-Anforderungen, Standard-Anforderungen und Anforderungen bei erhöhtem Schutzbedarf. &lt;em>Basis-Anforderungen&lt;/em> (grün) sind fundamental und stets umzusetzen, sofern nicht gravierende Gründe dagegen sprechen. &lt;em>Standard-Anforderungen&lt;/em> (gelb) sind für den normalen Schutzbedarf grundsätzlich umzusetzen, sofern sie nicht durch mindestens gleichwertige Alternativen oder die bewusste Akzeptanz des Restrisikos ersetzt werden. &lt;em>Anforderungen bei erhöhtem Schutzbedarf&lt;/em> (rot) sind exemplarische Vorschläge, was bei entsprechendem Schutzbedarf zur Absicherung sinnvoll umzusetzen ist.';
+        let anforderungDesc = 'Als &lt;em>Sicherheitsanforderung&lt;/em> werden Anforderungen für den organisatorischen, personellen, infrastrukturellen und technischen Bereich bezeichnet, deren Erfüllung zur Erhöhung der Informationssicherheit notwendig ist bzw. dazu beiträgt. Eine Sicherheitsanforderung beschreibt also, was getan werden muss, um ein bestimmtes Niveau bezüglich der Informationssicherheit zu erreichen. Wie die Anforderungen im konkreten Fall erfüllt werden, muss in der entsprechenden Sicherheitsmaßnahme beschrieben werden. (&lt;em>Im englischen Sprachraum wird für Sicherheitsanforderungen häufig der Begriff „control“ verwendet.&lt;/em>)&lt;br />Der IT-Grundschutz unterscheidet zwischen Basis-Anforderungen, Standard-Anforderungen und Anforderungen bei erhöhtem Schutzbedarf. &lt;em>Basis-Anforderungen&lt;/em> (grün) sind fundamental und stets umzusetzen, sofern nicht gravierende Gründe dagegen sprechen. &lt;em>Standard-Anforderungen&lt;/em> (gelb) sind für den normalen Schutzbedarf grundsätzlich umzusetzen, sofern sie nicht durch mindestens gleichwertige Alternativen oder die bewusste Akzeptanz des Restrisikos ersetzt werden. &lt;em>Anforderungen bei erhöhtem Schutzbedarf&lt;/em> (rot) sind exemplarische Vorschläge, was bei entsprechendem Schutzbedarf zur Absicherung sinnvoll umzusetzen ist.';
         let statusDesc = 'Als Antworten bezüglich des &lt;em>Umsetzungsstatus&lt;/em> der einzelnen Anforderungen kommen folgende Aussagen in Betracht:&lt;ul>&lt;li>&lt;strong>Ja&lt;/strong> - Zu der Anforderung wurden geeignete Maßnahmen vollständig, wirksam und angemessen umgesetzt.&lt;/li>&lt;li>&lt;strong>Teilweise&lt;/strong> - Die Anforderung wurde nur teilweise umgesetzt.&lt;/li>&lt;li>&lt;strong>Nein&lt;/strong> - Die Anforderung wurde noch nicht erfüllt, also geeignete Maßnahmen sind größtenteils noch nicht umgesetzt worden.&lt;/li>&lt;li>&lt;strong>Entbehrlich&lt;/strong> - Die Erfüllung der Anforderung ist in der vorgeschlagenen Art nicht notwendig, weil die Anforderung im betrachteten Informationsverbund nicht relevant ist (z. B. weil Dienste nicht aktiviert wurden) oder bereits durch Alternativmaßnahmen erfüllt wurde. Wenn Basisanforderungen nicht erfüllt werden, bleibt grundsätzlich ein erhöhtes Risiko bestehen.&lt;/ul>';
         let massnahmeDesc = 'Als &lt;em>Sicherheitsmaßnahme&lt;/em> (kurz Maßnahme) werden alle Aktionen bezeichnet, die dazu dienen, um Sicherheitsrisiken zu steuern und um diesen entgegenzuwirken. Dies schließt sowohl organisatorische, als auch personelle, technische oder infrastrukturelle Sicherheitsmaßnahmen ein. Sicherheitsmaßnahmen dienen zur Erfüllung von Sicherheitsanforderungen. Synonym werden auch die Begriffe Sicherheitsvorkehrung oder Schutzmaßnahme benutzt. (&lt;em>Im englischen Sprachraum werden die Begriffe „safeguard“, „security measure“ oder „measure“ verwendet.&lt;/em>)';
         let catURL = row['CatURL'] ? '&lt;a href="' + row['CatURL'] + '" target="_blank" rel="noopener noreferrer">&lt;i class="fa fa-external-link" style="cursor: pointer;" data-toggle="tooltip" title="Zum BSI Grundschutz-Katalog">&lt;/i>&lt;/a>' : '';
@@ -1843,18 +1915,23 @@ function toggleTOMList(evt) {
       // Alle TOMs in die passende Tabelle einfügen
       let className = row['Risklevel'] == 1 ? 'success' : row['Risklevel'] == 2 ? 'warning' : 'danger';
       let tomID = row['Identifier'].trim().replace(/ /g, '_');
+
       // Titel einblenden, falls vorhanden (bei ENISA gibt es nur die Beschreibung)
-      let tomContent = row['Title'] ? '&lt;p class="strong">' + row['Title'] + ' &lt;/p>&lt;p class="tom_desc">' + row['Description'] + '&lt;/p>' : row['Description'];
+      let tomContent = row['Title'] ? ('&lt;p class="strong">' + row['Title'] + ' &lt;/p>&lt;div class="tom_desc">' + row['Description'] + '&lt;/div>') : (row['Description']);
       let tableBody = $('#' + targetCategory).find('tbody');
+
       // Identifier als Link falls URL vorhanden
       let tomIdentifier = row['Identifier'];
 
+      // Umsetzung
       let tomDropdown = $('&lt;select data-tool="selectpicker" name="massnahmen_' + tomID + '">&lt;/select>')
         .append('&lt;option value="1">Ja&lt;/option>')
         .append('&lt;option value="0" selected>Nein&lt;/option>')
         .append('&lt;option value="2">Teilweise&lt;/option>')
         .append('&lt;option value="4">Entbehrlich&lt;/option>');
-      tableBody.append('&lt;tr data-risk="' + row['Risklevel'] + '" class="' + className + '">&lt;td>' + tomIdentifier + '&lt;/td>&lt;td>' + tomContent + '&lt;/td>&lt;td>' + tomDropdown[0].outerHTML + '&lt;/td>&lt;td>&lt;textarea rows="5" name="massnahmen_' + tomID + '_kommentar" class="form-control" placeholder="Beschreibung der Sicherheitsmaßnahme, Erläuterung bzw. Begründung">&lt;/textarea>&lt;/td>&lt;/tr>');
+
+      // Tabellenzeile einfügen
+      tableBody.append('&lt;tr data-risk="' + row['Risklevel'] + '" class="' + className + '">&lt;td>' + tomIdentifier + '&lt;br />&lt;em>&lt;span class="hidden printOnly">' + (row['Risklevel'] == 1 ? 'Basis' : row['Risklevel'] == 2 ? 'Standard' : 'Erhöht') + '&lt;/span>&lt;em>&lt;/td>&lt;td>' + tomContent + '&lt;/td>&lt;td>' + tomDropdown[0].outerHTML + '&lt;/td>&lt;td>&lt;textarea rows="5" name="massnahmen_' + tomID + '_kommentar" class="form-control" placeholder="Beschreibung der Sicherheitsmaßnahme, Erläuterung bzw. Begründung">&lt;/textarea>&lt;/td>&lt;/tr>');
 
       if(tomContent.includes('ENTFALLEN')) {
         tableBody.find('tr').last().find('textarea').prop('disabled', true);
@@ -1894,7 +1971,7 @@ function toggleTOMList(evt) {
       });
     }
 
-    if(!hasContent) {
+    if(!hasContent || globalClear) {
       $('#' + evtTarget.data('target')).parent('div').prev('h6').detach();
       $('#' + evtTarget.data('target')).parent('div').detach();
     }
@@ -1911,9 +1988,6 @@ function toggleTOMList(evt) {
         $('#' + evtTarget.data('target')).parent('div').detach();
       }
     }
-
-
-
   }
 }
 
@@ -2056,6 +2130,9 @@ Promise.all(promises).then(function() {
         let statusSymbol = data['data'][0]['Status'] in statusSymbolMapping ? '&lt;span>' + statusText + ' &lt;i data-toggle="tooltip" class="fa ' + statusSymbolMapping[data['data'][0]['Status']] + '" title="' + statusText + '">&lt;/i>&lt;/span>' : '&lt;span>Unbekannt &lt;i data-toggle="tooltip" class="fa fa-question" title="Unbekannt">&lt;/i>&lt;/span>';
         idField.closest('td').find('.status span').replaceWith(statusSymbol);
         idField.closest('td').find('.status i').tooltip();
+
+        // Hide quick add button
+        idField.closest('tr').find('.quick_add_dependency').addClass('hidden');
       }).fail((jqXHR, error, errorThrown) => {
         console.error('Fehler beim Abruf von Abhängigkeiten! HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
         descText.val('&lt;Fehler beim Abrufen>');
@@ -2068,10 +2145,15 @@ Promise.all(promises).then(function() {
         // Refresh status
         idField.closest('td').find('.status span').replaceWith('&lt;span>Unbekannt &lt;i data-toggle="tooltip" class="fa fa-question" title="Unbekannt">&lt;/i>&lt;/span>');
         idField.closest('td').find('.status i').tooltip();
+
+        // Show quick add button
+        idField.closest('tr').find('.quick_add_dependency').removeClass('hidden');
       });
     }
     else {
       descText.val('');
+      idField.closest('td').find('input[name="abschluss_abhaengigkeit_betreiber[]"], input[name="itverfahren_abhaengigkeit_betreiber[]"], input[name="verarbeitung_abhaengigkeit_betreiber[]"], input[name="massnahmen_abhaengigkeit_betreiber[]"]').val('');
+
       // Disable Link
       idField.closest('tr').find('td:last').find('a').removeAttr('href');
       idField.closest('tr').find('td:last').find('a').attr('disabled', 'disabled');
@@ -2079,7 +2161,73 @@ Promise.all(promises).then(function() {
       // Refresh status
       idField.closest('td').find('.status span').replaceWith('&lt;span>Unbekannt &lt;i data-toggle="tooltip" class="fa fa-question" title="Unbekannt">&lt;/i>&lt;/span>');
       idField.closest('td').find('.status i').tooltip();
+
+      // Show quick add button
+      idField.closest('tr').find('.quick_add_dependency').removeClass('hidden');
     }
+  });
+
+  $('#abschluss_abhaengigkeit, #itverfahren_abhaengigkeit, #verarbeitung_abhaengigkeit, #massnahmen_abhaengigkeit').on('click', 'button.quick_add_dependency', function() {
+    let targetIDField = $(this).closest('tr').find('input[type="hidden"]');
+    let targetType    = $(this).data('type');
+    let targetTitle   = $(this).closest('tr').find('input[type="text"]').first().val();
+
+    modal.find('.modal-title').text('Abhängigkeit anlegen');
+    modal.find('.modal-body').html('&lt;div>&lt;/div>');
+    modal.find('.modal-body > div').append('&lt;p>Hier können Sie die Abhängigkeit von ' + modeMapping[targetType][4] + ' noch nicht existierenden ' + modeMapping[targetType][0] + ' vorläufig anlegen, damit die Verknüpfung direkt angelegt werden kann. ' + modeMapping[targetType][2] + ' ' + modeMapping[targetType][0] + ' kann später wie jede andere Dokumentation bearbeitet und ergänzt werden.&lt;/p>');
+    modal.find('.modal-body > div').append('&lt;p class="alert alert-danger hidden">Bitte füllen Sie alle Felder aus, um die Abhängigkeit anlegen zu können!&lt;/p>');
+    modal.find('.modal-body > div').append('&lt;div class="form-group">&lt;label>Bezeichnung &lt;i data-toggle="tooltip" title="Eindeutiges Kürzel" class="fa fa-question-circle-o fa-lg">&lt;/i> &lt;sup>&lt;i style="color: #EB5E28;" class="fa fa-asterisk" aria-hidden="true">&lt;/i>&lt;/sup>&lt;/label>&lt;input type="text" class="form-control" name="quick_title" placeholder="Bsp.: E-Mail Service" required>&lt;/div>');
+    modal.find('.modal-body > div').append('&lt;div class="form-group">&lt;label>Verantwortliche Organisationseinheit &lt;sup>&lt;i style="color: #EB5E28;" class="fa fa-asterisk" aria-hidden="true">&lt;/i>&lt;/sup>&lt;/label>&lt;br>&lt;input data-tool="typeahead" data-action="searchabteilung" data-minlength="0" type="text" class="form-control" name="quick_department" placeholder="Bsp.: Zentrum für Informationsverarbeitung" required>&lt;/div>');
+    modal.find('.modal-body > div').append('&lt;div class="form-group">&lt;label>1. Ansprechpartner &lt;i data-toggle="tooltip" title="Ansprechpartner für inhaltliche Fragen zur Verarbeitungstätigkeit &lt;br />&lt;br /> Es kann ein Mitarbeiter aus der Liste gewählt oder eine Funktionsbezeichnung (z.B. Leiter Abt. 3) eingetragen werden. Der automatische Zugriff bzw. die E-Mail-Benachrichtigungen funktionieren nur bei Auswahl eines Mitarbeiters aus der Liste!" class="fa fa-question-circle-o fa-lg">&lt;/i> &lt;sup>&lt;i style="color: #EB5E28;" class="fa fa-asterisk" aria-hidden="true">&lt;/i>&lt;/sup>&lt;/label>&lt;br>&lt;input data-tool="typeahead" data-action="searchmitarbeiter" data-minlength="0" data-dynamic="true" data-cache="false" data-hiddenfield="quick_contact_id" type="text" class="form-control" name="quick_contact_name" placeholder="Geben Sie eine Kennung oder einen Namen (min. 4 Zeichen) ein..." required>&lt;input type="hidden" name="quick_contact_id">&lt;/div>');
+
+    modal.find('input[name="quick_title"]').val(targetTitle);
+
+    modal.find('.modal-body').append('&lt;p class="text-center">&lt;button type="button" class="btn btn-success" id="quickSave">Anlegen &amp; Speichern&lt;/button>&lt;button type="button" class="ml btn btn-danger" data-dismiss="modal" aria-label="Close">Abbrechen&lt;/button>&lt;/p>');
+
+    // Tooltips, Typeahead und Buttons
+    modal.find('.modal-body i').tooltip();
+    modal.find('input[data-tool="typeahead"]').each(function(key, value) {
+      initTypeahead(value);
+    });
+    modal.find('#quickSave').click(function() {
+      // Werte holen
+      let newDoc = {
+        'allgemein_typ': targetType,
+        'allgemein_bezeichnung': modal.find('input[name="quick_title"]').val(),
+        'allgemein_beschreibung': '',
+        'allgemein_abteilung': modal.find('input[name="quick_department"]').val(),
+        'allgemein_fachlich_name': modal.find('input[name="quick_contact_name"]').val(),
+        'allgemein_fachlich_kennung': modal.find('input[name="quick_contact_id"]').val(),
+      };
+
+      debugLog('Quick Create', newDoc);
+
+      if(!newDoc['allgemein_typ'] || !newDoc['allgemein_bezeichnung'] || !newDoc['allgemein_fachlich_name'] || !newDoc['allgemein_abteilung']) {
+        modal.find('.alert').removeClass('hidden');
+        return;
+      }
+
+      // Dokumentation anlegen
+      setOverlay(true);
+      $(this).prop('disabled', true);
+
+      $.post(backendPath, JSON.stringify({'action':'create', 'debug': debug, 'data': newDoc})).done(function(data) {
+        if(data['success']) {
+          targetIDField.val(parseInt(data['data']['ID']));
+          targetIDField.trigger('change');
+          modal.modal('hide');
+        }
+        else {
+          showError('Anlegen einer Abhängigkeit', data['error']);
+        }
+        setOverlay(false);
+      }).fail((jqXHR, error, errorThrown) => {
+        showError('Anlegen einer Abhängigkeit', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+        setOverlay(false);
+      });
+    });
+
+    modal.modal();
   });
 
   // Zeigt den aktuellen Aufstellungsort der Endgeräte an
@@ -2187,7 +2335,7 @@ Promise.all(promises).then(function() {
   $('input[name="allgemein_bezeichnung"]').on('input', (e) => {
     document.title = e.target.value + ' - ' + document.title.split(' - ').slice(-1)[0];
     let statusSymbol = status in statusSymbolMapping ? ' &lt;i data-toggle="tooltip" class="fa ' + statusSymbolMapping[status] + '" title="' + statusMapping[status]  + '">&lt;/i>' : '';
-    $('#title').text('Dokumentation von ' + e.target.value).append(statusSymbol).find('i').tooltip();
+    $('#title').text(' Dokumentation von ' + e.target.value).append(statusSymbol).find('i').tooltip();
   });
 
   // Warnung vor dem Schließen der Webseite, falls ungespeicherte Änderungen vorhanden sind
@@ -2270,13 +2418,13 @@ Promise.all(promises).then(function() {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#addTableRow">addTableRow</a></li><li><a href="global.html#autoSaveTimer">autoSaveTimer</a></li><li><a href="global.html#autoSaveWait">autoSaveWait</a></li><li><a href="global.html#backendPath">backendPath</a></li><li><a href="global.html#canEdit">canEdit</a></li><li><a href="global.html#changedFields">changedFields</a></li><li><a href="global.html#changedValues">changedValues</a></li><li><a href="global.html#copyFromServer">copyFromServer</a></li><li><a href="global.html#copyId">copyId</a></li><li><a href="global.html#copyIdMain">copyIdMain</a></li><li><a href="global.html#debug">debug</a></li><li><a href="global.html#debugLog">debugLog</a></li><li><a href="global.html#deleteFromServer">deleteFromServer</a></li><li><a href="global.html#endlessCounts">endlessCounts</a></li><li><a href="global.html#endlessTables">endlessTables</a></li><li><a href="global.html#endlessTemplates">endlessTemplates</a></li><li><a href="global.html#exportJSON">exportJSON</a></li><li><a href="global.html#filterTOMList">filterTOMList</a></li><li><a href="global.html#generateTOMList">generateTOMList</a></li><li><a href="global.html#genHTMLforPDF">genHTMLforPDF</a></li><li><a href="global.html#getCombinedPDF">getCombinedPDF</a></li><li><a href="global.html#getCompletePDF">getCompletePDF</a></li><li><a href="global.html#getPDFFromServer">getPDFFromServer</a></li><li><a href="global.html#GetURLParameter">GetURLParameter</a></li><li><a href="global.html#getUserPromise">getUserPromise</a></li><li><a href="global.html#htmlDecode">htmlDecode</a></li><li><a href="global.html#htmlEncode">htmlEncode</a></li><li><a href="global.html#importJSON">importJSON</a></li><li><a href="global.html#initEndlessTables">initEndlessTables</a></li><li><a href="global.html#initTypeahead">initTypeahead</a></li><li><a href="global.html#loadEmpty">loadEmpty</a></li><li><a href="global.html#loadFromJSON">loadFromJSON</a></li><li><a href="global.html#loadFromServer">loadFromServer</a></li><li><a href="global.html#loadId">loadId</a></li><li><a href="global.html#loadIdMain">loadIdMain</a></li><li><a href="global.html#loadSubpage">loadSubpage</a></li><li><a href="global.html#loadTables">loadTables</a></li><li><a href="global.html#markedAsFinished">markedAsFinished</a></li><li><a href="global.html#modal">modal</a></li><li><a href="global.html#mode">mode</a></li><li><a href="global.html#modeName">modeName</a></li><li><a href="global.html#modeNum">modeNum</a></li><li><a href="global.html#myFinish">myFinish</a></li><li><a href="global.html#myInit">myInit</a></li><li><a href="global.html#myNext">myNext</a></li><li><a href="global.html#myPrevious">myPrevious</a></li><li><a href="global.html#myTabChange">myTabChange</a></li><li><a href="global.html#myTabClick">myTabClick</a></li><li><a href="global.html#page">page</a></li><li><a href="global.html#promises">promises</a></li><li><a href="global.html#removeTableRows">removeTableRows</a></li><li><a href="global.html#saveAsObject">saveAsObject</a></li><li><a href="global.html#saveOnServer">saveOnServer</a></li><li><a href="global.html#selectedTier">selectedTier</a></li><li><a href="global.html#setOverlay">setOverlay</a></li><li><a href="global.html#setSaveLabel">setSaveLabel</a></li><li><a href="global.html#showError">showError</a></li><li><a href="global.html#showImportDialog">showImportDialog</a></li><li><a href="global.html#showVerfahrensliste">showVerfahrensliste</a></li><li><a href="global.html#status">status</a></li><li><a href="global.html#statusMapping">statusMapping</a></li><li><a href="global.html#statusSymbolMapping">statusSymbolMapping</a></li><li><a href="global.html#toggleTOMList">toggleTOMList</a></li><li><a href="global.html#tomsMapping">tomsMapping</a></li><li><a href="global.html#typeaheadCache">typeaheadCache</a></li><li><a href="global.html#userCanDSB">userCanDSB</a></li><li><a href="global.html#userIsDSB">userIsDSB</a></li><li><a href="global.html#version">version</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#addTableRow">addTableRow</a></li><li><a href="global.html#autoSaveTimer">autoSaveTimer</a></li><li><a href="global.html#autoSaveWait">autoSaveWait</a></li><li><a href="global.html#backendPath">backendPath</a></li><li><a href="global.html#canEdit">canEdit</a></li><li><a href="global.html#changedFields">changedFields</a></li><li><a href="global.html#changedValues">changedValues</a></li><li><a href="global.html#copyFromServer">copyFromServer</a></li><li><a href="global.html#copyId">copyId</a></li><li><a href="global.html#copyIdMain">copyIdMain</a></li><li><a href="global.html#debug">debug</a></li><li><a href="global.html#debugLog">debugLog</a></li><li><a href="global.html#deleteFromServer">deleteFromServer</a></li><li><a href="global.html#endlessCounts">endlessCounts</a></li><li><a href="global.html#endlessTables">endlessTables</a></li><li><a href="global.html#endlessTemplates">endlessTemplates</a></li><li><a href="global.html#exportJSON">exportJSON</a></li><li><a href="global.html#filterTOMList">filterTOMList</a></li><li><a href="global.html#generateTOMList">generateTOMList</a></li><li><a href="global.html#genHTMLforPDF">genHTMLforPDF</a></li><li><a href="global.html#getCombinedPDF">getCombinedPDF</a></li><li><a href="global.html#getCompletePDF">getCompletePDF</a></li><li><a href="global.html#getPDFFromServer">getPDFFromServer</a></li><li><a href="global.html#GetURLParameter">GetURLParameter</a></li><li><a href="global.html#getUserPromise">getUserPromise</a></li><li><a href="global.html#globalClear">globalClear</a></li><li><a href="global.html#htmlDecode">htmlDecode</a></li><li><a href="global.html#htmlEncode">htmlEncode</a></li><li><a href="global.html#importJSON">importJSON</a></li><li><a href="global.html#initEndlessTables">initEndlessTables</a></li><li><a href="global.html#initTypeahead">initTypeahead</a></li><li><a href="global.html#loadEmpty">loadEmpty</a></li><li><a href="global.html#loadFromJSON">loadFromJSON</a></li><li><a href="global.html#loadFromServer">loadFromServer</a></li><li><a href="global.html#loadId">loadId</a></li><li><a href="global.html#loadIdMain">loadIdMain</a></li><li><a href="global.html#loadSubpage">loadSubpage</a></li><li><a href="global.html#loadTables">loadTables</a></li><li><a href="global.html#markedAsFinished">markedAsFinished</a></li><li><a href="global.html#modal">modal</a></li><li><a href="global.html#mode">mode</a></li><li><a href="global.html#modeMapping">modeMapping</a></li><li><a href="global.html#modeName">modeName</a></li><li><a href="global.html#modeNum">modeNum</a></li><li><a href="global.html#myFinish">myFinish</a></li><li><a href="global.html#myInit">myInit</a></li><li><a href="global.html#myNext">myNext</a></li><li><a href="global.html#myPrevious">myPrevious</a></li><li><a href="global.html#myTabChange">myTabChange</a></li><li><a href="global.html#myTabClick">myTabClick</a></li><li><a href="global.html#page">page</a></li><li><a href="global.html#promises">promises</a></li><li><a href="global.html#removeTableRows">removeTableRows</a></li><li><a href="global.html#saveAsObject">saveAsObject</a></li><li><a href="global.html#saveOnServer">saveOnServer</a></li><li><a href="global.html#selectedTier">selectedTier</a></li><li><a href="global.html#setOverlay">setOverlay</a></li><li><a href="global.html#setSaveLabel">setSaveLabel</a></li><li><a href="global.html#showError">showError</a></li><li><a href="global.html#showImportDialog">showImportDialog</a></li><li><a href="global.html#showVerfahrensliste">showVerfahrensliste</a></li><li><a href="global.html#status">status</a></li><li><a href="global.html#statusMapping">statusMapping</a></li><li><a href="global.html#statusSymbolMapping">statusSymbolMapping</a></li><li><a href="global.html#toggleTOMList">toggleTOMList</a></li><li><a href="global.html#tomsMapping">tomsMapping</a></li><li><a href="global.html#typeaheadCache">typeaheadCache</a></li><li><a href="global.html#userCanDSB">userCanDSB</a></li><li><a href="global.html#userIsDSB">userIsDSB</a></li><li><a href="global.html#userIsManager">userIsManager</a></li><li><a href="global.html#version">version</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.4</a> on Fri Jul 31 2020 09:19:43 GMT+0200 (Mitteleuropäische Sommerzeit)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.5</a> on Fri Aug 14 2020 09:53:05 GMT+0200 (Mitteleuropäische Sommerzeit)
 </footer>
 
 <script> prettyPrint(); </script>

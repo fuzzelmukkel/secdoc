@@ -904,6 +904,7 @@ function loadFromServer(id) {
         $('#content > .tab-content > .tab-pane > div').appendTo('#content > .tab-content > .tab-pane:first()');
         $('#content > .wizard-navigation, #content > .wizard-footer div').remove();
         $('#content > .tab-content').css('padding-top', '0px');
+        $('#autosaveLabel').addClass('hidden');
       }
 
       lastSaveDate = data['data'][0]['Aktualisierung'];
@@ -2326,7 +2327,7 @@ Promise.all(promises).then(function() {
 
   // Autosave Timer
   autoSaveTimer = window.setInterval(() => {
-    if(loadId !== 0 && changedValues) {
+    if(loadId !== 0 && canEdit && changedValues) {
       console.log('Autosaving...');
       saveOnServer();
     }

@@ -48,10 +48,10 @@
     $output['error'] = "Ein interner Fehler ist aufgetreten! Bitte versuchen Sie es später erneut oder wenden Sie sich an einen Administrator.";
 
     # Meldung als HTML ausgeben
-    echo '<br><b>Fatal error</b>:  Exception \'' . get_class($exception) . '\' with message ';
-    echo $exception->getMessage() . '<br>';
+    echo '<br /><b>Fatal error</b>:  Exception \'' . get_class($exception) . '\' with message ';
+    echo $exception->getMessage() . '<br />';
     echo 'Stack trace:<pre>' . $exception->getTraceAsString() . '</pre>';
-    echo 'thrown in <b>' . $exception->getFile() . '</b> on line <b>' . $exception->getLine() . '</b><br>';
+    echo 'thrown in <b>' . $exception->getFile() . '</b> on line <b>' . $exception->getLine() . '</b><br />';
 
     # Meldung zusätzlich in Log schreiben
     error_log("[SecDoc] Exception " . get_class($exception) . ' with message ' . $exception->getMessage() . ' thrown in ' . $exception->getFile() . ' on line ' . $exception->getLine());
@@ -249,7 +249,7 @@
 
     require_once '../vendor/autoload.php';
 
-    global $dbcon, $userId, $pdf_dir, $prog_name, $prog_version;
+    global $dbcon, $userId, $pdf_dir, $prog_name, $prog_version, $prog_url;
     $res = Utils::searchUsers($userId, TRUE);
     $author = !empty($res) ? $res[0]['name'] : '';
 
@@ -258,6 +258,9 @@
     $mpdf->SetTitle('SecDoc Dokumentation - ' . $title . ($isDraft ? ' (ENTWURF)' : ''));
     $mpdf->SetAuthor($author);
     $mpdf->SetCreator($prog_name . ' v' . $prog_version);
+
+    # Überschriften zu Bookmarks machen
+    $mpdf->h2bookmarks = ['H3' => 0, 'H5' => 1];
 
     # Wasserzeichen setzen?
     #$mpdf->SetWatermarkText('DRAFT');
@@ -282,6 +285,13 @@
     $mpdf->WriteHTML($style,1);
     $style = file_get_contents('../css/custom_pdf.css');
     $mpdf->WriteHTML($style,1);
+
+    # Ersetzungen durchführen
+    $lastEditor = $dbcon->getHistorie($verfahrensId)[0];
+    $lastEditor = !empty($lastEditor['Anzeigename']) ? $lastEditor['Anzeigename'] : $lastEditor['Kennung'];
+    $html = str_replace('$lasteditor$', $lastEditor, $html);
+    $html = str_replace('$docurl$', $prog_url . "?id=$verfahrensId", $html);
+    $html = str_replace('$baseurl$', $prog_url, $html);
 
     # HTML aufbauen
     $finalHTML = <<<EOH
@@ -349,7 +359,7 @@ EOH;
   }
 
   /**
-   * Generiert eine kombinierte PDF mit allen PDFs von abgeschlossenen Verfahren.
+   * Generiert eine kombinierte PDF-Datei mit allen PDFs von abgeschlossenen Verarbeitungstätigkeiten (VVT).
    *
    * @param  array $processes Array von Verfahren (wie von DBCon->listVerfahrenDSB() zurückgegeben)
    * @return bool             TRUE bei Erfolg (PDF wurde in $pdf_dir abgespeichert), FALSE sonst
@@ -365,7 +375,7 @@ EOH;
 
     # MPDF initialisieren
     $mpdf = new \Mpdf\Mpdf(['debug' => false, 'CSSselectMedia' => 'screen', 'mode' => 'utf-8', 'format' => 'A4']);
-    $mpdf->SetTitle('Verzeichnis der Verarbeitungstätigkeiten');
+    $mpdf->SetTitle('Verzeichnis von Verarbeitungstätigkeiten');
     $mpdf->SetAuthor($author);
     $mpdf->SetCreator($prog_name . ' v' . $prog_version);
 
@@ -381,6 +391,7 @@ EOH;
     # Titelseite einfügen
     $titlePage = file_get_contents('../html/pdf_titlepage.inc.html');
     $titlePage .= '<pagebreak resetpagenum="1" pagenumstyle="1" suppress="off" />';
+    $mpdf->Bookmark(htmlspecialchars("Verzeichnis abgeschlossener Dokumentationen", ENT_QUOTES), 0);
     $mpdf->WriteHTML($titlePage);
 
     # TOC einfügen (ein Eintrag pro Verfahren)
@@ -393,12 +404,14 @@ EOH;
       'toc_preHTML' => "<h2>Inhaltsverzeichnis</h2>",
       'toc_ohvalue' => 'off',
       'toc_ofvalue' => 'off',
+      'toc_bookmarkText' => 'Inhaltsverzeichnis'
     ]);
 
     $procCount = count($processes);
 
     # Nach ID sortieren? Oder eher nach Name, Erstelldatum oder Aktualisierungsdatum?
-    usort($processes, function($a, $b) { return (intval($a['ID']) - intval($b['ID'])); });
+    # Am besten alphabetisch nach Name
+    usort($processes, function($a, $b) { return strcmp(strval($a['Bezeichnung']), strval($b['Bezeichnung'])); });
 
     for($p = 0; $p < $procCount; $p++) {
       $filePath = $pdf_dir . DIRECTORY_SEPARATOR . $processes[$p]['ID'] . '.pdf';
@@ -406,6 +419,7 @@ EOH;
       if(file_exists($filePath)) {
         $mpdf->setFooter(htmlspecialchars("#{$processes[$p]['ID']}|{$processes[$p]['Bezeichnung']}") . '|{PAGENO}');
         $mpdf->TOC_Entry(htmlspecialchars("#{$processes[$p]['ID']} - {$processes[$p]['Bezeichnung']}"));
+        $mpdf->Bookmark(htmlspecialchars("#{$processes[$p]['ID']} - {$processes[$p]['Bezeichnung']}", ENT_QUOTES), 0);
 
         $pageCount = $mpdf->SetSourceFile($filePath);
 
@@ -419,8 +433,9 @@ EOH;
       elseif(intval($processes[$p]['Status']) === 2) {
         $mpdf->setFooter(htmlspecialchars("#{$processes[$p]['ID']}|{$processes[$p]['Bezeichnung']}") . '|{PAGENO}');
         $mpdf->TOC_Entry(htmlspecialchars("#{$processes[$p]['ID']} - {$processes[$p]['Bezeichnung']}"));
+        $mpdf->Bookmark(htmlspecialchars("#{$processes[$p]['ID']} - {$processes[$p]['Bezeichnung']}", ENT_QUOTES), 0);
 
-        $mpdf->WriteHTML("<h2>PDF für Dokumentation #{$processes[$p]['ID']} - '" . htmlspecialchars("{$processes[$p]['Bezeichnung']}") . "' fehlt</h2><p>Die Dokumentation #{$processes[$p]['ID']} ist als abgeschlossen markiert, aber es ist keine PDF vorhanden!</p><p>Bitte schließen Sie die Dokumentation neu ab, um eine korrekte PDF-Version zu erzeugen.</p><pagebreak />");
+        $mpdf->WriteHTML("<h2>Die PDF-Datei für die Dokumentation #{$processes[$p]['ID']} - '" . htmlspecialchars("{$processes[$p]['Bezeichnung']}") . "' fehlt</h2><p>Die Dokumentation #{$processes[$p]['ID']} ist als abgeschlossen markiert, aber es ist keine PDF-Datei vorhanden!</p><p>Bitte schließen Sie die Dokumentation erneut ab, um eine vollständige PDF-Version zu erzeugen.</p><pagebreak />");
       }
     }
 
@@ -498,6 +513,7 @@ EOH;
     $titlePage = file_get_contents('../html/pdf_titlepage.inc.html');
     $titlePage = preg_replace('/<h1>.*<\/h1>/', "<h1>Gesamtdokumentation</h1><br /><h2>#{$process['ID']} - {$process['Bezeichnung']}</h2>", $titlePage);
     $titlePage .= '<pagebreak resetpagenum="1" pagenumstyle="1" suppress="off" />';
+    $mpdf->Bookmark(htmlspecialchars("Gesamtdokumentation #{$process['ID']} - {$process['Bezeichnung']}", ENT_QUOTES), 0);
     $mpdf->WriteHTML($titlePage);
 
     # TOC einfügen
@@ -510,6 +526,7 @@ EOH;
       'toc_preHTML' => "<h2>Inhaltsverzeichnis</h2>",
       'toc_ohvalue' => 'off',
       'toc_ofvalue' => 'off',
+      'toc_bookmarkText' => 'Inhaltsverzeichnis'
     ]);
 
     # Hauptverarbeitungstätigkeit hinzufügen
@@ -517,6 +534,7 @@ EOH;
     if(file_exists($filePath)) {
       $mpdf->SetFooter(htmlspecialchars("#{$process['ID']}|{$process['Bezeichnung']}") . '|{PAGENO}');
       $mpdf->TOC_Entry(htmlspecialchars("Hauptverarbeitungstätigkeit #{$process['ID']} - {$process['Bezeichnung']}"));
+      $mpdf->Bookmark(htmlspecialchars("Hauptverarbeitungstätigkeit #{$process['ID']} - {$process['Bezeichnung']}", ENT_QUOTES), 0);
 
       $pageCount = $mpdf->SetSourceFile($filePath);
 
@@ -547,6 +565,7 @@ EOH;
 
       # Überschrift im TOC
       $mpdf->TOC_Entry(htmlspecialchars("Abhängigkeiten von $key"));
+      $mpdf->Bookmark(htmlspecialchars("Abhängigkeiten von $key", ENT_QUOTES), 0);
 
       for($doc = 0; $doc < $docCount; $doc++) {
         $filePath = $pdf_dir . DIRECTORY_SEPARATOR . $deps[$doc]['id'] . '.pdf';
@@ -554,6 +573,7 @@ EOH;
         if(file_exists($filePath)) {
           $mpdf->setFooter(htmlspecialchars("#{$deps[$doc]['id']}|{$deps[$doc]['name']}") . '|{PAGENO}');
           $mpdf->TOC_Entry(htmlspecialchars("#{$deps[$doc]['id']} - {$deps[$doc]['name']}"), 1);
+          $mpdf->Bookmark(htmlspecialchars("#{$deps[$doc]['id']} - {$deps[$doc]['name']}", ENT_QUOTES), 1);
 
           $pageCount = $mpdf->SetSourceFile($filePath);
 
@@ -566,15 +586,17 @@ EOH;
         elseif(intval($deps[$doc]['status']) === 2) {
           $mpdf->setFooter(htmlspecialchars("#{$deps[$doc]['id']}|{$deps[$doc]['name']}") . '|{PAGENO}');
           $mpdf->TOC_Entry(htmlspecialchars("#{$deps[$doc]['id']} - {$deps[$doc]['name']}"), 1);
+          $mpdf->Bookmark(htmlspecialchars("#{$deps[$doc]['id']} - {$deps[$doc]['name']}", ENT_QUOTES), 1);
 
-          $mpdf->WriteHTML("<h2>PDF für Dokumentation #{$deps[$doc]['id']} - '" . htmlspecialchars("{$deps[$doc]['name']}") . "' fehlt</h2><p>Die Dokumentation #{$deps[$doc]['id']} ist als abgeschlossen markiert, aber es ist keine PDF vorhanden!</p><p>Bitte schließen Sie die Dokumentation neu ab, um eine korrekte PDF-Version zu erzeugen.</p><p><a href=\"$prog_url?id={$deps[$doc]['id']}\">Dokumentation online einsehen</a></p><pagebreak />");
+          $mpdf->WriteHTML("<h2>Die PDF-Datei für die Dokumentation #{$deps[$doc]['id']} - '" . htmlspecialchars("{$deps[$doc]['name']}") . "' fehlt</h2><p>Die Dokumentation #{$deps[$doc]['id']} ist als abgeschlossen markiert, aber es ist keine PDF-Datei vorhanden!</p><p>Bitte schließen Sie die Dokumentation erneut ab, um eine vollständige PDF-Version zu erzeugen.</p><p><a href=\"$prog_url?id={$deps[$doc]['id']}\">Dokumentation online einsehen</a></p><pagebreak />");
         }
         # Fehlende PDF, da noch nicht abgeschlossen
         elseif(intval($deps[$doc]['status']) === 0) {
           $mpdf->setFooter(htmlspecialchars("#{$deps[$doc]['id']}|{$deps[$doc]['name']}") . '|{PAGENO}');
           $mpdf->TOC_Entry(htmlspecialchars("#{$deps[$doc]['id']} - {$deps[$doc]['name']}"), 1);
+          $mpdf->Bookmark(htmlspecialchars("#{$deps[$doc]['id']} - {$deps[$doc]['name']}", ENT_QUOTES), 1);
 
-          $mpdf->WriteHTML("<h2>PDF für Dokumentation #{$deps[$doc]['id']} - '" . htmlspecialchars("{$deps[$doc]['name']}") . "' fehlt</h2><p>Die Dokumentation #{$deps[$doc]['id']} ist noch nicht abgeschlossen worden, sodass bisher keine PDF existiert.</p><p>Bitte schließen Sie die Dokumentation ab, um eine korrekte PDF-Version zu erzeugen.</p><p><a href=\"$prog_url?id={$deps[$doc]['id']}\">Dokumentation online einsehen</a></p><pagebreak />");
+          $mpdf->WriteHTML("<h2>Die PDF-Datei für die Dokumentation #{$deps[$doc]['id']} - '" . htmlspecialchars("{$deps[$doc]['name']}") . "' fehlt</h2><p>Die Dokumentation #{$deps[$doc]['id']} wurde noch nicht abgeschlossen, so dass bisher keine PDF-Datei existiert.</p><p>Bitte schließen Sie die Dokumentation ab, um eine vollständige PDF-Version zu erzeugen.</p><p><a href=\"$prog_url?id={$deps[$doc]['id']}\">Dokumentation online einsehen</a></p><pagebreak />");
         }
       }
     }
@@ -641,15 +663,19 @@ EOH;
     $lastUpdate = date('YmdHi', strtotime($verfahrensInfo['Aktualisierung']));
     if ($verfahrensInfo['Typ'] == 1)
     {
-      $verfahrensTyp = "der Verarbeitungstätigkeit";
+      $verfahrensTyp = "einer Verarbeitungstätigkeit";
     }
     elseif ($verfahrensInfo['Typ'] == 3)
     {
-      $verfahrensTyp = "der Fachapplikation";
+      $verfahrensTyp = "einer Fachapplikation";
     }
     elseif ($verfahrensInfo['Typ'] == 2)
     {
-      $verfahrensTyp = "des IT-Verfahrens";
+      $verfahrensTyp = "eines IT-Verfahrens";
+    }
+    elseif ($verfahrensInfo['Typ'] == 4)
+    {
+      $verfahrensTyp = "einer übergreifenden Massnahme";
     }
 
     $personen = array(
@@ -667,9 +693,10 @@ EOH;
       ),
     );
 
-    require_once '../vendor/autoload.php';
+
 
     # Create a new PHPMailer instance
+    require_once '../vendor/autoload.php';
     $mail = new PHPMailer;
     $mail->isSendmail();
     $mail->CharSet = "UTF-8";
@@ -701,25 +728,24 @@ EOH;
     }
 
     # Überprüft ob ein Kontakt merhmals eingetragen worden ist
-    if ($personen['Ersteller']['uid'] == $personen['Technischer Ansprechpartner']['uid'] && $personen['Ersteller']['uid'] == $personen['Fachlicher Ansprechpartner']['uid'] ) {
+    if ($personen['Ersteller']['uid'] === $personen['Technischer Ansprechpartner']['uid'] && $personen['Ersteller']['uid'] === $personen['Fachlicher Ansprechpartner']['uid'] ) {
       $personen['Ersteller, Technischer Ansprechpartner, Fachlicher Ansprechpartner'] = $personen['Ersteller'];
       unset($personen['Ersteller']);
       unset($personen['Technischer Ansprechpartner']);
       unset($personen['Fachlicher Ansprechpartner']);
-    } elseif ($personen['Ersteller']['uid'] == $personen['Technischer Ansprechpartner']['uid']) {
+    } elseif ($personen['Ersteller']['uid'] === $personen['Technischer Ansprechpartner']['uid']) {
       $personen['Ersteller, Technischer Ansprechpartner'] = $personen['Ersteller'];
       unset($personen['Ersteller']);
       unset($personen['Technischer Ansprechpartner']);
-    } elseif ($personen['Ersteller']['uid'] == $personen['Fachlicher Ansprechpartner']['uid']) {
+    } elseif ($personen['Ersteller']['uid'] === $personen['Fachlicher Ansprechpartner']['uid']) {
       $personen['Ersteller, Fachlicher Ansprechpartner'] = $personen['Ersteller'];
       unset($personen['Ersteller']);
       unset($personen['Fachlicher Ansprechpartner']);
-    } elseif ($personen['Fachlicher Ansprechpartner']['uid'] == $personen['Technischer Ansprechpartner']['uid']) {
+    } elseif ($personen['Fachlicher Ansprechpartner']['uid'] === $personen['Technischer Ansprechpartner']['uid']) {
       $personen['Fachlicher Ansprechpartner, Technischer Ansprechpartner'] = $personen['Technischer Ansprechpartner'];
-      unset($personen['Fachkontakt']);
-      unset($personen['Techkontakt']);
+      unset($personen['Fachlicher Ansprechpartner']);
+      unset($personen['Technischer Ansprechpartner']);
     }
-    $last_entry = array_keys($personen)[count($personen)-1];
 
     $mailSuccess = TRUE;
 
@@ -856,9 +882,10 @@ EOH;
   # Nutzergruppen holen
   $userGroups = $authClass->getUserGroups();
 
-  # Prüfen, ob der Nutzer ein DSB oder Admin ist
-  $userCanDSB  = in_array($userId, $dsbIDs) || $authClass->checkDPOPerm();
-  $userIsAdmin = $authClass->checkAdminPerm();
+  # Prüfen, ob der Nutzer ein DSB, Admin oder Bereichsleiter ist
+  $userCanDSB    = in_array($userId, $dsbIDs) || $authClass->checkDPOPerm();
+  $userIsAdmin   = $authClass->checkAdminPerm();
+  $userIsManager = $authClass->checkManagerPerm();
 
   $dsbCookie = preg_replace("/\W/", '_', $prog_name . ' ' . $prog_version) . '_dsb';
   if(isset($_COOKIE[$dsbCookie]) && $_COOKIE[$dsbCookie] === '1' && $userCanDSB) {
@@ -1058,8 +1085,8 @@ EOH;
         }
       }
 
-      if(intval($data['allgemein_typ']) === 4 && !$userIsDSB) {
-        returnError('Nur Nutzer mit DSB-Berechtigung können übergreifende Massnahmen anlegen!');
+      if(intval($data['allgemein_typ']) === 4 && !$userIsDSB && !$userIsManager) {
+        returnError('Nur Nutzer mit DSB- oder Bereichsleiter-Berechtigung können übergreifende Massnahmen anlegen!');
         break;
       }
 
@@ -1387,6 +1414,8 @@ EOH;
         $output['count'] = $filesize;
         $output['data']['status'] = intval($details[0]['Status']);
         $output['data']['lastupdate'] = $details[0]['Aktualisierung'];
+        $output['data']['title'] = $details[0]['Bezeichnung'];
+        $output['data']['type'] = intval($details[0]['Typ']);
         $output['data']['pdf'] = base64_encode($pdfContent);
         $output['success'] = TRUE;
       }
@@ -1430,8 +1459,9 @@ EOH;
       }
 
       if($search == $userId) {
-        $result[0]['userIsDSB']  = $userIsDSB;
-        $result[0]['userCanDSB'] = $userCanDSB;
+        $result[0]['userIsDSB']      = $userIsDSB;
+        $result[0]['userCanDSB']     = $userCanDSB;
+        $result[0]['userIsManager']  = $userIsManager;
       }
       $output['data'] = $result;
       $output['count'] = count($result);
@@ -1577,7 +1607,7 @@ EOH;
         $output['success'] = TRUE;
       }
       else {
-        $output['error'] = 'PDF konnte nicht erzeugt werden. Bitte versuchen Sie es später erneut!';
+        $output['error'] = 'Die PDF-Datei konnte nicht erzeugt werden. Bitte versuchen Sie es später erneut!';
       }
       break;
     }
@@ -1587,8 +1617,8 @@ EOH;
         returnError('Sie haben keine Berechtigung diese Funktion aufzurufen!');
       }
 
-      if(!generateCombinedPDF($dbcon->listVerfahrenDSB())) {
-        returnError('Interner Fehler beim Erstellen der kombinierten PDF!');
+      if(!generateCombinedPDF($dbcon->listVerfahrenDSB('', 1))) {
+        returnError('Interner Fehler beim Erstellen der kombinierten PDF-Datei!');
       }
 
       $filename = $pdf_dir . DIRECTORY_SEPARATOR . 'combined.pdf';
@@ -1604,10 +1634,10 @@ EOH;
       else {
         trigger_error('[SecDoc] verwaltung.php -> Kann PDF-Datei nicht öffnen');
         error_log('[SecDoc] verwaltung.php -> Kann PDF-Datei nicht öffnen');
-        returnError('Die PDF zum Verzeichnis von Verarbeitungstätigkeiten existiert nicht.');
+        returnError('Die PDF-Datei zum Verzeichnis von Verarbeitungstätigkeiten existiert nicht.');
       }
 
-      if(!unlink($filename)) error_log("[SecDoc] verwaltung.php -> Konnte kombinierte PDF '$filename' nicht löschen!");
+      if(!unlink($filename)) error_log("[SecDoc] verwaltung.php -> Konnte kombinierte PDF-Datei '$filename' nicht löschen!");
       break;
     }
 
@@ -1685,6 +1715,8 @@ EOH;
         $pdfContent = file_get_contents($filename);
         $output['count'] = $filesize;
         $output['data']['pdf'] = base64_encode($pdfContent);
+        $output['data']['title'] = $mainDoc['Bezeichnung'];
+        $output['data']['type'] = $mainDoc['Typ'];
         $output['success'] = TRUE;
       }
       else {
