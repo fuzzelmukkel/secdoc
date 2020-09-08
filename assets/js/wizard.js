@@ -1807,9 +1807,9 @@ function generateTOMList() {
  */
 function filterTOMList(risklevel) {
   let riskTexts = {
-    '1': 'Der Schutzbedarf ' + (modeNum === 2 ? 'des ' + modeName[0] + 's' : 'der ' + modeName[0]) + ' ist normal. Es sind die <em>Basis</em>-Anforderungen umzusetzen.',
-    '2': 'Der Schutzbedarf ' + (modeNum === 2 ? 'des ' + modeName[0] + 's' : 'der ' + modeName[0]) + ' ist hoch. Es sind vorrangig die <em>Basis</em>-Anforderungen umzusetzen. Darüber hinaus sollten die <em>Standard</em>-Anforderungen umgesetzt werden.',
-    '3': 'Der Schutzbedarf ' + (modeNum === 2 ? 'des ' + modeName[0] + 's' : 'der ' + modeName[0]) + ' ist sehr hoch. Es sind vorrangig die <em>Basis</em>-Anforderungen umzusetzen. Darüber hinaus sollten die <em>Standard</em>-Anforderungen sowie die Anforderungen bei <em>erhöhtem</em> Schutzbedarf umgesetzt werden.'
+    '1': 'Der Schutzbedarf ' + (modeNum === 2 ? 'des ' + modeName[0] + 's' : 'der ' + modeName[0]) + ' ist <em>niedrig</em>. Es sind die <em>Basis</em>-Anforderungen umzusetzen, sofern nicht gravierende Gründe dagegen sprechen.',
+    '2': 'Der Schutzbedarf ' + (modeNum === 2 ? 'des ' + modeName[0] + 's' : 'der ' + modeName[0]) + ' ist <em>normal</em>. Es sind die <em>Basis</em>- sowie die <em>Standard</em>-Anforderungen umzusetzen, sofern sie nicht durch mindestens gleichwertige Alternativen oder die bewusste Akzeptanz des Restrisikos ersetzt werden.',
+    '3': 'Der Schutzbedarf ' + (modeNum === 2 ? 'des ' + modeName[0] + 's' : 'der ' + modeName[0]) + ' ist <em>hoch</em>. Es sind die <em>Basis</em>- sowie die <em>Standard</em>-Anforderungen umzusetzen. Darüber hinaus stellen die Anforderungen bei <em>erhöhtem</em> Schutzbedarf exemplarische Vorschläge dar, was zur Absicherung sinnvoll umzusetzen ist.'
   };
   let tomRows = $('#tom_accordion').find('tbody tr');
 

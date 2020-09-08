@@ -123,5 +123,5 @@ Die Dokumentation des JS-Codes ist zu finden in [JSDoc](/docs/JSDoc) und die des
 
 ## Lizenz
 
-Copyright (c) 2018 Westfälische Wilhelms-Universität Münster (https://www.uni-muenster.de)  
+Copyright (c) 2018-2020 Westfälische Wilhelms-Universität Münster (https://www.uni-muenster.de)  
 Licensed under AGPL-3.0-or-later (https://www.gnu.org/licenses/agpl.html)  
