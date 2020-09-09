@@ -1,0 +1,96 @@
+div.dash-info {
+    background-color: #00beff;
+}
+
+div.dash-info span.title {
+    border-color: #00beff;
+}
+
+div.dash-ok {
+    background-color: #55DD55;
+}
+
+div.dash-ok span.title {
+    border-color: #55DD55;
+}
+
+div.dash-warn {
+    background-color: #FFAA55;
+}
+
+div.dash-warn span.title {
+    border-color: #FFAA55;
+}
+
+div.dash-link {
+    background-color: #DDDDDD;
+}
+
+div.dash-link span.title {
+    border-color: #DDDDDD;
+}
+
+div.dash-danger {
+    background-color: #FF5555;
+}
+
+div.dash-danger span.title {
+    border-color: #FF5555;
+}
+
+div.dash-invalid {
+    background-color: #AAAAAA;
+}
+
+div.dash-invalid span.title {
+    border-color: #AAAAAA;
+}
+
+div.dash-box a:hover {
+    text-decoration: none;
+    color: #777777;
+}
+
+div.dash-box a:visited {
+    color: black;
+}
+
+div.dash-box a {
+    color: black;
+}
+
+div.dash-card {
+    border-radius: 3px;
+    box-shadow: 3px 3px 2px #AAAAAA;
+    margin: 10px;
+    min-width: 125px;
+    min-height: 5.5rem;
+}
+
+div.dash-card span.title {
+    display: block;
+    font-size: 1em;
+    font-weight: bold;
+    background-color: white;
+    border-width: 1px;
+    border-style: solid;
+    border-radius: 3px;
+    padding: 5px;
+    text-align: center;
+}
+
+div.dash-card span.value {
+    display: block;
+    font-size: 2.5em;
+    padding-top:0.6rem;
+    padding-bottom:0.6rem;
+    padding-left: 15px;
+    padding-right: 15px;
+    text-align: center;
+
+    line-height: 0.9em;
+}
+
+div.dash-card span.value svg {
+    margin-top:-0.4rem;
+}
