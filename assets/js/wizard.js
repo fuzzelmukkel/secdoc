@@ -1964,6 +1964,119 @@ function toggleTOMList(evt) {
   }
 }
 
+/**
+ * Zeigt den Dokumenten-Verwaltungs-Dialog an.
+ *
+ * @param  {Number} docID       (optional) Dokumenten-ID
+ * @param  {String} filename    (optional) Dateiname
+ * @param  {String} description (optional) Dokumenten-Beschreibung
+ * @return {undefined}
+ */
+function showDocumentAddDialog(docID = -1, filename = '', description = '') {
+  /**
+   * Läd eine ausgewählte Datei hoch als Base64 String.
+   *
+   * @private
+   * @param  {Blob}   file        Datei
+   * @param  {Number} docID       (optional) Dokumenten-ID
+   * @param  {String} description (optional) Dokumenten-Beschreibung
+   * @return {undefined}
+   */
+  function uploadFile(file, docID = -1, description = '') {
+    setOverlay(true);
+
+    if(file === undefined) {
+      $.post(backendPath, JSON.stringify({'action': 'updateDocument', 'debug': debug, 'data': {'docid': docID, 'description': description}})).done(function(data) {
+        if(data['success']) {
+          // TODO Reload Doc Table
+          modal.modal('hide');
+        }
+        else {
+          showError('Anhängen eines Dokuments', data['error']);
+        }
+        setOverlay(false);
+      }).fail((jqXHR, error, errorThrown) => {
+        showError('Anhängen eines Dokuments', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+        setOverlay(false);
+      });
+    }
+    else {
+      let reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = function () {
+        $.post(backendPath, JSON.stringify({'action': (docID === -1 ? 'addDocument' : 'updateDocument'), 'id': loadId, 'debug': debug, 'data': {'filename': file.name, 'filecontent': reader.result.split(',')[1], 'docid': docID, 'description': description}})).done(function(data) {
+          if(data['success']) {
+            // TODO Reload Doc Table
+            modal.modal('hide');
+          }
+          else {
+            showError('Anhängen eines Dokuments', data['error']);
+          }
+          setOverlay(false);
+        }).fail((jqXHR, error, errorThrown) => {
+          showError('Anhängen eines Dokuments', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+          setOverlay(false);
+        });
+      };
+      reader.onerror = function (error) {
+        showError('Anhängen eines Dokuments', 'Quelldatei konnte nicht gelesen werden');
+      };
+    }
+  }
+  setOverlay(true);
+
+  modal.find('.modal-title').text('Dokumenten-Verwaltung');
+  let modalBody = modal.find('.modal-body');
+  if(docID === -1) {
+    modalBody.html('<div><p>Hier kann ein PDF-Dokument zum Anhängen und eine optionale Beschreibung ausgwählt werden.</p><div class="form-group text-center"><label>Beschreibung</label><textarea class="form-control" id="filedesc"></textarea></div><div class="text-center form-group"><label for="uploadFile">Neues PDF-Dokument zum Anhängen auswählen</label><input type="file" id="uploadFile" accept=".pdf,application/pdf" class="btn center-block hidden" /><div id="dropFile" class="text-center alert alert-info"></div><p><strong>Ausgewählte Datei:</strong> <span id="filename">Keine</span></p><p><button id="filesave" class=btn btn-fill btn-success">Speichern</button></p></div></div>');
+  }
+  else {
+    modalBody.html('<div><p>Bitte wählen Sie ein neues PDF-Dokument zum Ersetzen von "' + filename + '" aus oder passen Sie die Beschreibung an.</p><div class="form-group text-center"><label>Beschreibung</label><textarea class="form-control" id="filedesc"></textarea></div><div class="text-center form-group"><label for="uploadFile">Neues PDF-Dokument zum Ersetzen auswählen</label><input type="file" id="uploadFile" accept=".pdf,application/pdf" class="btn center-block hidden" /><div id="dropFile" class="text-center alert alert-info"></div><p><strong>Ausgewählte Datei:</strong> <span id="filename">Keine</span></p><p><button id="filesave" class=btn btn-fill btn-success">Speichern</button></p></div></div>');
+    $('#filedesc').val(description);
+  }
+
+  modalBody.find('#dropFile').append('<p class="text-center"><i class="fa fa-file fa-2x"></i></p><p class="text-center">Klicken für Auswahldialog oder Datei per Drag&Drop hineinziehen...</p>');
+
+  modalBody.find('#filesave').data('file', undefined);
+
+  modalBody.find('#dropFile').on('dragover', (evt) => {
+    evt.preventDefault();
+    evt.stopPropagation();
+    modalBody.find('#dropFile').removeClass('alert-info').addClass('alert-success');
+  });
+  modalBody.find('#dropFile').on('dragleave', (evt) => {
+    evt.preventDefault();
+    evt.stopPropagation();
+    modalBody.find('#dropFile').removeClass('alert-success').addClass('alert-info');
+  });
+  modalBody.find('#dropFile').on('drop', (evt) => {
+    evt.preventDefault();
+    evt.stopPropagation();
+
+    if(evt.originalEvent.dataTransfer.files.length > 0) {
+      modalBody.find('#filesave').data('file', evt.originalEvent.dataTransfer.files[0]);
+      modalBody.find('#filename').text(evt.originalEvent.dataTransfer.files[0].name);
+    }
+
+    modalBody.find('#dropFile').removeClass('alert-success').addClass('alert-info');
+
+  });
+  modalBody.find('#dropFile').click(() => { modalBody.find('#uploadFile').click(); });
+
+  modalBody.find('#uploadFile').change((evt) => {
+    modalBody.find('#filesave').data('file', evt.target.files[0]);
+    modalBody.find('#filename').text(evt.target.files[0].name);
+  });
+
+  modalBody.find('#filesave').click((evt) => {
+    uploadFile($(evt.target).data('file'), docID, modalBody.find('#filedesc').val());
+  });
+
+  modal.modal();
+
+  setOverlay(false);
+}
+
 debugLog('Beginne Setup...');
 
 // Abwarten, bis alle notwendigen Daten über AJAX-Requests geholt wurden

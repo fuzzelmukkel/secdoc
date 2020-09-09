@@ -1761,8 +1761,8 @@ EOH;
     }
 
     case 'updatedocument': {
-      if(empty($data) || empty($data['filename']) || empty($data['filecontent']) || empty($data['docid'])) {
-        returnError('Dateiinformationen fehlen!');
+      if(empty($data) || empty($data['docid'])) {
+        returnError('Dokumentinformationen fehlen!');
       }
 
       $docDetails = $dbcon->getDocumentDetails(intval($data['docid']));
@@ -1775,21 +1775,24 @@ EOH;
         returnError('Keine Schreibberechtigung für die gewählte Dokumentation!');
       }
 
-      # Dateityp prüfen
-      $finfo = finfo_open();
-      if(!in_array(finfo_buffer($finfo, base64_decode($data['filecontent']), FILEINFO_MIME_TYPE), ['application/pdf'])) {
-        returnError('Es können nur PDF Dateien hinterlegt werden!');
+      if(!empty($data['filename']) && !empty($data['filecontent'])) {
+        # Dateityp prüfen
+        $finfo = finfo_open();
+        if(!in_array(finfo_buffer($finfo, base64_decode($data['filecontent']), FILEINFO_MIME_TYPE), ['application/pdf'])) {
+          returnError('Es können nur PDF Dateien hinterlegt werden!');
+        }
+
+        global $docmgmtClass;
+
+        $newFileRef = $docmgmtClass->updateDocument($docDetails['ProcessID'], $docDetails['FileRef'], $data['filename'], $data['filecontent']);
+
+        if(empty($newFileRef)) returnError('Konnte Dokument nicht abspeichern!');
+      }
+      else {
+        $newFileRef = $docDetails['FileRef'];
       }
 
-      global $docmgmtClass;
-
-      $newFileRef = $docmgmtClass->updateDocument($docDetails['ProcessID'], $docDetails['FileRef'], $data['filename'], $data['filecontent']);
-
-      if(empty($newFileRef)) returnError('Konnte Dokument nicht abspeichern!');
-
-      $newDocID = $dbcon->updateDocument($docDetails['DocID'], !empty($data['description']) ? $data['description'] : '', $newFileRef);
-
-      if($newDocID === -1) returnError('Konnte Document nicht in Datenbank aktualisieren!');
+      if(!$dbcon->updateDocument($docDetails['DocID'], !empty($data['description']) ? $data['description'] : '', $newFileRef)) returnError('Konnte Document nicht in Datenbank aktualisieren!');
 
       $output['success'] = TRUE;
       break;

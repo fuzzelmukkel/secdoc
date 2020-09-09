@@ -70,7 +70,7 @@ class localDocMGMT extends DocMGMT {
     $filePath = $pdf_dir . DIRECTORY_SEPARATOR . $processID . DIRECTORY_SEPARATOR . $fileName;
 
     if(file_exists($filePath)) {
-      $fileName = time() . $fileName;
+      $fileName = time() . '_' . $fileName;
       $filePath = $pdf_dir . DIRECTORY_SEPARATOR . $processID . DIRECTORY_SEPARATOR . $fileName;
     }
 
