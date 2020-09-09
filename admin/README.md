@@ -10,6 +10,8 @@ Alle Befehle sollten im working-directory "secdoc/admin" ausgeführt werden.
 ## Starten des Development Servers
     npm start
     
+Für Funktionen welche das Backend benötigen wird ein lokaler Backend Server auf Port 3001 benötigt.
+    
 Getestet mit
 
     >npm version

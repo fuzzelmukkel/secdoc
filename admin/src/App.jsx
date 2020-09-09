@@ -4,6 +4,7 @@ import {Link, withRouter} from 'react-router-dom';
 import {Col, Container, Nav, Navbar, Row} from "react-bootstrap";
 import {Sidebar} from "react-feather";
 import {BrowserRouter as Router} from "react-router-dom";
+import Dashboard from "./Dashboard";
 
 class App extends React.Component {
     constructor(props) {
@@ -60,7 +61,7 @@ class App extends React.Component {
                                     </Col>
                                     <Col xs={9}>
                                         <div  id="page-content-wrapper">
-                                            Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.
+                                            <Dashboard />
                                         </div>
                                     </Col>
                                 </Row>
