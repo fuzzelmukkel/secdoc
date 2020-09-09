@@ -1729,6 +1729,142 @@ EOH;
       break;
     }
 
+    case 'adddocument': {
+      if(empty($verfahrensId)) {
+        returnError('Keine ID für ein Verfahren wurde übergeben!');
+      }
+      if(empty($data) || empty($data['filename']) || empty($data['filecontent'])) {
+        returnError('Dateiinformationen fehlen!');
+      }
+      if(!$userIsDSB && $dbcon->getPermissionLevel($verfahrensId, $userId, $userGroups) < 2) {
+        returnError('Keine Schreibberechtigung für die gewählte Dokumentation!');
+      }
+
+      # Dateityp prüfen
+      $finfo = finfo_open();
+      if(!in_array(finfo_buffer($finfo, base64_decode($data['filecontent']), FILEINFO_MIME_TYPE), ['application/pdf'])) {
+        returnError('Es können nur PDF Dateien hinterlegt werden!');
+      }
+
+      global $docmgmtClass;
+
+      $newFileRef = $docmgmtClass->addDocument($verfahrensId, $data['filename'], $data['filecontent']);
+
+      if(empty($newFileRef)) returnError('Konnte Dokument nicht abspeichern!');
+
+      $newDocID = $dbcon->addDocument($verfahrensId, !empty($data['description']) ? $data['description'] : '', $newFileRef);
+
+      if($newDocID === -1) returnError('Konnte Document nicht in Datenbank anlegen!');
+
+      $output['success'] = TRUE;
+      break;
+    }
+
+    case 'updatedocument': {
+      if(empty($data) || empty($data['filename']) || empty($data['filecontent']) || empty($data['docid'])) {
+        returnError('Dateiinformationen fehlen!');
+      }
+
+      $docDetails = $dbcon->getDocumentDetails(intval($data['docid']));
+
+      if(empty($docDetails)) {
+        returnError('Zu aktualisierendes Dokument existiert nicht!');
+      }
+
+      if(!$userIsDSB && $dbcon->getPermissionLevel($docDetails['ProcessID'], $userId, $userGroups) < 2) {
+        returnError('Keine Schreibberechtigung für die gewählte Dokumentation!');
+      }
+
+      # Dateityp prüfen
+      $finfo = finfo_open();
+      if(!in_array(finfo_buffer($finfo, base64_decode($data['filecontent']), FILEINFO_MIME_TYPE), ['application/pdf'])) {
+        returnError('Es können nur PDF Dateien hinterlegt werden!');
+      }
+
+      global $docmgmtClass;
+
+      $newFileRef = $docmgmtClass->updateDocument($docDetails['ProcessID'], $docDetails['FileRef'], $data['filename'], $data['filecontent']);
+
+      if(empty($newFileRef)) returnError('Konnte Dokument nicht abspeichern!');
+
+      $newDocID = $dbcon->updateDocument($docDetails['DocID'], !empty($data['description']) ? $data['description'] : '', $newFileRef);
+
+      if($newDocID === -1) returnError('Konnte Document nicht in Datenbank aktualisieren!');
+
+      $output['success'] = TRUE;
+      break;
+    }
+
+    case 'getdocument': {
+      if(empty($data['docid'])) {
+        returnError('Dokumenten ID fehlt!');
+      }
+
+      $docDetails = $dbcon->getDocumentDetails(intval($data['docid']));
+
+      if(empty($docDetails)) {
+        returnError('Angefragtes Dokument existiert nicht!');
+      }
+
+      if(!$userIsDSB && $dbcon->getPermissionLevel($docDetails['ProcessID'], $userId, $userGroups) < 1) {
+        returnError('Keine Leseberechtigung für das angefragte Dokument!');
+      }
+
+      global $docmgmtClass;
+
+      $file = $docmgmtClass->getDocument($docDetails['ProcessID'], $docDetails['FileRef']);
+
+      if(empty($file) || empty($file['fileName']) || empty($file['fileContent'])) returnError('Dokument konnte nicht gelesen werden!');
+
+      $output['success'] = TRUE;
+      $output['data']    = $file;
+      break;
+    }
+
+    case 'deletedocument': {
+      if(empty($data['docid'])) {
+        returnError('Dokumenten ID fehlt!');
+      }
+
+      $docDetails = $dbcon->getDocumentDetails(intval($data['docid']));
+
+      if(empty($docDetails)) {
+        returnError('Angefragtes Dokument existiert nicht!');
+      }
+
+      if(!$userIsDSB && $dbcon->getPermissionLevel($docDetails['ProcessID'], $userId, $userGroups) < 2) {
+        returnError('Keine Schreibberechtigung für das angefragte Dokument!');
+      }
+
+      global $docmgmtClass;
+
+      $delSuccess = $docmgmtClass->deleteDocument($docDetails['ProcessID'], $docDetails['FileRef']);
+
+      if(!$delSuccess) returnError('Dokument konnte nicht gelöscht werden!');
+
+      $dbcon->deleteDocument(intval($data['docid']));
+
+      $output['success'] = TRUE;
+      break;
+    }
+
+    case 'listdocuments': {
+      if(empty($verfahrensId)) {
+        returnError('Keine ID für ein Verfahren wurde übergeben!');
+      }
+
+      if(!$userIsDSB && $dbcon->getPermissionLevel($verfahrensId, $userId, $userGroups) < 1) {
+        returnError('Keine Leseberechtigung für die angefragte Dokumentation!');
+      }
+
+      $documents = $dbcon->listDocuments($verfahrensId);
+
+      $output['success'] = TRUE;
+      $output['data']    = $documents;
+      $output['count']   = count($documents);
+      break;
+    }
+
     case 'login': {
       $output['data']['msg'] = 'Erfolgreich eingeloggt';
       break;

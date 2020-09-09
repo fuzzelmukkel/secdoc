@@ -140,7 +140,7 @@
     protected $path = '/secdoc/';
 
     /** @var int Aktuelle DB-Version */
-    const DBVERSION = 10; # Version für eine DB-Struktur; zur Überprüfung beim Laden genutzt
+    const DBVERSION = 11; # Version für eine DB-Struktur; zur Überprüfung beim Laden genutzt
 
     /** @var int Maximale Anzahl an Historien-Einträgen */
     const MAXHISTORY = 15; # Nur diese Anzahl an Historien-Einträgen wird behalten
@@ -248,6 +248,14 @@
             Delimit TEXT,         -- Abgrenzung
             URL TEXT DEFAULT '',  -- URL
             PRIMARY KEY (Identifier)
+        );",
+        "CREATE TABLE documents (                                                  -- Zuweisung von Dokumenten zu Dokumentationen
+            DocID INTEGER PRIMARY KEY AUTOINCREMENT,                                   -- ID des Dokuments
+            ProcessID INT NOT NULL,                                                -- ID der Dokumentation
+            Description TEXT NOT NULL DEFAULT '',                                  -- Beschreibung
+            FileRef TEXT NOT NULL,                                                 -- Verweis auf Datei
+            Date DATE NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')), -- Letztes Änderungsdatum
+            FOREIGN KEY (ProcessID) REFERENCES verfahren(ID) ON UPDATE CASCADE ON DELETE CASCADE
         );"
     ];
 
@@ -382,6 +390,15 @@
             Delimit TEXT,         -- Abgrenzung
             URL TEXT DEFAULT '',  -- URL
             PRIMARY KEY (Identifier)
+        );",
+        # 17
+        "CREATE TABLE documents (                                                  -- Zuweisung von Dokumenten zu Dokumentationen
+            DocID INTEGER PRIMARY KEY AUTOINCREMENT,                                   -- ID des Dokuments
+            ProcessID INT NOT NULL,                                                -- ID der Dokumentation
+            Description TEXT NOT NULL DEFAULT '',                                  -- Beschreibung
+            FileRef TEXT NOT NULL,                                                 -- Verweis auf Datei
+            Date DATE NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')), -- Letztes Änderungsdatum
+            FOREIGN KEY (ProcessID) REFERENCES verfahren(ID) ON UPDATE CASCADE ON DELETE CASCADE
         );"
     ];
 
@@ -580,6 +597,15 @@
           $this->pdo->beginTransaction();
           $this->pdo->exec(self::TABLES[16]);
           $this->pdo->exec("PRAGMA user_version = 10;");
+          $this->pdo->commit();
+        }
+        else if($db_version == 10) {
+          trigger_error("[SecDoc] DBCon.class.php -> Aktualisiere Datenbank von Version $db_version zu " . self::DBVERSION . "!");
+          error_log("[SecDoc] DBCon.class.php -> Aktualisiere Datenbank von Version $db_version zu " . self::DBVERSION . "!");
+
+          $this->pdo->beginTransaction();
+          $this->pdo->exec(self::TABLES[17]);
+          $this->pdo->exec("PRAGMA user_version = 11;");
           $this->pdo->commit();
         }
         else {
@@ -1674,7 +1700,7 @@
         throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
       }
 
-      if(!$userIsDSB && $this->getPermissionLevel($verfahrensId, $userId, $userGroups) < 2) {
+      if(!$userIsDSB && $this->getPermissionLevel($verfahrensId, $userId, $userGroups) < 1) {
         return FALSE;
       }
 
@@ -1788,6 +1814,179 @@
       }
 
       return $result;
+    }
+
+    /**
+     * Gibt alle Dokumente zurück, die an eine Dokumentation angehangen sind.
+     *
+     * @param  int      $verfahrensId ID einer Dokumentation
+     * @return mixed[] Array mit den Einträgen in der Form [['DocID' => 1, 'ProcessID' => 2, 'Description' => 'Test', 'FileRef' => 'test.pdf', 'Date' => '2020-09-08 12:06:18']]
+     * @throws PDOException
+     * @throws Exception
+     */
+    public function listDocuments($verfahrensId) {
+      if(!$this->isConnected()) {
+        throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
+      }
+
+      $sql = 'SELECT * FROM documents WHERE ProcessID = ? ORDER BY DocID ASC;';
+
+      $sth = $this->pdo->prepare($sql);
+
+      $sth->execute([$verfahrensId]);
+
+      ob_start();
+      $sth->debugDumpParams();
+      $sqlDump = ob_get_clean();
+      print "DBCon.class.php -> getDocuments() Execute: $sqlDump";
+
+      return $sth->fetchAll();
+    }
+
+    /**
+     * Gibt die Detals zu einem Dokument zurück.
+     *
+     * @param  int      $docID        ID eines Dokuments
+     * @return mixed[] Array mit den Einträgen in der Form ['DocID' => 1, 'ProcessID' => 2, 'Description' => 'Test', 'FileRef' => 'test.pdf', 'Date' => '2020-09-08 12:06:18']
+     * @throws PDOException
+     * @throws Exception
+     */
+    public function getDocumentDetails($docID) {
+      if(!$this->isConnected()) {
+        throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
+      }
+
+      $sql = 'SELECT * FROM documents WHERE DocID = ? LIMIT 1;';
+
+      $sth = $this->pdo->prepare($sql);
+
+      $sth->execute([$docID]);
+
+      ob_start();
+      $sth->debugDumpParams();
+      $sqlDump = ob_get_clean();
+      print "DBCon.class.php -> getDocumentDetails() Execute: $sqlDump";
+
+      $result = $sth->fetchAll();
+
+      if(empty($result)) return [];
+
+      return $result[0];
+    }
+
+    /**
+     * Fügt ein angehängtes Dokument hinzu.
+     *
+     * @param  int      $verfahrensId ID einer Dokumentation
+     * @param  string   $description  Beschreibung des Dokuments
+     * @param  string   $fileRef      Dateireferenz
+     * @return int ID des neuen Dokuments; -1 bei fehlenden Berechtigungen
+     * @throws PDOException
+     * @throws Exception
+     */
+    public function addDocument($verfahrensId, $description, $fileRef) {
+      if(!$this->isConnected()) {
+        throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
+      }
+
+      $sql = 'INSERT INTO documents (ProcessID, Description, FileRef) VALUES (?, ?, ?);';
+
+      $sth = $this->pdo->prepare($sql);
+
+      $sth->execute([$verfahrensId, $description, $fileRef]);
+
+      ob_start();
+      $sth->debugDumpParams();
+      $sqlDump = ob_get_clean();
+      print "DBCon.class.php -> addDocument() Execute: $sqlDump";
+
+      $changedRows = $sth->rowCount();
+      if($changedRows !== 1) {
+        throw new Exception("DBCon.class.php -> Fehler beim Hinzufügen eines Dokuments! (Fehler: Unbekannter Fehler - Anzahl geänderter Reihen: $changedRows)");
+      }
+
+      # ID des neuen Dokuments holen
+      $sth = $this->pdo->prepare('SELECT last_insert_rowid();');
+      $sth->execute();
+
+      ob_start();
+      $sth->debugDumpParams();
+      $sqlDump = ob_get_clean();
+      print "DBCon.class.php -> addDocument() Execute: $sqlDump";
+
+      $docID = $sth->fetch()['last_insert_rowid()'];
+
+      if($docID === FALSE || !is_numeric($docID)) {
+        throw new Exception("DBCon.class.php -> Fehler beim Hinzufügen eines Dokuments! (Fehler: ID des neuen Dokuments konnte nicht abgefragt werden (Wert: $docID))");
+      }
+
+      return $docID;
+    }
+
+    /**
+     * Aktualisiert ein angehängtes Dokument.
+     *
+     * @param  int      $docID        ID eines Dokuments
+     * @param  string   $description  Neue Beschreibung des Dokuments
+     * @param  string   $fileRef      Neue Dateireferenz
+     * @return bool TRUE bei Erfolg, sonst FALSE
+     * @throws PDOException
+     * @throws Exception
+     */
+    public function updateDocument($docID, $description, $fileRef) {
+      if(!$this->isConnected()) {
+        throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
+      }
+
+      $sql = 'UPDATE documents SET Description = ?, FileRef = ?, Date = (datetime(CURRENT_TIMESTAMP, \'localtime\')) WHERE DocID = ?;';
+
+      $sth = $this->pdo->prepare($sql);
+
+      $sth->execute([$description, $fileRef, $docID]);
+
+      ob_start();
+      $sth->debugDumpParams();
+      $sqlDump = ob_get_clean();
+      print "DBCon.class.php -> updateDocument() Execute: $sqlDump";
+
+      $changedRows = $sth->rowCount();
+      if($changedRows !== 1) {
+        throw new Exception("DBCon.class.php -> Fehler beim Aktualisieren eines Dokuments! (Fehler: Unbekannter Fehler - Anzahl geänderter Reihen: $changedRows)");
+      }
+
+      return TRUE;
+    }
+
+    /**
+     * Löscht ein angehängtes Dokument.
+     *
+     * @param  int      $docID        ID eines Dokuments
+     * @return bool TRUE bei Erfolg, sonst FALSE
+     * @throws PDOException
+     * @throws Exception
+     */
+    public function deleteDocument($docID) {
+      if(!$this->isConnected()) {
+        throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
+      }
+
+      $sql = 'DELETE FROM documents WHERE DocID = ?;';
+
+      $sth = $this->pdo->prepare($sql);
+
+      $sth->execute([$docID]);
+
+      ob_start();
+      $sth->debugDumpParams();
+      $sqlDump = ob_get_clean();
+      print "DBCon.class.php -> updateDocument() Execute: $sqlDump";
+
+      $changedRows = $sth->rowCount();
+      if($changedRows !== 1) {
+        throw new Exception("DBCon.class.php -> Fehler beim Aktualisieren eines Dokuments! (Fehler: Unbekannter Fehler - Anzahl geänderter Reihen: $changedRows)");
+      }
+
+      return TRUE;
     }
 
     /**

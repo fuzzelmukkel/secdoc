@@ -21,6 +21,7 @@
   require_once('DBCon.class.php');
   require_once('Utils.class.php');
   require_once('auth/Auth.class.php');
+  require_once('docmgmt/DocMGMT.class.php');
 
   # ----------------------------------------
   # Globale Konfiguration setzen
@@ -166,9 +167,21 @@
   ];
 
   # ----------------------------------------
+  # Konfiguration der Dokumentenverwaltung
+  # ----------------------------------------
+  $docmgmt_method = 'local'; # Aktuell nur local unterstützt
+  $docmgmt_class  = $docmgmt_method . 'DocMGMT';
+
+  # ----------------------------------------
   # Lokale Konfiguration laden
   # ----------------------------------------
   include_once("$secret_dir/secdoc.conf.php");
+
+  # ----------------------------------------
+  # Dokumentenverwaltungsklasse laden
+  # ----------------------------------------
+  if(!@require_once("docmgmt/{$docmgmt_class}.class.php")) throw new Exception("config.inc.php Fehler: Dokumentenverwaltungsklasse '{$docmgmt_class}.class.php' wurde nicht gefunden oder konnte nicht eingebunden werden!");
+  $docmgmtClass = new $docmgmt_class;
 
   # ----------------------------------------
   # Authentifizierungsklasse laden
