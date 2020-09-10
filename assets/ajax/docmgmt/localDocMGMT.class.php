@@ -100,13 +100,13 @@ class localDocMGMT extends DocMGMT {
 
     if(!is_writable($pdf_dir)) throw new Exception("Fehlende Schreibberechtigung in '$pdf_dir'");
 
-    $filePathOld = $pdf_dir . DIRECTORY_SEPARATOR . $processID . DIRECTORY_SEPARATOR . $fileRef;
-    $filePathNew = $pdf_dir . DIRECTORY_SEPARATOR . $processID . DIRECTORY_SEPARATOR . $fileName;
-
     # Sonderzeichen entschärfen
     $fileName = str_replace('.pdf', '', $fileName);
     $fileName = preg_replace('/[^A-Za-z0-9_\-]/', '_', $fileName);
     $fileName .= '.pdf';
+
+    $filePathOld = $pdf_dir . DIRECTORY_SEPARATOR . $processID . DIRECTORY_SEPARATOR . $fileRef;
+    $filePathNew = $pdf_dir . DIRECTORY_SEPARATOR . $processID . DIRECTORY_SEPARATOR . $fileName;
 
     if($filePathOld !== $filePathNew && file_exists($filePathNew)) {
       $fileName = time() . $fileName;
