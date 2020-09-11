@@ -719,6 +719,9 @@ function loadFromJSON(values, keepAccess = false) {
     showError('Zuordnen gespeicherter Felder', 'Folgende gespeicherte Felder existieren nicht mehr und die eingegebenen Daten gehen beim Speichern verloren: <ul>' + missingFieldsHTML + '</ul>');
   }
 
+  // Angehängte Dokumente laden
+  loadDocuments();
+
   return true;
 }
 
@@ -1973,6 +1976,10 @@ function toggleTOMList(evt) {
  * @return {undefined}
  */
 function showDocumentAddDialog(docID = -1, fileref = '', description = '') {
+  if(loadId === 0) {
+    showError('Anhängen eines Dokuments', 'Die Dokumentation muss mindestens einmal abgespeichert werden, bevor Dokumente angehängt werden können.');
+    return;
+  }
   /**
    * Läd eine ausgewählte Datei hoch als Base64 String.
    *
@@ -2422,9 +2429,6 @@ Promise.all(promises).then(function() {
   $('[name=massnahmen_risiko]').change(function() {
     filterTOMList(parseInt($(this).val()));
   });
-
-  // Angehängte Dokumente laden
-  loadDocuments();
 
   console.timeEnd('Dynamische Inhalte initialisieren');
 
