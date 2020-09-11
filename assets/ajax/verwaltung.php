@@ -249,7 +249,7 @@
 
     require_once '../vendor/autoload.php';
 
-    global $dbcon, $userId, $pdf_dir, $prog_name, $prog_version, $prog_url;
+    global $dbcon, $userId, $pdf_dir, $prog_name, $prog_version, $prog_url, $docmgmtClass, $temp_dir;
     $res = Utils::searchUsers($userId, TRUE);
     $author = !empty($res) ? $res[0]['name'] : '';
 
@@ -318,6 +318,46 @@ EOH;
     $htmlParts = explode('<span class="snip"></span>', $finalHTML);
     foreach($htmlParts as $part) {
       $mpdf->WriteHTML($part,2);
+    }
+
+    if(!$isDraft) {
+      # Angehängte PDF-Dokumente einbetten
+      $attachedDocs = $dbcon->listDocuments($verfahrensId);
+      if(count($attachedDocs) > 0) {
+        $mpdf->Bookmark("Angehängte Dokumente", 0);
+      }
+      foreach($attachedDocs as $doc) {
+        $file = $docmgmtClass->getDocument($verfahrensId, $doc['FileRef']);
+        $tmpFile = $temp_dir . DIRECTORY_SEPARATOR . "{$verfahrensId}_{$doc['DocID']}.pdf";
+        if(file_put_contents($tmpFile, base64_decode($file['fileContent'])) === FALSE) {
+          error_log("[SecDoc] verwaltung.php -> Konnte temporäre PDF von angehängtem Dokument nicht erstellen (Dokumentation #{$verfahrensId} - Dokument #{$doc['DocID']})");
+          continue;
+        }
+
+        $mpdf->WriteHTML('<pagebreak />');
+
+        $tocTitle = empty($doc['Description']) ? $doc['FileRef'] : $doc['Description'];
+        if(strlen($tocTitle) > 43) {
+          $tocTitle = trim(substr($tocTitle, 0, 40)) . '...';
+        }
+        $mpdf->Bookmark(htmlspecialchars($tocTitle), 1);
+
+        try {
+          $pageCount = $mpdf->SetSourceFile($tmpFile);
+
+          for($c = 1; $c <= $pageCount; $c++) {
+            $mpdf->UseTemplate($mpdf->ImportPage($c));
+            if($c !== $pageCount) $mpdf->WriteHTML('<pagebreak />');
+          }
+        } catch(\Exception $e) {
+          $mpdf->WriteHTML('<h3>Die angehängte PDF konnte nicht gelesen werden! Möglicherweise wird das Format nicht unterstützt.</h3>');
+          error_log("[SecDoc] verwaltung.php -> PDF konnte nicht gelesen werden (Dokument #{$doc['DocID']}) (Fehler: " . $e->getMessage() . ")");
+          unlink($tmpFile);
+          continue;
+        }
+
+        unlink($tmpFile);
+      }
     }
 
     # PDF generieren und zurückgeben
@@ -1314,10 +1354,14 @@ EOH;
       break;
     }
 
-    # Löscht ein Verfahren
+    # Löscht ein Verfahren (es wird aktuell nur als gelöscht markiert)
     case 'delete': {
       if(empty($verfahrensId)) {
         returnError('Keine ID für ein Verfahren wurde übergeben!');
+      }
+
+      if(!$userIsDSB && $dbcon->getPermissionLevel($verfahrensId, $userId, $userGroups) < 2) {
+        returnError('Keine Schreibberechtigung für die gewählte Dokumentation!');
       }
 
       $dependencies = $dbcon->getDependencies($verfahrensId, $userId, $userGroups, $userIsDSB);
@@ -1327,20 +1371,6 @@ EOH;
       }
 
       $success = $dbcon->delVerfahren($verfahrensId, $userId, $userGroups, $userIsDSB);
-
-      if($success) {
-        if(!unlink($includes_dir . DIRECTORY_SEPARATOR . $verfahrensId . '.txt')) {
-          error_log('[SecDoc] verwaltung.php -> Konnte Include-Textbaustein zur ID "' . $verfahrensId . '" nicht löschen!');
-        }
-
-        if(!unlink($pdf_dir . DIRECTORY_SEPARATOR . $verfahrensId . '.pdf')) {
-          error_log('[SecDoc] verwaltung.php -> Konnte PDF zur ID "' . $verfahrensId . '" nicht löschen!');
-        }
-
-        if(!unlink($pdf_dir . DIRECTORY_SEPARATOR . $verfahrensId . '_DRAFT.pdf')) {
-          error_log('[SecDoc] verwaltung.php -> Konnte Vorschau-PDF zur ID "' . $verfahrensId . '" nicht löschen!');
-        }
-      }
 
       if(!$success) {
         returnError('Kein Verfahren wurde gelöscht, da entweder das Verfahren nicht gefunden wurde oder Sie keine Berechtigung haben!');

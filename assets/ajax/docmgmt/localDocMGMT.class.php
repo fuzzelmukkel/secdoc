@@ -146,6 +146,12 @@ class localDocMGMT extends DocMGMT {
     $filePath = $pdf_dir . DIRECTORY_SEPARATOR . $processID . DIRECTORY_SEPARATOR . $fileRef;
 
     if(unlink($filePath)) {
+      if(count(glob($pdf_dir . DIRECTORY_SEPARATOR . $processID . DIRECTORY_SEPARATOR . '*')) === 0) {
+        if(!rmdir($pdf_dir . DIRECTORY_SEPARATOR . $processID)) {
+          trigger_error("[SecDoc] localDocMGMT.php -> Leerer Ordner '" . $pdf_dir . DIRECTORY_SEPARATOR . $processID . "' konnte nicht gelöscht werden");
+          error_log("[SecDoc] localDocMGMT.php -> Leerer Ordner '" . $pdf_dir . DIRECTORY_SEPARATOR . $processID . "' konnte nicht gelöscht werden");
+        }
+      }
       return TRUE;
     }
     else {

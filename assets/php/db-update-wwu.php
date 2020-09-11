@@ -2,13 +2,15 @@
 <?php
   /**
    * db-update-wwu.php - Zur Befüllung der SQLite-DB (secdoc.db) mit Personen- und Organisationseinheitdaten aus WWU Datenbanken.
-   * 
+   *
    * TK, 18.07.2018 - Erste Version
-   * 
+   *
    * @author Thorsten Küfer <thorsten.kuefer@uni-muenster.de>
    * @copyright (c) 2018 Westfälische Wilhelms-Universität Münster
    * @license AGPL-3.0-or-later <https://www.gnu.org/licenses/agpl.html>
    */
+
+  if(php_sapi_name() !== 'cli') die('cli execution only!');
 
   # Allgemeine Einstellungen
   require_once('../ajax/config.inc.php');
@@ -34,7 +36,7 @@
 
   /**
    * Personen-Tabelle mit Mitarbeitern und Stud. Hilfskräften füllen.
-   * 
+   *
    */
   function sql_personen_table()
   {
@@ -44,7 +46,7 @@
 
   /**
    * Liste der Mitarbeiter sowie Adresse, Tel. und E-Mail holen.
-   * 
+   *
    */
   function sql_mitarbeiter_table()
   {
@@ -81,7 +83,7 @@
 
   /**
    * Liste der Stud. Mitarbeiter mit Name holen.
-   * 
+   *
    */
   function sql_studhilfskraefte_table()
   {
@@ -100,7 +102,7 @@
 
   /**
    * Liste der IVVen holen (Tabelle V_NETZ).
-   * 
+   *
    * @global type $oci_handle Globaler Datenbank-Handle
    */
   function sql_ivven_table()
@@ -130,13 +132,13 @@
 
   /**
    * Liste der Organisationseinheiten mit Adresse holen (Tabelle WWUBEN.INSTITUTS_ADRESSEN).
-   * 
+   *
    * @global type $oci_handle Gloabler Datenbank-Handle
    */
   function sql_organisationseinheiten_table()
   {
     global $oci_handle;
-    
+
     $sql = "SELECT Trim(Institut) as Id, Name || ', ' || Str || ', ' || Ort as Name FROM wwuben.instituts_adressen WHERE Status='A' ORDER BY institut";
     if ($GLOBALS['DEBUG'])
     { print '<p class="debug"><b>Notice</b>: oci_execute(): ' . htmlspecialchars($sql) . '</p>'; }
@@ -150,7 +152,7 @@
       foreach ($rows as $row)
       {
         if (preg_match('/^\w/', $row['ID']) && preg_match('/^\w/', $row['NAME']))
-        {              
+        {
           print "INSERT INTO ORGANISATIONSEINHEITEN VALUES('$row[ID]', '$row[NAME]');\n";
         }
       }
@@ -159,7 +161,7 @@
 
   /**
    * Liste der Organisationseinheiten mit Adresse holen (Tabelle ALT_INSTITUTE/PROJEKTE).
-   * 
+   *
    * @global type $oci_handle Globaler Datenbank-Handle
    */
   function sql_organisationseinheiten_table2()
@@ -186,7 +188,7 @@
 
   /**
    * Liste der Organisationseinheiten holen (Tabelle V_NETZ).
-   * 
+   *
    * @global type $oci_handle Globaler Datenbank-Handle
    */
   function sql_organisationseinheiten_table3()
@@ -216,7 +218,7 @@
 
   /**
    * Liste der Organisationseinheiten holen (Tabelle PUBLIC_ETB).
-   * 
+   *
    * @global type $oci_handle Globaler Datenbank-Handle
    */
   function sql_organisationseinheiten_table4()

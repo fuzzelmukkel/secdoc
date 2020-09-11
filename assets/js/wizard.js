@@ -511,9 +511,14 @@ function showVerfahrensliste(startup = false) {
     if(show) {
       modalBody.append('<p><span><button type="button" class="btn loadEmpty btn-success btn-fill"><i class="fa fa-plus"></i> Neue Dokumentation anlegen</button></span></p>');
       modalBody.find('.loadEmpty').click(function() {
-        history.replaceState({}, document.title, window.location.href.split('?')[0]);
-        loadEmpty();
-        modal.modal('hide');
+        if(!canEdit) {
+          window.location.href = "?page=" + mode;
+        }
+        else {
+          history.replaceState({}, document.title, window.location.href.split('?')[0]);
+          loadEmpty();
+          modal.modal('hide');
+        }
       });
       modal.modal();
     }
@@ -2084,6 +2089,11 @@ function showDocumentAddDialog(docID = -1, fileref = '', description = '') {
   setOverlay(false);
 }
 
+/**
+ * Listet angehängte Dokumente auf.
+ *
+ * @return {undefined}
+ */
 function loadDocuments() {
   $.get(backendPath, { 'action': 'listDocuments', 'id':  loadId, 'debug': debug }).done(function(data) {
     if(!data['success']) {
@@ -2093,7 +2103,8 @@ function loadDocuments() {
 
     $('#attached_documents').find('tbody').empty();
     data['data'].forEach((val, idx) => {
-      $('#attached_documents').find('tbody').append('<tr><td>' + htmlEncode(val['FileRef']) + '</td><td>' + htmlEncode(val['Description']) + '</td><td>' + htmlEncode(val['Date']) + '</td><td class="text-center"><div class="btn-group"><button type="button" class="attached_documents_show btn" data-docid="' + val['DocID'] + '">Anzeigen</button><button type="button" class="attached_documents_edit btn btn-warning" data-docid="' + val['DocID'] + '" data-docdesc="' + val['Description'] + '" data-fileref="' + val['FileRef'] + '"><i class="fa fa-pencil-square-o"></i> Bearbeiten</button><button type="button" class="attached_documents_del btn btn-danger" data-docid="' + val['DocID'] + '"><i class="fa fa-minus"></i> Löschen</button></div></td></tr>');
+      let lastUpdate = new Date(Date.parse(val['Date'].replace(' ', 'T')));
+      $('#attached_documents').find('tbody').append('<tr><td>' + htmlEncode(val['FileRef']) + '</td><td>' + htmlEncode(val['Description']) + '</td><td>' + lastUpdate.toLocaleDateString('de-DE', { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' }) + '</td><td class="text-center"><div class="btn-group"><button type="button" class="attached_documents_show btn" data-docid="' + val['DocID'] + '">Anzeigen</button><button type="button" class="attached_documents_edit btn btn-warning" data-docid="' + val['DocID'] + '" data-docdesc="' + val['Description'] + '" data-fileref="' + val['FileRef'] + '" '+ (canEdit ? '' : 'disabled') + '><i class="fa fa-pencil-square-o"></i> Bearbeiten</button><button type="button" class="attached_documents_del btn btn-danger" data-docid="' + val['DocID'] + '" '+ (canEdit ? '' : 'disabled') + '><i class="fa fa-minus"></i> Löschen</button></div></td></tr>');
     });
 
     $('#attached_documents').find('.attached_documents_show').click((evt) => {

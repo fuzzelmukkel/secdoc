@@ -887,6 +887,32 @@
     }
 
     /**
+     * Listet alle IDs der als 'gelöscht' markierten Dokumentationen auf.
+     *
+     * @return mixed[] Liste der IDs
+     * @throws PDOException
+     * @throws Exception
+     */
+    public function listVerfahrenDeleted() {
+      if($this->isConnected()) {
+
+        $sth = $this->pdo->prepare('SELECT ID FROM verfahren WHERE Status = 3;');
+
+        $sth->execute();
+
+        ob_start();
+        $sth->debugDumpParams();
+        $sqlDump = ob_get_clean();
+        print "DBCon.class.php -> listVerfahrenDeleted() Execute: $sqlDump";
+
+        return $sth->fetchAll();
+      }
+      else {
+        throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
+      }
+    }
+
+    /**
      * Liest ein Verfahren mit der übergebenen ID aus.
      *
      * @param int    $verfahrensId ID des Verfahrens
@@ -1198,7 +1224,7 @@
     }
 
     /**
-     * Löscht das Verfahren mit der übergebenen ID.
+     * Löscht das Verfahren mit der übergebenen ID (markiert es als gelöscht).
      *
      * @param int    $verfahrensId ID des zu löschenden Verfahrens
      * @param string $userId       Nutzerkennung des ausführenden Nutzers
@@ -1215,7 +1241,7 @@
           return FALSE;
         }
 
-        if(!$userIsDSB && $this->getVerfahrenInfo()['Typ'] === 4) {
+        if(!$userIsDSB && $this->getVerfahrenInfo($verfahrensId)['Typ'] === 4) {
           return FALSE;
         }
 
@@ -1236,6 +1262,40 @@
 
         if($deletedRows === 1) {
           $this->addHistorie($verfahrensId, $userId);
+          return TRUE; // Falls genau ein Verfahren gelöscht wurde
+        }
+
+        if($deletedRows === 0) return FALSE; // Falls nichts gelöscht werden konnte
+
+        throw new Exception("DBCon.class.php -> Fehler beim Löschen eines Verfahrens! (Fehler: Unbekannter Fehler - Gelöschte Reihen: $deletedRows)");
+      }
+      else {
+        throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
+      }
+    }
+
+    /**
+     * Löscht eine Dokumentation final. Wird nur ausgeführt, wenn die Dokumentation vorher bereits im Zustand gelöscht war.
+     * @param  int $verfahrensId ID der Dokumentation
+     * @return bool Gibt im Erfolgsfall TRUE zurück; FALSE falls das Verfahren nicht gefunden wurde oder es noch nicht als gelöscht markiert war
+     * @throws PDOException
+     * @throws Exception
+     */
+    public function finalDelVerfahren($verfahrensId) {
+      if($this->isConnected()) {
+        # Das Verfahren wird erstmal nur als gelöscht markiert
+        $sth = $this->pdo->prepare('DELETE FROM verfahren WHERE Status = 3 AND id = ?;');
+
+        $sth->execute(array($verfahrensId));
+
+        ob_start();
+        $sth->debugDumpParams();
+        $sqlDump = ob_get_clean();
+        print "DBCon.class.php -> finalDelVerfahren() Execute: $sqlDump";
+
+        $deletedRows = $sth->rowCount();
+
+        if($deletedRows === 1) {
           return TRUE; // Falls genau ein Verfahren gelöscht wurde
         }
 
