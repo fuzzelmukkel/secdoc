@@ -1002,6 +1002,9 @@ function copyFromServer(id) {
 function genHTMLforPDF(draft = false) {
   console.time('HTML-Code-Generierung für PDF-Datei');
 
+  /* Bearbeitete TOMs wieder einblenden */
+  $('#hideFinishedTOMs:checked').prop('checked', false).trigger('change');
+
   /* Alle leeren Tabellenzeilen entfernen */
   endlessTables.forEach(function(table) {
     removeTableRows(table, true);
@@ -1064,6 +1067,7 @@ function genHTMLforPDF(draft = false) {
 
   /* Ausgeblendete, bearbeitete TOMs wieder anzeigen */
   toSend.find('#tom_accordion tr.hidden').removeClass('hidden');
+  toSend.find('#hideFinishedTOMs').closest('div').remove();
 
   /* Bei Abschluss-PDF unbearbeitete Massnahmen entfernen */
   if(!draft) toSend.find('#tom_accordion select').each(function() {
