@@ -1003,7 +1003,7 @@ function genHTMLforPDF(draft = false) {
   console.time('HTML-Code-Generierung für PDF-Datei');
 
   /* Bearbeitete TOMs wieder einblenden */
-  $('#hideFinishedTOMs:checked').prop('checked', false).trigger('change');
+  $('#showFinishedTOMs:not(checked)').prop('checked', true).trigger('change');
 
   /* Alle leeren Tabellenzeilen entfernen */
   endlessTables.forEach(function(table) {
@@ -1067,7 +1067,7 @@ function genHTMLforPDF(draft = false) {
 
   /* Ausgeblendete, bearbeitete TOMs wieder anzeigen */
   toSend.find('#tom_accordion tr.hidden').removeClass('hidden');
-  toSend.find('#hideFinishedTOMs').closest('div').remove();
+  toSend.find('#showFinishedTOMs').closest('div').remove();
 
   /* Bei Abschluss-PDF unbearbeitete Massnahmen entfernen */
   if(!draft) toSend.find('#tom_accordion select').each(function() {
@@ -1833,10 +1833,10 @@ function generateTOMList() {
 /**
  * Filtert die Liste der TOMs anhand des gewählten Risikolevels
  * @param  {Number}  risklevel    Risikolevel des Verfahrens
- * @param  {Boolean} hideFinished (optional) Bearbeitete Massnahmen ausblenden
+ * @param  {Boolean} showFinished (optional) Bearbeitete Massnahmen einblenden
  * @return {undefined}
  */
-function filterTOMList(risklevel, hideFinished = false) {
+function filterTOMList(risklevel, showFinished = true) {
   let riskTexts = {
     '1': 'Der Schutzbedarf ' + (modeNum === 2 ? 'des ' + modeName[0] + 's' : 'der ' + modeName[0]) + ' ist <em>niedrig</em>. Es sind die <em>Basis</em>-Anforderungen umzusetzen, sofern nicht gravierende Gründe dagegen sprechen.',
     '2': 'Der Schutzbedarf ' + (modeNum === 2 ? 'des ' + modeName[0] + 's' : 'der ' + modeName[0]) + ' ist <em>normal</em>. Es sind die <em>Basis</em>- sowie die <em>Standard</em>-Anforderungen umzusetzen, sofern sie nicht durch mindestens gleichwertige Alternativen oder die bewusste Akzeptanz des Restrisikos ersetzt werden.',
@@ -1853,7 +1853,7 @@ function filterTOMList(risklevel, hideFinished = false) {
     if(tomRisklevel <= risklevel) $(this).removeClass('hidden');
     if(tomRisklevel > risklevel) $(this).addClass('hidden');
 
-    if(hideFinished && $(this).find('select').val() !== '-1') $(this).addClass('hidden');
+    if(!showFinished && $(this).find('select').val() !== '-1') $(this).addClass('hidden');
   });
 
   $('#tom_accordion').find('div.panel').each((idx, elem) => {
@@ -2467,12 +2467,13 @@ Promise.all(promises).then(function() {
     filterTOMList(parseInt($(this).val()));
   });
 
-  $('#hideFinishedTOMs').change(function() {
+  // Bearbeite Maßnahmen in TOM Liste anzeigen/verbergen
+  $('#showFinishedTOMs').change(function() {
     if(this.checked) {
-      filterTOMList(parseInt($('[name=massnahmen_risiko]:checked').val()), true);
+      filterTOMList(parseInt($('[name=massnahmen_risiko]:checked').val()), true);  // default
     }
     else {
-      filterTOMList(parseInt($('[name=massnahmen_risiko]:checked').val()));
+      filterTOMList(parseInt($('[name=massnahmen_risiko]:checked').val()), false);
     }
   });
 
