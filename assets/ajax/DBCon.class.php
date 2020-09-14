@@ -604,7 +604,30 @@
           error_log("[SecDoc] DBCon.class.php -> Aktualisiere Datenbank von Version $db_version zu " . self::DBVERSION . "!");
 
           $this->pdo->beginTransaction();
+          # Neue Tabelle für angehängte Dokumente
           $this->pdo->exec(self::TABLES[17]);
+          
+          # Alte TOMs auf 'unbearbeitet' setzen, wenn nicht umgesetzt und kein Kommentar hinterlegt
+          $sth1 = $this->pdo->prepare('SELECT ID, JSON FROM verfahren WHERE NOT Status = 3;');
+          $sth2 = $this->pdo->prepare('UPDATE verfahren SET JSON = ? WHERE ID = ?;');
+          $sth1->execute();
+          foreach($sth1->fetchAll() as $entry) {
+            $parsedJSON = json_decode($entry['JSON'], true);
+
+            $tomKeys = array_filter(array_keys($parsedJSON), function($key) { return strpos($key, 'massnahmen_') === 0; });
+
+            foreach($tomKeys as $key) {
+              if(strpos($key, '_kommentar') !== FALSE || in_array($key, ['massnahmen_risiko', 'massnahmen_abhaengigkeit_id', 'massnahmen_abhaengigkeit_name', 'massnahmen_vertraulichkeit', 'massnahmen_integritaet', 'massnahmen_verfuegbarkeit'])) continue;
+
+              if($parsedJSON[$key] !== '0') continue;
+
+              if($parsedJSON[$key] === '0' && (!array_key_exists($key . '_kommentar', $parsedJSON) || empty($parsedJSON[$key . '_kommentar']))) {
+                $parsedJSON[$key] = '-1';
+              }
+            }
+
+            $sth2->execute([json_encode($parsedJSON), $entry['ID']]);
+          }
           $this->pdo->exec("PRAGMA user_version = 11;");
           $this->pdo->commit();
         }
