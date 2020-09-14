@@ -132,6 +132,7 @@ function loadTables(tier) {
     $('#inbearbeitung table').DataTable().destroy();
 
     $('#abgeschlossen table').off();
+    $('#inbearbeitung table').off();
 
     abgTable.empty();
     inbTable.empty();
@@ -149,20 +150,19 @@ function loadTables(tier) {
       newEntry.append('<td>' + data['data'][c]['Erstelldatum'] + '</td>');
       newEntry.append('<td>' + data['data'][c]['Aktualisierung'] + '</td>');
       newEntry.append('<td><textarea class="form-control comment" data-id="' + data['data'][c]['ID'] + '" style="resize: both;">' + htmlDecode(data['data'][c]['DSBKommentar']) + '</textarea></td>');
-      newEntry.append('<td><div class="btn-group inline"><a class="btn" href="?id=' + data['data'][c]['ID'] + (debug ? '&debug=true' : '') + '" target="_blank"><i class="fa fa-edit"></i> Bearbeiten</a><a class="btn" href="?copy=' + data['data'][c]['ID'] + (debug ? '&debug=true' : '') + '" target="_blank"><i class="fa fa-copy"></i> Kopieren</a><button type="button" class="btn pdfdownload" data-id="' + data['data'][c]['ID'] + '" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '><i class="fa fa-file-pdf-o"></i> PDF anzeigen</button></div> <button type="button" data-id="' + data['data'][c]['ID'] +'" data-name="' + data['data'][c]['Bezeichnung'] +'" class="btn del btn-danger"><i class="fa fa-minus"></i> Löschen</button></td>');
-
-      if(parseInt(data['data'][c]['Typ']) === 1 || parseInt(data['data'][c]['Typ']) === 3 || parseInt(data['data'][c]['Typ']) === 2) newEntry.find('.pdfdownload').closest('div').append('<button type="button" class="btn completepdf" data-id="' + data['data'][c]['ID'] + '" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '><i class="fa fa-file-pdf-o"></i> Vollständige PDF erzeugen</button>');
+      newEntry.append('<td><div class="btn-group inline"><a class="btn" href="?id=' + data['data'][c]['ID'] + (debug ? '&debug=true' : '') + '" target="_blank"><i class="fa fa-edit"></i> Bearbeiten</a><a class="btn" href="?copy=' + data['data'][c]['ID'] + (debug ? '&debug=true' : '') + '" target="_blank"><i class="fa fa-copy"></i> Kopieren</a><button type="button" class="btn pdfdownload" data-id="' + data['data'][c]['ID'] + '" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '><i class="fa fa-file-pdf-o"></i> ' + (parseInt(data['data'][c]['Status']) === 0 ? 'Letzte abgeschlossene PDF anzeigen' : 'PDF anzeigen') + '</button></div> <button type="button" data-id="' + data['data'][c]['ID'] +'" data-name="' + data['data'][c]['Bezeichnung'] +'" class="btn del btn-danger"><i class="fa fa-minus"></i> Löschen</button></td>');
 
       if(parseInt(data['data'][c]['Status']) === 0) {
         inbTable.append(newEntry);
       }
       else {
+        if(parseInt(data['data'][c]['Typ']) === 1 || parseInt(data['data'][c]['Typ']) === 3 || parseInt(data['data'][c]['Typ']) === 2) newEntry.find('.pdfdownload').closest('div').append('<button type="button" class="btn completepdf" data-id="' + data['data'][c]['ID'] + '" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '><i class="fa fa-file-pdf-o"></i> Vollständige PDF erzeugen</button>');
         abgTable.append(newEntry);
       }
     }
 
     // Event-Listener zum Speichern von Änderungen an den Kommentaren
-    $('#abgeschlossen table').on('input change', 'textarea.comment', function(event) {
+    $('#abgeschlossen table, #inbearbeitung table').on('input change', 'textarea.comment', function(event) {
       let tar = $(event.target);
       let timeout = 5000;
       clearTimeout(tar.data('timer'));
@@ -194,16 +194,16 @@ function loadTables(tier) {
     });
 
     // PDF-Download ermöglichen
-    $('#abgeschlossen table').on('click', 'button.pdfdownload', function(event) {
+    $('#abgeschlossen table, #inbearbeitung table').on('click', 'button.pdfdownload', function(event) {
       getPDFFromServer($(event.target).data('id'));
     });
 
-    $('#abgeschlossen table').on('click', 'button.completepdf', function(event) {
+    $('#abgeschlossen table, #inbearbeitung table').on('click', 'button.completepdf', function(event) {
       getCompletePDF($(event.target).data('id'));
     });
 
     // Handler für das Löschen von Verfahren
-    $('#abgeschlossen table').on('click', 'button.del', function() {
+    $('#abgeschlossen table, #inbearbeitung table').on('click', 'button.del', function() {
       var confirmed = confirm('Achtung: Von diesem Verfahren könnten andere Verfahren abhängen! Wollen Sie das Verfahren "' + $(this).data('name') + '" wirklich löschen?');
       if(confirmed) {
         deleteFromServer($(this).data('id'));

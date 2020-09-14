@@ -428,26 +428,26 @@ function showVerfahrensliste(startup = false) {
       let currId = parseInt(data['data'][c]['ID']);
       let newEntry = $('<tr></tr>');
       let statusSymbol = data['data'][c]['Status'] in statusSymbolMapping ? ' <i class="fa ' + statusSymbolMapping[data['data'][c]['Status']] + '"></i>' : '';
-      data['data'][c]['Status'] = data['data'][c]['Status'] in statusMapping ? statusMapping[data['data'][c]['Status']] : statusMapping['9'];
+      let statusName   = data['data'][c]['Status'] in statusMapping ? statusMapping[data['data'][c]['Status']] : statusMapping['9'];
 
       // Editierbare/Eigene Verfahren
       if(data['data'][c]['Editierbar'] === true) {
         newEntry.append('<td style="width: 16px;"></td>');
         newEntry.append('<td>' + data['data'][c]['Bezeichnung'] + ' <i data-toggle="tooltip" class="fa fa-info-circle" title="' + data['data'][c]['Beschreibung'] + '"></i></td>');
         newEntry.append('<td>' + data['data'][c]['Fachabteilung']  + '</td>');
-        newEntry.append('<td>' + data['data'][c]['Status'] + statusSymbol + '</td>');
+        newEntry.append('<td>' + statusName + statusSymbol + '</td>');
         newEntry.append('<td>' + data['data'][c]['LetzterBearbeiter'] + ' <i data-toggle="tooltip" class="fa fa-info-circle" title="' + (data['data'][c]['BearbeiterDetails'] ? data['data'][c]['BearbeiterDetails'] : '<Keine Details vorhanden>') + '"></i></td>');
         newEntry.append('<td>' + data['data'][c]['Aktualisierung'] + '</td>');
-        newEntry.append('<td><div class="btn-group inline"><a class="btn" href="?id=' + currId + (debug ? '&debug=true' : '') + '" target="_blank"><i class="fa fa-edit"></i> Bearbeiten</a><a class="btn" href="?copy=' + currId + '" target="_blank"><i class="fa fa-copy"></i> Kopieren</a><button type="button" title="Die PDF-Version repräsentiert das zuletzt abgeschlossene Verfahren!" data-id="' + currId + '" class="btn pdfdownload" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '><i class="fa fa-file-pdf-o"></i> PDF anzeigen</button></div> <button type="button" data-id="' + currId +'" data-name="' + data['data'][c]['Bezeichnung'] +'" class="btn del btn-danger" ' + (data['data'][c]['Löschbar'] === true ? '' : 'disabled')  + '><i class="fa fa-minus"></i> Löschen</button></td>');
+        newEntry.append('<td><div class="btn-group inline"><a class="btn" href="?id=' + currId + (debug ? '&debug=true' : '') + '" target="_blank"><i class="fa fa-edit"></i> Bearbeiten</a><a class="btn" href="?copy=' + currId + '" target="_blank"><i class="fa fa-copy"></i> Kopieren</a><button type="button" title="Die PDF-Version repräsentiert das zuletzt abgeschlossene Verfahren!" data-id="' + currId + '" class="btn pdfdownload" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '><i class="fa fa-file-pdf-o"></i> ' + (parseInt(data['data'][c]['Status']) === 0 ? 'Letzte abgeschlossene PDF anzeigen' : 'PDF anzeigen') + '</button></div> <button type="button" data-id="' + currId +'" data-name="' + data['data'][c]['Bezeichnung'] +'" class="btn del btn-danger" ' + (data['data'][c]['Löschbar'] === true ? '' : 'disabled')  + '><i class="fa fa-minus"></i> Löschen</button></td>');
         modalBody.find('#editableprocesses tbody').append(newEntry);
       }
       else {
         newEntry.append('<td style="width: 16px;"></td>');
         newEntry.append('<td>' + data['data'][c]['Bezeichnung'] + ' <i data-toggle="tooltip" class="fa fa-info-circle" title="' + data['data'][c]['Beschreibung'] + '"></i></td>');
         newEntry.append('<td>' + data['data'][c]['Fachabteilung']  + '</td>');
-        newEntry.append('<td>' + data['data'][c]['Status'] + statusSymbol + '</td>');
+        newEntry.append('<td>' + statusName + statusSymbol + '</td>');
         newEntry.append('<td>' + data['data'][c]['Aktualisierung'] + '</td>');
-        newEntry.append('<td><div class="btn-group inline"><a class="btn" href="?id=' + currId + (debug ? '&debug=true' : '') + '" target="_blank"><i class="fa fa-edit"></i> Anzeigen</a><a class="btn" href="?copy=' + currId + '" target="_blank"><i class="fa fa-copy"></i> Kopieren</a><button type="button" data-id="' + currId + '" class="btn pdfdownload" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '><i class="fa fa-file-pdf-o"></i> PDF anzeigen</button></div></td>');
+        newEntry.append('<td><div class="btn-group inline"><a class="btn" href="?id=' + currId + (debug ? '&debug=true' : '') + '" target="_blank"><i class="fa fa-edit"></i> Anzeigen</a><a class="btn" href="?copy=' + currId + '" target="_blank"><i class="fa fa-copy"></i> Kopieren</a><button type="button" data-id="' + currId + '" class="btn pdfdownload" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '><i class="fa fa-file-pdf-o"></i> ' + (parseInt(data['data'][c]['Status']) === 0 ? 'Letzte abgeschlossene PDF anzeigen' : 'PDF anzeigen') + '</button></div></td>');
         modalBody.find('#readableprocesses tbody').append(newEntry);
       }
     }
@@ -1555,7 +1555,7 @@ function initTypeahead(node) {
         }*/
       } :
       { // Einmal alle Daten holen und dann cachen lassen
-        [nodeData['url'] + '_' + nodeData['path']]: {
+        [window.location.origin + '/' + nodeData['url'] + '_' + nodeData['path']]: {
           data: [{"label": "-- keine --"}],
           ajax: {
             type: 'GET',
@@ -2121,6 +2121,8 @@ function showDocumentAddDialog(docID = -1, fileref = '', description = '') {
  * @return {undefined}
  */
 function loadDocuments() {
+  if(loadId === 0) return;
+
   $.get(backendPath, { 'action': 'listDocuments', 'id':  loadId, 'debug': debug }).done(function(data) {
     if(!data['success']) {
       showError('Laden der angehängten Dokumente', data['error']);
