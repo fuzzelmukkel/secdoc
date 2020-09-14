@@ -278,8 +278,6 @@
       }
       else
       {
-        trigger_error('[SecDoc] Utils.class.php -> ldap_get_entries() Fehler: ' . ldap_error($ldap_handle));
-        error_log('[SecDoc] Utils.class.php ->ldap_get_entries() Fehler: ' . ldap_error($ldap_handle));
         return [];
       }
     }
@@ -319,8 +317,6 @@
       }
       else
       {
-        trigger_error('[SecDoc] Utils.class.php -> ldap_get_entries() Fehler: ' . ldap_error($ldap_handle));
-        error_log('[SecDoc] Utils.class.php -> ldap_get_entries() Fehler: ' . ldap_error($ldap_handle));
         return [];
       }
     }
@@ -364,8 +360,6 @@
       }
       else
       {
-        trigger_error('[SecDoc] Utils.class.php -> ldap_get_entries() Fehler: ' . ldap_error($ldap_handle));
-        error_log('[SecDoc] Utils.class.php ->ldap_get_entries() Fehler: ' . ldap_error($ldap_handle));
         return [];
       }
     }
@@ -399,8 +393,6 @@
       }
       else
       {
-        trigger_error('[SecDoc] Utils.class.php -> ldap_get_entries() Fehler: ' . ldap_error($ldap_handle));
-        error_log('[SecDoc] Utils.class.php ->ldap_get_entries() Fehler: ' . ldap_error($ldap_handle));
         return '';
       }
     }
@@ -442,8 +434,6 @@
       }
       else
       {
-        trigger_error('[SecDoc] Utils.class.php -> ldap_get_entries() Fehler: ' . ldap_error($ldap_handle));
-        error_log('[SecDoc] Utils.class.php ->ldap_get_entries() Fehler: ' . ldap_error($ldap_handle));
         return FALSE;
       }
     }
@@ -516,12 +506,19 @@
 	    # Einträge suchen
 	    $ldap_search = @ldap_search($ldap_handle, $base, $filter, $attributes);
 
-      if(!$ldap_search) {
+      if($ldap_search === FALSE) {
         trigger_error('[SecDoc] Utils.class.php -> ldap_search() Fehler: ' . ldap_error($ldap_handle));
         error_log('[SecDoc] Utils.class.php -> ldap_search() Fehler: ' . ldap_error($ldap_handle));
         return [];
       }
+
 	    $result = @ldap_get_entries($ldap_handle, $ldap_search);
+      if($result === FALSE) {
+        trigger_error('[SecDoc] Utils.class.php -> ldap_get_entries() Fehler: ' . ldap_error($ldap_handle));
+        error_log('[SecDoc] Utils.class.php -> ldap_get_entries() Fehler: ' . ldap_error($ldap_handle));
+        return [];
+      }
+
 	    return $result;
     }
 
