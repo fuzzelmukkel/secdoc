@@ -1042,7 +1042,9 @@ function genHTMLforPDF(draft = false) {
   if(draft) {
     toSend.find('#tom_accordion').find('option').each(function() {
       let selectName = $(this).closest('select')[0].name;
-      let selectedValue = $('select[name="' + selectName + '"]').val();
+      let selectedValue = $('select[name="' + selectName + '"]').val(); // .val() funktioniert in Kopie nicht richtig, deswegen Abfrage im Live-DOM
+
+      if(this.value === '-1') return;
 
       if(this.value === selectedValue) {
         $(this).closest('td').append('<p>&#9746; ' + this.text + '</p>');
@@ -1060,10 +1062,26 @@ function genHTMLforPDF(draft = false) {
     if(parseInt($(this).data('risk')) > currRiskLevel) $(this).remove();
   });
 
+  /* Ausgeblendete, bearbeitete TOMs wieder anzeigen */
+  toSend.find('#tom_accordion tr.hidden').removeClass('hidden');
+
+  /* Bei Abschluss-PDF unbearbeitete Massnahmen entfernen */
+  if(!draft) toSend.find('#tom_accordion select').each(function() {
+    if($('select[name="' + this.name + '"]').val() === '-1') $(this).closest('tr').remove();
+  });
+
   /* Bei Abschluss-PDF Volltexte entfernen */
   if(!draft) toSend.find('#tom_accordion').find('tbody td:nth-child(2) div.tom_desc').remove();
   if(!draft) toSend.find('#tom_accordion').find('tbody td:nth-child(2) p').removeClass('strong');
   if(!draft) toSend.find('#tom_accordion').find('.panel-body > p, .panel-body > a').remove();
+
+  /* Leere TOM-Kategorien entfernen */
+  if(!draft) toSend.find('#tom_accordion table').each(function() {
+    if($(this).find('tbody tr').length === 0) {
+      $(this).closest('.panel-collapse').prev('h6').remove();
+      $(this).closest('.panel-collapse').remove();
+    }
+  });
 
   /* Hinweis-Text bei keinen ausgewählten TOMs */
   if(toSend.find('#toggletoms').find('input[type=checkbox]:checked').length === 0 || toSend.find('#tom_accordion').find('tr').length === 0) {
@@ -1810,10 +1828,11 @@ function generateTOMList() {
 
 /**
  * Filtert die Liste der TOMs anhand des gewählten Risikolevels
- * @param  {Number} risklevel Risikolevel des Verfahrens
+ * @param  {Number}  risklevel    Risikolevel des Verfahrens
+ * @param  {Boolean} hideFinished (optional) Bearbeitete Massnahmen ausblenden
  * @return {undefined}
  */
-function filterTOMList(risklevel) {
+function filterTOMList(risklevel, hideFinished = false) {
   let riskTexts = {
     '1': 'Der Schutzbedarf ' + (modeNum === 2 ? 'des ' + modeName[0] + 's' : 'der ' + modeName[0]) + ' ist normal. Es sind die <em>Basis</em>-Anforderungen umzusetzen.',
     '2': 'Der Schutzbedarf ' + (modeNum === 2 ? 'des ' + modeName[0] + 's' : 'der ' + modeName[0]) + ' ist hoch. Es sind vorrangig die <em>Basis</em>-Anforderungen umzusetzen. Darüber hinaus sollten die <em>Standard</em>-Anforderungen umgesetzt werden.',
@@ -1829,6 +1848,8 @@ function filterTOMList(risklevel) {
     let tomRisklevel = parseInt($(this).data('risk'));
     if(tomRisklevel <= risklevel) $(this).removeClass('hidden');
     if(tomRisklevel > risklevel) $(this).addClass('hidden');
+
+    if(hideFinished && $(this).find('select').val() !== '-1') $(this).addClass('hidden');
   });
 
   $('#tom_accordion').find('div.panel').each((idx, elem) => {
@@ -1906,8 +1927,9 @@ function toggleTOMList(evt) {
 
       // Umsetzung
       let tomDropdown = $('<select data-tool="selectpicker" name="massnahmen_' + tomID + '"></select>')
+        .append('<option value="-1" selected>Unbearbeitet</option>')
         .append('<option value="1">Ja</option>')
-        .append('<option value="0" selected>Nein</option>')
+        .append('<option value="0">Nein</option>')
         .append('<option value="2">Teilweise</option>')
         .append('<option value="4">Entbehrlich</option>');
 
@@ -2439,6 +2461,15 @@ Promise.all(promises).then(function() {
   // TOM Liste aktualisieren, wenn Risikolevel geändert wird
   $('[name=massnahmen_risiko]').change(function() {
     filterTOMList(parseInt($(this).val()));
+  });
+
+  $('#hideFinishedTOMs').change(function() {
+    if(this.checked) {
+      filterTOMList(parseInt($('[name=massnahmen_risiko]:checked').val()), true);
+    }
+    else {
+      filterTOMList(parseInt($('[name=massnahmen_risiko]:checked').val()));
+    }
   });
 
   console.timeEnd('Dynamische Inhalte initialisieren');
