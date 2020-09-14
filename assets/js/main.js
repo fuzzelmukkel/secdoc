@@ -454,6 +454,10 @@ $('#logoutLabel').click(() => {
  */
 $.getJSON(backendPath + '?action=loggedin' + (debug ? '&debug=true' : '')).done((data) => {
   if(data.length !== 0 && data['success']) {
+    if(data['maintenance']) {
+      $('#maintenanceAlert').removeClass('hidden');
+      if(data['maintenanceMessage'] !== '') $('#maintenanceMessage').text(data['maintenanceMessage']);
+    }
     loadSubpage();
   }
   else {

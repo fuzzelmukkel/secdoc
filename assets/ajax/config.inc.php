@@ -77,6 +77,10 @@
   # Zeitmessung starten
   $timer = array(array('Skript-Start', microtime(TRUE)));
 
+  # Wartungsmodus
+  $maintenanceMode    = FALSE;
+  $maintenanceMessage = 'Aktuell wird ein Versionsupdate durchgeführt. Danke für Ihre Geduld!';
+
   # ----------------------------------------
   # E-Mail-Konfiguration
   # ----------------------------------------

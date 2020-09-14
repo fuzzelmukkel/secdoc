@@ -937,6 +937,11 @@ EOH;
     returnError('Es konnte keine DB-Verbindung hergestellt werden! Versuchen Sie es später erneut.');
   }
 
+  # Im Wartungs Fehler bei schreibenden Funktionen ausgeben
+  if($maintenanceMode && in_array($action, ['create', 'update', 'finish', 'delete', 'updatecomment', 'gendraftpdf', 'adddocument', 'updatedocument', 'deletedocument'])) {
+    returnError('Funktion steht im Wartungsmodus nicht zur Verfügung!');
+  }
+
   # Gewünschte Aktion ausführen
   switch($action) {
     # Liest alle Verfahren aus, auf die $userId Zugriff hat
@@ -1092,6 +1097,10 @@ EOH;
 
       if(empty($proc)) {
         returnError('Kein Verfahren mit der angebenen ID konnte gefunden werden oder Sie haben keinen Zugriff darauf!');
+      }
+
+      if($maintenanceMode) {
+        $proc[0]['Editierbar'] = FALSE;
       }
 
       $output['count'] = 1;
@@ -1910,6 +1919,8 @@ EOH;
 
     case 'loggedin': {
       $output['success'] = TRUE;
+      $output['maintenance'] = $maintenanceMode;
+      if($maintenanceMode) $output['maintenanceMessage'] = $maintenanceMessage;
       break;
     }
 

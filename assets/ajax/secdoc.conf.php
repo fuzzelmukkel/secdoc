@@ -17,6 +17,10 @@
    $prog_name    = "SecDoc Demosystem";
    $prog_url     = 'http://localhost/';
 
+   # Wartungsmodus
+   $maintenanceMode    = FALSE;
+   $maintenanceMessage = 'Aktuell wird ein Versionsupdate durchgeführt. Danke für Ihre Geduld!';
+
    # ----------------------------------------
    # E-Mail-Konfiguration
    # ----------------------------------------
