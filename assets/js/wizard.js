@@ -393,7 +393,7 @@ function myFinish() {
 function showVerfahrensliste(startup = false) {
   console.time('Verfahrensliste laden');
   var show = true;
-  modal.find('.modal-title').text('Liste bestehender ' + modeName[1]);
+  modal.find('.modal-title').html('<i class="fa fa-list"></i> Liste bestehender ' + modeName[1]);
   var modalBody = modal.find('.modal-body');
   modalBody.html('<p>Wählen Sie eine Dokumentation aus der Liste, um sie zu bearbeiten oder einzusehen, oder legen Sie eine neue Dokumentation an.</p>');
   modalBody.append('<ul class="nav nav-tabs" role="tablist"><li role="presentation" class="active"><a href="#listeditable" aria-controls="listeditable" role="tab" data-toggle="tab"><i class="fa fa-edit"></i> Editierbare ' + modeName[1] + '</a></li><li role="presentation"><a href="#listreadable" aria-controls="listreadable" role="tab" data-toggle="tab"><i class="fa fa-eye"></i> Einsehbare ' + modeName[1] + '</a></li></ul>');
@@ -509,7 +509,7 @@ function showVerfahrensliste(startup = false) {
     setOverlay(false);
     console.timeEnd('Verfahrensliste laden');
     if(show) {
-      modalBody.append('<p><span><button type="button" class="btn loadEmpty btn-success btn-fill"><i class="fa fa-plus"></i> Neue Dokumentation anlegen</button></span></p>');
+      modalBody.append('<p><button type="button" class="btn btn-success btn-fill loadEmpty"><i class="fa fa-plus"></i> Neue Dokumentation für ' + modeName[0] + '  anlegen</button><button type="button" class="btn btn-danger ml pull-right" data-dismiss="modal" aria-label="Close">Schließen</button></p>');
       modalBody.find('.loadEmpty').click(function() {
         if(!canEdit) {
           window.location.href = "?page=" + mode;
@@ -566,7 +566,7 @@ function loadEmpty() {
     removeTableRows(table);
   });
   $('input[type=text], textarea').not('[name$="_nummer[]"]').val('');
-  $('input[type=checkbox]').prop('checked', false).trigger('change');
+  $('input[type=checkbox]:not(#showFinishedTOMs)').prop('checked', false).trigger('change');
   $('.wizard-navigation li a').first().click();
   endlessTables.forEach(function(table) {
     addTableRow(table);
@@ -1003,7 +1003,7 @@ function genHTMLforPDF(draft = false) {
   console.time('HTML-Code-Generierung für PDF-Datei');
 
   /* Bearbeitete TOMs wieder einblenden */
-  $('#showFinishedTOMs:not(checked)').prop('checked', true).trigger('change');
+  $('#showFinishedTOMs:not(:checked)').prop('checked', true).trigger('change');
 
   /* Alle leeren Tabellenzeilen entfernen */
   endlessTables.forEach(function(table) {
@@ -2063,13 +2063,13 @@ function showDocumentAddDialog(docID = -1, fileref = '', description = '') {
   }
   setOverlay(true);
 
-  modal.find('.modal-title').text('Dokumenten-Verwaltung');
+  modal.find('.modal-title').html('<i class="fa fa-book"></i> Dokumenten-Verwaltung');
   let modalBody = modal.find('.modal-body');
   if(docID === -1) {
-    modalBody.html('<div><p>Hier kann ein PDF-Dokument zum Anhängen und eine optionale Beschreibung ausgwählt werden.</p><div class="form-group text-center"><label>Beschreibung</label><textarea class="form-control" id="filedesc" placeholder="Beschreibt den Inhalt des Dokuments"></textarea></div><div class="text-center form-group"><label for="uploadFile">Neues PDF-Dokument zum Anhängen auswählen</label><input type="file" id="uploadFile" accept=".pdf,application/pdf" class="btn center-block hidden" /><div id="dropFile" class="text-center alert alert-info"></div><p><strong>Ausgewählte Datei:</strong> <span id="filename">Keine</span></p><p><button id="filesave" class=btn btn-fill btn-success">Speichern</button></p></div></div>');
+    modalBody.html('<div><p>Wählen Sie ein PDF-Dokument aus und geben Sie eine optionale Beschreibung ein.</p><div class="form-group"><label>Beschreibung</label><textarea class="form-control" id="filedesc" placeholder="Beschreibt den Inhalt des Dokuments"></textarea></div><div class="form-group"><label for="uploadFile">Neues PDF-Dokument zum Anhängen auswählen</label><input type="file" id="uploadFile" accept=".pdf,application/pdf" class="btn center-block hidden" /><div id="dropFile" class="alert alert-info"></div><p><strong>Ausgewählte Datei:</strong> <span id="filename">Keine</span></p><p class="text-center"><button id="filesave" class=btn btn-fill btn-success">Speichern</button><button type="button" class="btn btn-danger ml" data-dismiss="modal" aria-label="Close">Schließen</button></p></div></div>');
   }
   else {
-    modalBody.html('<div><p>Bitte wählen Sie ein neues PDF-Dokument zum Ersetzen von "' + fileref + '" aus oder passen Sie die Beschreibung an.</p><div class="form-group text-center"><label>Beschreibung</label><textarea class="form-control" id="filedesc" placeholder="Beschreibt den Inhalt des Dokuments"></textarea></div><div class="text-center form-group"><label for="uploadFile">Neues PDF-Dokument zum Ersetzen auswählen</label><input type="file" id="uploadFile" accept=".pdf,application/pdf" class="btn center-block hidden" /><div id="dropFile" class="text-center alert alert-info"></div><p><strong>Ausgewählte Datei:</strong> <span id="filename">Keine</span></p><p><button id="filesave" class=btn btn-fill btn-success">Speichern</button></p></div></div>');
+    modalBody.html('<div><p>Wählen Sie ein neues PDF-Dokument zum Ersetzen von "' + fileref + '" aus oder passen Sie die Beschreibung an.</p><div class="form-group"><label>Beschreibung</label><textarea class="form-control" id="filedesc" placeholder="Beschreibt den Inhalt des Dokuments"></textarea></div><div class="form-group"><label for="uploadFile">Neues PDF-Dokument zum Ersetzen auswählen</label><input type="file" id="uploadFile" accept=".pdf,application/pdf" class="btn center-block hidden" /><div id="dropFile" class="alert alert-info"></div><p><strong>Ausgewählte Datei:</strong> <span id="filename">Keine</span></p><p class="text-center"><button id="filesave" class=btn btn-fill btn-success">Speichern</button><button type="button" class="btn btn-danger ml" data-dismiss="modal" aria-label="Close">Schließen</button></p></div></div>');
     $('#filedesc').val(description);
   }
 
@@ -2378,7 +2378,7 @@ Promise.all(promises).then(function() {
     let targetType    = $(this).data('type');
     let targetTitle   = $(this).closest('tr').find('input[type="text"]').first().val();
 
-    modal.find('.modal-title').text('Abhängigkeit anlegen');
+    modal.find('.modal-title').html('<i class="fa fa-exchange"></i> Abhängigkeit anlegen');
     modal.find('.modal-body').html('<div></div>');
     modal.find('.modal-body > div').append('<p>Hier können Sie die Abhängigkeit von ' + modeMapping[targetType][4] + ' noch nicht existierenden ' + modeMapping[targetType][0] + ' vorläufig anlegen, damit die Verknüpfung direkt angelegt werden kann. ' + modeMapping[targetType][2] + ' ' + modeMapping[targetType][0] + ' kann später wie jede andere Dokumentation bearbeitet und ergänzt werden.</p>');
     modal.find('.modal-body > div').append('<p class="alert alert-danger hidden">Bitte füllen Sie alle Felder aus, um die Abhängigkeit anlegen zu können!</p>');
@@ -2388,7 +2388,7 @@ Promise.all(promises).then(function() {
 
     modal.find('input[name="quick_title"]').val(targetTitle);
 
-    modal.find('.modal-body').append('<p class="text-center"><button type="button" class="btn btn-success" id="quickSave">Anlegen & Speichern</button><button type="button" class="ml btn btn-danger" data-dismiss="modal" aria-label="Close">Abbrechen</button></p>');
+    modal.find('.modal-body').append('<p class="text-center"><button type="button" class="btn btn-success" id="quickSave">Speichern</button><button type="button" class="ml btn btn-danger" data-dismiss="modal" aria-label="Close">Abbrechen</button></p>');
 
     // Tooltips, Typeahead und Buttons
     modal.find('.modal-body i').tooltip();
@@ -2490,7 +2490,7 @@ Promise.all(promises).then(function() {
   setSaveLabel('failed');
 
   // Standardmäßig alle Checkboxen nicht auswählen
-  $('input[type=checkbox]').prop('checked', false);
+  $('input[type=checkbox]:not(#showFinishedTOMs)').prop('checked', false);
 
   // Tooltips initialisieren
   $('[data-toggle="tooltip"]').tooltip({
