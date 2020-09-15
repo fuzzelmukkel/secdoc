@@ -2556,25 +2556,37 @@ Promise.all(promises).then(function() {
     $(this).prop('disabled', true);
     setOverlay();
 
-    if(canEdit) saveOnServer();
+    let savePromise = Promise.resolve();
+    if(canEdit && changedValues) {
+      savePromise = saveOnServer();
+    }
 
-    let htmlForPDF = genHTMLforPDF(true);
-
-    $.post(backendPath, JSON.stringify({'action':'gendraftpdf', 'id': loadId, 'data': {'title': $('[name="allgemein_bezeichnung"]').val(), 'pdfCode': htmlForPDF}, 'debug': debug})).done((data) => {
-      if(!data['success']) {
-        showError('Erzeugen der Vorschau-PDF', data['error']);
-        $(this).prop('disabled', false);
-        setOverlay(false);
-        return;
-      }
-
-      getPDFFromServer(loadId, true);
-      $(this).prop('disabled', false);
-    }).fail((jqXHR, error, errorThrown) => {
-      showError('Erzeugen der Vorschau-PDF', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
-      $(this).prop('disabled', false);
+    if(!savePromise) {
+      $('#dlDraftPDF').prop('disabled', false);
       setOverlay(false);
-    })
+      return;
+    }
+    else {
+      savePromise.then(function() {
+        let htmlForPDF = genHTMLforPDF(true);
+
+        $.post(backendPath, JSON.stringify({'action':'gendraftpdf', 'id': loadId, 'data': {'title': $('[name="allgemein_bezeichnung"]').val(), 'pdfCode': htmlForPDF}, 'debug': debug})).done((data) => {
+          if(!data['success']) {
+            showError('Erzeugen der Vorschau-PDF', data['error']);
+            $('#dlDraftPDF').prop('disabled', false);
+            setOverlay(false);
+            return;
+          }
+
+          getPDFFromServer(loadId, true);
+          $('#dlDraftPDF').prop('disabled', false);
+        }).fail((jqXHR, error, errorThrown) => {
+          showError('Erzeugen der Vorschau-PDF', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+          $('#dlDraftPDF').prop('disabled', false);
+          setOverlay(false);
+        });
+      });
+    }
   });
 
   // Titel anhand Bezeichnung aktualisieren
