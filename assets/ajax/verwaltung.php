@@ -249,7 +249,7 @@
 
     require_once '../vendor/autoload.php';
 
-    global $dbcon, $userId, $pdf_dir, $prog_name, $prog_version, $prog_url, $docmgmtClass, $temp_dir;
+    global $dbcon, $userId, $pdf_dir, $prog_name, $prog_version, $prog_url, $docmgmtClass, $docmgmt_maxAttachSize, $temp_dir;
     $res = Utils::searchUsers($userId, TRUE);
     $author = !empty($res) ? $res[0]['name'] : '';
 
@@ -323,10 +323,16 @@ EOH;
     if(!$isDraft) {
       # Angehängte PDF-Dokumente einbetten
       $attachedDocs = $dbcon->listDocuments($verfahrensId);
+      $attachedDocs = array_filter($attachedDocs, function($doc) { return ($doc['Attach'] > 0 ? TRUE : FALSE); });
+      $attachedSize = 0;
       if(count($attachedDocs) > 0) {
         $mpdf->Bookmark("Angehängte Dokumente", 0);
       }
       foreach($attachedDocs as $doc) {
+        # Prüfen, ob Anhanggröße überschritten wird
+        $attachedSize += $doc['FileSize'];
+        if($attachedSize > $docmgmt_maxAttachSize) break;
+
         $file = $docmgmtClass->getDocument($verfahrensId, $doc['FileRef']);
         $tmpFile = $temp_dir . DIRECTORY_SEPARATOR . "{$verfahrensId}_{$doc['DocID']}.pdf";
         if(file_put_contents($tmpFile, base64_decode($file['fileContent'])) === FALSE) {
@@ -1791,7 +1797,7 @@ EOH;
 
       if(empty($newFileRef)) returnError('Konnte Dokument nicht abspeichern!');
 
-      $newDocID = $dbcon->addDocument($verfahrensId, !empty($data['description']) ? $data['description'] : '', $newFileRef);
+      $newDocID = $dbcon->addDocument($verfahrensId, (!empty($data['description']) ? $data['description'] : ''), $newFileRef, strlen(base64_decode($data['filecontent'])), (!empty($data['attach']) ? intval($data['attach']) : 0));
 
       if($newDocID === -1) returnError('Konnte Document nicht in Datenbank anlegen!');
 
@@ -1823,15 +1829,17 @@ EOH;
 
         global $docmgmtClass;
 
-        $newFileRef = $docmgmtClass->updateDocument($docDetails['ProcessID'], $docDetails['FileRef'], $data['filename'], $data['filecontent']);
+        $newFileRef  = $docmgmtClass->updateDocument($docDetails['ProcessID'], $docDetails['FileRef'], $data['filename'], $data['filecontent']);
+        $newFileSize = strlen(base64_decode($data['filecontent']));
 
         if(empty($newFileRef)) returnError('Konnte Dokument nicht abspeichern!');
       }
       else {
-        $newFileRef = $docDetails['FileRef'];
+        $newFileRef  = $docDetails['FileRef'];
+        $newFileSize = $docDetails['FileSize'];
       }
 
-      if(!$dbcon->updateDocument($docDetails['DocID'], !empty($data['description']) ? $data['description'] : '', $newFileRef)) returnError('Konnte Document nicht in Datenbank aktualisieren!');
+      if(!$dbcon->updateDocument($docDetails['DocID'], !empty($data['description']) ? $data['description'] : '', $newFileRef, $newFileSize, (array_key_exists('attach', $data) && $data['attach'] ? 1 : 0))) returnError('Konnte Document nicht in Datenbank aktualisieren!');
 
       $output['success'] = TRUE;
       break;
@@ -1901,9 +1909,16 @@ EOH;
 
       $documents = $dbcon->listDocuments($verfahrensId);
 
-      $output['success'] = TRUE;
-      $output['data']    = $documents;
-      $output['count']   = count($documents);
+      $combinedSize = 0;
+      foreach($documents as $doc) {
+        if($doc['Attach'] > 0) $combinedSize += $doc['FileSize'];
+      }
+
+      $output['success']  = TRUE;
+      $output['data']     = $documents;
+      $output['sizewarn'] = $combinedSize > $docmgmt_maxAttachSize ? TRUE : FALSE;
+      $output['maxsize']  = $docmgmt_maxAttachSize;
+      $output['count']    = count($documents);
       break;
     }
 

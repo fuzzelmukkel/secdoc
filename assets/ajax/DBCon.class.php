@@ -250,10 +250,12 @@
             PRIMARY KEY (Identifier)
         );",
         "CREATE TABLE documents (                                                  -- Zuweisung von Dokumenten zu Dokumentationen
-            DocID INTEGER PRIMARY KEY AUTOINCREMENT,                                   -- ID des Dokuments
+            DocID INTEGER PRIMARY KEY AUTOINCREMENT,                               -- ID des Dokuments
             ProcessID INT NOT NULL,                                                -- ID der Dokumentation
             Description TEXT NOT NULL DEFAULT '',                                  -- Beschreibung
             FileRef TEXT NOT NULL,                                                 -- Verweis auf Datei
+            FileSize INT NOT NULL DEFAULT 0,                                       -- Dateigröße
+            Attach INT NOT NULL DEFAULT 0,                                         -- Dokument an Abschluss-PDF anhängen?
             Date DATE NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')), -- Letztes Änderungsdatum
             FOREIGN KEY (ProcessID) REFERENCES verfahren(ID) ON UPDATE CASCADE ON DELETE CASCADE
         );"
@@ -393,10 +395,12 @@
         );",
         # 17
         "CREATE TABLE documents (                                                  -- Zuweisung von Dokumenten zu Dokumentationen
-            DocID INTEGER PRIMARY KEY AUTOINCREMENT,                                   -- ID des Dokuments
+            DocID INTEGER PRIMARY KEY AUTOINCREMENT,                               -- ID des Dokuments
             ProcessID INT NOT NULL,                                                -- ID der Dokumentation
             Description TEXT NOT NULL DEFAULT '',                                  -- Beschreibung
             FileRef TEXT NOT NULL,                                                 -- Verweis auf Datei
+            FileSize INT NOT NULL DEFAULT 0,                                       -- Dateigröße
+            Attach INT NOT NULL DEFAULT 0,                                         -- Dokument an Abschluss-PDF anhängen?
             Date DATE NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')), -- Letztes Änderungsdatum
             FOREIGN KEY (ProcessID) REFERENCES verfahren(ID) ON UPDATE CASCADE ON DELETE CASCADE
         );"
@@ -606,7 +610,7 @@
           $this->pdo->beginTransaction();
           # Neue Tabelle für angehängte Dokumente
           $this->pdo->exec(self::TABLES[17]);
-          
+
           # Alte TOMs auf 'unbearbeitet' setzen, wenn nicht umgesetzt und kein Kommentar hinterlegt
           $sth1 = $this->pdo->prepare('SELECT ID, JSON FROM verfahren WHERE NOT Status = 3;');
           $sth2 = $this->pdo->prepare('UPDATE verfahren SET JSON = ? WHERE ID = ?;');
@@ -1903,7 +1907,7 @@
      * Gibt alle Dokumente zurück, die an eine Dokumentation angehangen sind.
      *
      * @param  int      $verfahrensId ID einer Dokumentation
-     * @return mixed[] Array mit den Einträgen in der Form [['DocID' => 1, 'ProcessID' => 2, 'Description' => 'Test', 'FileRef' => 'test.pdf', 'Date' => '2020-09-08 12:06:18']]
+     * @return mixed[] Array mit den Einträgen in der Form [['DocID' => 1, 'ProcessID' => 2, 'Description' => 'Test', 'FileRef' => 'test.pdf', 'FileSize' => 1200, 'Attach' => 0, 'Date' => '2020-09-08 12:06:18']]
      * @throws PDOException
      * @throws Exception
      */
@@ -1930,7 +1934,7 @@
      * Gibt die Detals zu einem Dokument zurück.
      *
      * @param  int      $docID        ID eines Dokuments
-     * @return mixed[] Array mit den Einträgen in der Form ['DocID' => 1, 'ProcessID' => 2, 'Description' => 'Test', 'FileRef' => 'test.pdf', 'Date' => '2020-09-08 12:06:18']
+     * @return mixed[] Array mit den Einträgen in der Form ['DocID' => 1, 'ProcessID' => 2, 'Description' => 'Test', 'FileRef' => 'test.pdf', 'FileSize' => 1200, 'Attach' => 0, 'Date' => '2020-09-08 12:06:18']
      * @throws PDOException
      * @throws Exception
      */
@@ -1963,20 +1967,22 @@
      * @param  int      $verfahrensId ID einer Dokumentation
      * @param  string   $description  Beschreibung des Dokuments
      * @param  string   $fileRef      Dateireferenz
+     * @param  bool     $attach       Gibt an, ob die Datei an die Abschluss-PDF angehängt werden soll
+     * @param  int      $fileSize     Dateigröße in Bytes
      * @return int ID des neuen Dokuments; -1 bei fehlenden Berechtigungen
      * @throws PDOException
      * @throws Exception
      */
-    public function addDocument($verfahrensId, $description, $fileRef) {
+    public function addDocument($verfahrensId, $description, $fileRef, $fileSize, $attach) {
       if(!$this->isConnected()) {
         throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
       }
 
-      $sql = 'INSERT INTO documents (ProcessID, Description, FileRef) VALUES (?, ?, ?);';
+      $sql = 'INSERT INTO documents (ProcessID, Description, FileRef, FileSize, Attach) VALUES (?, ?, ?, ?, ?);';
 
       $sth = $this->pdo->prepare($sql);
 
-      $sth->execute([$verfahrensId, $description, $fileRef]);
+      $sth->execute([$verfahrensId, $description, $fileRef, $fileSize, ($attach ? 1 : 0)]);
 
       ob_start();
       $sth->debugDumpParams();
@@ -2016,16 +2022,16 @@
      * @throws PDOException
      * @throws Exception
      */
-    public function updateDocument($docID, $description, $fileRef) {
+    public function updateDocument($docID, $description, $fileRef, $fileSize, $attach) {
       if(!$this->isConnected()) {
         throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
       }
 
-      $sql = 'UPDATE documents SET Description = ?, FileRef = ?, Date = (datetime(CURRENT_TIMESTAMP, \'localtime\')) WHERE DocID = ?;';
+      $sql = 'UPDATE documents SET Description = ?, FileRef = ?, FileSize = ?, Attach = ?, Date = (datetime(CURRENT_TIMESTAMP, \'localtime\')) WHERE DocID = ?;';
 
       $sth = $this->pdo->prepare($sql);
 
-      $sth->execute([$description, $fileRef, $docID]);
+      $sth->execute([$description, $fileRef, $fileSize, ($attach ? 1 : 0), $docID]);
 
       ob_start();
       $sth->debugDumpParams();

@@ -186,6 +186,25 @@ function htmlDecode(input) {
 }
 
 /**
+ * Wandelt Dateigrößen in Bytes in eine lesbare Größenanzeige um
+ * @see {@link https://stackoverflow.com/a/18650828}
+ * @param  {Number} bytes    Dateigröße in Bytes
+ * @param  {Number} decimals (optional) Nachkommanstellen
+ * @return {String} Dateigröße (human-readable)
+ */
+function formatBytes(bytes, decimals = 2) {
+    if (bytes === 0) return '0 Bytes';
+
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+}
+
+/**
  * Generiert eine Debug-Ausgabe, falls der globale debug-Parameter 'true' ist
  * @param {Object} msg Ausgabenachricht (kann null sein) (wird mittels console.log(msg) ausgegeben)
  * @param {Object} obj (optional) Objekt, was formatiert ausgegeben werden soll (wird mittels console.table(obj) ausgegeben)
