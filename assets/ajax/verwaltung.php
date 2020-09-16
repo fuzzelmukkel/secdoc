@@ -293,6 +293,36 @@
     $html = str_replace('$docurl$', $prog_url . "?id=$verfahrensId", $html);
     $html = str_replace('$baseurl$', $prog_url, $html);
 
+    # Revisionen holen und einfügen
+    $revisionsHTML = <<<EOH
+      <p class="info-text text-ul text-center">Revisionen</p>
+      <table id="abschluss_revisionen" class="table table-hover btn-table" style="border: 1px solid darkgray; padding: 5px;">
+        <thead>
+          <tr>
+            <th style="border: 1px solid darkgray; padding: 5px; background-color: lightgray;">Revision</th>
+            <th style="border: 1px solid darkgray; padding: 5px; background-color: lightgray;">Datum</th>
+            <th style="border: 1px solid darkgray; padding: 5px; background-color: lightgray;">Bearbeiter</th>
+            <th style="border: 1px solid darkgray; padding: 5px; background-color: lightgray;">Kommentar</th>
+          </tr>
+        </thead>
+        <tbody>
+EOH;
+    foreach($dbcon->listRevisions($verfahrensId) as $revision) {
+      $revisionsHTML .= <<<EOH
+          <tr>
+            <td style="border: 1px solid darkgray; padding: 5px;">{$revision['Revision']}</td>
+            <td style="border: 1px solid darkgray; padding: 5px;">{$revision['Date']}</td>
+            <td style="border: 1px solid darkgray; padding: 5px;">{$revision['Editor']}</td>
+            <td style="border: 1px solid darkgray; padding: 5px;">{$revision['Comment']}</td>
+          </tr>
+EOH;
+    }
+    $revisionsHTML .= <<<EOH
+        </tbody>
+      </table>
+EOH;
+    $html = str_replace('$docrevisions$', $revisionsHTML, $html);
+
     # HTML aufbauen
     $finalHTML = <<<EOH
       <body>
@@ -1339,8 +1369,8 @@ EOH;
         returnError('Keine ID für ein Verfahren wurde übergeben!');
       }
 
-      if(empty($data)) {
-        returnError('Kein JSON-kodierter Inhalt zum Abschluss wurde übergeben (title, pdfCode)!');
+      if(empty($data) || !array_key_exists('title', $data) || !array_key_exists('pdfCode', $data) || !array_key_exists('lastupdate', $data) || !array_key_exists('comment', $data)) {
+        returnError('Kein JSON-kodierter Inhalt zum Abschluss wurde übergeben (title, pdfCode, lastupdate, comment)!');
       }
 
       // Überprüfen, ob das Verfahren nicht durch eine andere Person seit dem letzten Laden bearbeitet wurde
@@ -1355,6 +1385,11 @@ EOH;
       if($success === 0) {
         returnError('Kein Verfahren wurde aktualisiert, da entweder das Verfahren nicht gefunden wurde oder Sie keine Berechtigung haben!');
       }
+
+      # Revision anlegen
+      $editor = Utils::searchUsers($userId, TRUE);
+      $editor = (empty($editor) || empty($editor[0]['name'])) ? $userId : $editor[0]['name'];
+      $dbcon->addRevision($verfahrensId, htmlspecialchars($data['comment'], ENT_QUOTES, 'UTF-8', FALSE), $editor);
 
       if($success) {
         $output['gentxt'] = generateTXT($dbcon, $userId, $userGroups, $userIsDSB, $verfahrensId);
@@ -1922,6 +1957,23 @@ EOH;
       break;
     }
 
+    case 'listrevisions': {
+      if(empty($verfahrensId)) {
+        returnError('Keine ID für ein Verfahren wurde übergeben!');
+      }
+
+      if(!$userIsDSB && $dbcon->getPermissionLevel($verfahrensId, $userId, $userGroups) < 1) {
+        returnError('Keine Leseberechtigung für die angefragte Dokumentation!');
+      }
+
+      $revisions = $dbcon->listRevisions($verfahrensId);
+
+      $output['success']  = TRUE;
+      $output['data']     = $revisions;
+      $output['count']    = count($revisions);
+      break;
+    }
+
     case 'login': {
       $output['data']['msg'] = 'Erfolgreich eingeloggt';
       break;
@@ -1941,7 +1993,7 @@ EOH;
 
     # Falls keine bekannte Aktion angegeben wurde
     default: {
-      $output['error'] = 'Es wurde kein oder kein unterstützter Modus (list, listdsb, get, create, update, delete, finish, updatecomment, history, dependencies, searchperson, serachabteilung, searchivv, getusergroups, searchapp, searchos, searchipdns, getaufstellungsort, getstats, gettoms, getsuggestions, gencombinedpdf) angegeben!';
+      $output['error'] = 'Es wurde kein oder kein unterstützter Modus (list, listdsb, get, create, update, delete, finish, updatecomment, history, dependencies, searchperson, serachabteilung, searchivv, getusergroups, searchapp, searchos, searchipdns, getaufstellungsort, getstats, gettoms, getsuggestions, gencombinedpdf, addDocument, listDocuments, updateDocument, deleteDocument, listRevisions) angegeben!';
       break;
     }
   }
