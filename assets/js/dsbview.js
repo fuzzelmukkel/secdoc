@@ -148,7 +148,7 @@ function loadTables(tier) {
       newEntry.append('<td>' + (data['data'][c]['FachKontakt'] ? data['data'][c]['FachKontakt'] : '-- nicht angegeben --') + '</td>');
       newEntry.append('<td>' + (data['data'][c]['TechKontakt'] ? data['data'][c]['TechKontakt'] : '-- nicht angegeben --') + '</td>');
       newEntry.append('<td>' + data['data'][c]['Erstelldatum'] + '</td>');
-      newEntry.append('<td>' + data['data'][c]['Aktualisierung'] + '</td>');
+      newEntry.append('<td>' + data['data'][c]['Aktualisierung'] + ' <i class="fa fa-history cursor-progress revisionload" data-id="' + data['data'][c]['ID'] + '"></i></td>');
       newEntry.append('<td><textarea class="form-control comment" data-id="' + data['data'][c]['ID'] + '" style="resize: both;">' + htmlDecode(data['data'][c]['DSBKommentar']) + '</textarea></td>');
       newEntry.append('<td><div class="btn-group inline"><a class="btn" href="?id=' + data['data'][c]['ID'] + (debug ? '&debug=true' : '') + '" target="_blank"><i class="fa fa-edit"></i> Bearbeiten</a><a class="btn" href="?copy=' + data['data'][c]['ID'] + (debug ? '&debug=true' : '') + '" target="_blank"><i class="fa fa-copy"></i> Kopieren</a><button type="button" class="btn pdfdownload" data-id="' + data['data'][c]['ID'] + '" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '><i class="fa fa-file-pdf-o"></i> ' + (parseInt(data['data'][c]['Status']) === 0 ? 'Letzte abgeschlossene PDF anzeigen' : 'PDF anzeigen') + '</button></div> <button type="button" data-id="' + data['data'][c]['ID'] +'" data-name="' + data['data'][c]['Bezeichnung'] +'" class="btn del btn-danger"><i class="fa fa-minus"></i> Löschen</button></td>');
 
@@ -325,7 +325,39 @@ function loadTables(tier) {
       ]
     });
 
+    // Tooltips intialisieren
     $('#content').find('[data-toggle="tooltip"]').tooltip({container: 'body'});
+
+    $('#content').find('i.revisionload').on('mouseover', (evt) => {
+      let evtTarget = $(evt.target);
+
+      if(!evtTarget.hasClass('revisionload')) return;
+
+      evtTarget.addClass('hover');
+      evtTarget.removeClass('revisionload');
+
+      $.get(backendPath, {'action': 'listrevisions', 'debug': debug, 'id':  evtTarget.data('id')}).done((data) => {
+        if(!data['success']) {
+          evtTarget.prop('title', '<Fehler beim Holen der Revisionen>');
+        }
+        else {
+          let revisions = $('<div><p>Letzte 5 Revisionen:</p><ul></ul></div>');
+          let revList   = revisions.find('ul');
+          for(let c=0; c < data['count'] && c < 5; c++) {
+            revList.append('<li>#' + data['data'][c]['Revision'] + ' - ' + data['data'][c]['Date'] + ' - ' + data['data'][c]['Editor'] + (data['data'][c]['Comment'] !== '' ? ' - ' + data['data'][c]['Comment'] : ''));
+          }
+          if(data['count'] === 0) revList.replaceWith('<Keine Revisionen vorhanden>');
+          evtTarget.prop('title', revisions[0].outerHTML);
+        }
+      }).fail((jqXHR, error, errorThrown) => {
+        evtTarget.prop('title', '<Fehler beim Holen der Revisionen>');
+      }).always(() => {
+        evtTarget.removeClass('cursor-progress').addClass('cursor-help');
+        evtTarget.tooltip({container: 'body', html: true});
+        if(evtTarget.hasClass('hover')) evtTarget.tooltip('show');
+      });
+    });
+    $('#content').find('i.revisionload').on('mouseleave', (evt) => { $(evt.target).removeClass('hover'); });
 
     // Tabellengröße anpassen, wenn der Tab gewechselt wird
     $('a[data-toggle="tab"]').on("shown.bs.tab", function (e) {

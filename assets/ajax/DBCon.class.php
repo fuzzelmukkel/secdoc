@@ -258,6 +258,14 @@
             Attach INT NOT NULL DEFAULT 0,                                         -- Dokument an Abschluss-PDF anhängen?
             Date DATE NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')), -- Letztes Änderungsdatum
             FOREIGN KEY (ProcessID) REFERENCES verfahren(ID) ON UPDATE CASCADE ON DELETE CASCADE
+        );",
+        "CREATE TABLE revisions (                                                  -- Speichert die Revisionen einer Dokumentation
+            ProcessID INT NOT NULL,                                                -- ID der Dokumentation
+            Revision INT NOT NULL,                                                 -- Nummer der Revision
+            Comment TEXT NOT NULL DEFAULT '',                                      -- Kommentar
+            Editor TEXT NOT NULL,                                                  -- Name des Bearbeiters
+            Date DATE NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')), -- Änderungsdatum
+            FOREIGN KEY (ProcessID) REFERENCES verfahren(ID) ON UPDATE CASCADE ON DELETE CASCADE
         );"
     ];
 
@@ -402,6 +410,15 @@
             FileSize INT NOT NULL DEFAULT 0,                                       -- Dateigröße
             Attach INT NOT NULL DEFAULT 0,                                         -- Dokument an Abschluss-PDF anhängen?
             Date DATE NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')), -- Letztes Änderungsdatum
+            FOREIGN KEY (ProcessID) REFERENCES verfahren(ID) ON UPDATE CASCADE ON DELETE CASCADE
+        );",
+        # 18
+        "CREATE TABLE revisions (                                                  -- Speichert die Revisionen einer Dokumentation
+            ProcessID INT NOT NULL,                                                -- ID der Dokumentation
+            Revision INT NOT NULL,                                                 -- Nummer der Revision
+            Comment TEXT NOT NULL DEFAULT '',                                      -- Kommentar
+            Editor TEXT NOT NULL,                                                  -- Name des Bearbeiters
+            Date DATE NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')), -- Änderungsdatum
             FOREIGN KEY (ProcessID) REFERENCES verfahren(ID) ON UPDATE CASCADE ON DELETE CASCADE
         );"
     ];
@@ -610,6 +627,7 @@
           $this->pdo->beginTransaction();
           # Neue Tabelle für angehängte Dokumente
           $this->pdo->exec(self::TABLES[17]);
+          $this->pdo->exec(self::TABLES[18]);
 
           # Alte TOMs auf 'unbearbeitet' setzen, wenn nicht umgesetzt und kein Kommentar hinterlegt
           $sth1 = $this->pdo->prepare('SELECT ID, JSON FROM verfahren WHERE NOT Status = 3;');
@@ -632,6 +650,7 @@
 
             $sth2->execute([json_encode($parsedJSON), $entry['ID']]);
           }
+
           $this->pdo->exec("PRAGMA user_version = 11;");
           $this->pdo->commit();
         }
@@ -2076,6 +2095,92 @@
       }
 
       return TRUE;
+    }
+
+    /**
+     * Fügt einen Revisionseintrag hinzu.
+     *
+     * @param int    $verfahrensId ID einer Dokumentation
+     * @param string $comment      Revisionskommentar
+     * @param string $editor       Name des Bearbeiters
+     * @return bool TRUE
+     * @throws PDOException
+     * @throws Exception
+     */
+    public function addRevision($verfahrensId, $comment, $editor) {
+      if(!$this->isConnected()) {
+        throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
+      }
+
+      # Letzte Revision holen
+      $sql = 'SELECT * FROM revisions WHERE ProcessID = ? ORDER BY Revision DESC LIMIT 1;';
+      $sth1 = $this->pdo->prepare($sql);
+      $sth1->execute([$verfahrensId]);
+
+      ob_start();
+      $sth1->debugDumpParams();
+      $sqlDump = ob_get_clean();
+      print "DBCon.class.php -> addRevision() Execute: $sqlDump";
+
+      $lastRevision = $sth1->fetch();
+
+      if(empty($lastRevision)) {
+        $newRevisionNumber = 1;
+      }
+      else {
+        $newRevisionNumber = intval($lastRevision['Revision']) + 1;
+      }
+
+      # Neue Revision eintragen
+      $sql = 'INSERT INTO revisions (ProcessID, Revision, Comment, Editor) VALUES (?, ?, ?, ?);';
+
+      $sth2 = $this->pdo->prepare($sql);
+      $sth2->execute([$verfahrensId, $newRevisionNumber, $comment, $editor]);
+
+      ob_start();
+      $sth2->debugDumpParams();
+      $sqlDump = ob_get_clean();
+      print "DBCon.class.php -> addRevision() Execute: $sqlDump";
+
+      $changedRows = $sth2->rowCount();
+      if($changedRows !== 1) {
+        throw new Exception("DBCon.class.php -> Fehler beim Hinzufügen der Revision! (Fehler: Unbekannter Fehler - Anzahl geänderter Reihen: $changedRows)");
+      }
+
+      return TRUE;
+    }
+
+    /**
+     * Listet die Revisionen einer Dokumentation auf.
+     *
+     * @param int    $verfahrensId ID einer Dokumentation
+     * @return mixed[] Liste der Revisionen [['ProcessID' => 1, 'Revision' => 2, 'Comment' => 'Test', 'Editr' => 'Name', 'Date' => '20202-09-15'],...]
+     * @throws PDOException
+     * @throws Exception
+     */
+    public function listRevisions($verfahrensId) {
+      if(!$this->isConnected()) {
+        throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
+      }
+
+      # Letzte Revision holen
+      $sql = 'SELECT * FROM revisions WHERE ProcessID = ? ORDER BY Revision DESC;';
+      $sth1 = $this->pdo->prepare($sql);
+      $sth1->execute([$verfahrensId]);
+
+      ob_start();
+      $sth1->debugDumpParams();
+      $sqlDump = ob_get_clean();
+      print "DBCon.class.php -> listRevisions() Execute: $sqlDump";
+
+      $lastRevisions = $sth1->fetchAll();
+
+      if(empty($lastRevisions)) {
+        return [];
+      }
+      else {
+        return $lastRevisions;
+      }
     }
 
     /**

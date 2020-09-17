@@ -63,7 +63,7 @@
     text-align: left;
 }
 
-i[data-toggle="tooltip"] {
+i[data-toggle="tooltip"], .cursor-help {
     cursor: help;
 }
 
@@ -175,6 +175,10 @@ input.customError {
 
 .pointer {
   cursor: pointer !important;
+}
+
+.cursor-progress {
+  cursor: progress !important;
 }
 
 .strong {
