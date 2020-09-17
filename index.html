@@ -84,6 +84,11 @@
           <!--  Wizard container  -->
           <div class="wizard-container">
             <div class="card wizard-card" data-color="blue" id="wizard">
+              <div class="alert alert-danger text-center mx-10 hidden" id="maintenanceAlert">
+                <h4>Wartungsmodus</h4>
+                <p>Diese SecDoc-Instanz befindet sich im Wartungsmodus und es sind nur lesende Zugriffe auf gespeicherte Dokumentationen möglich. Es können keine neuen Dokumentationen angelegt oder bestehende Dokumentationen editiert werden.</p>
+                <p id="maintenanceMessage"></p>
+              </div>
               <form action="/" method="post">
                 <!-- You can switch " data-color="green" "  with one of the next bright colors: "blue", "azure", "orange", "red" -->
 

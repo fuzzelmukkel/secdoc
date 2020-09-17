@@ -2001,30 +2001,33 @@ function toggleTOMList(evt) {
 /**
  * Zeigt den Dokumenten-Verwaltungs-Dialog an.
  *
- * @param  {Number} docID       (optional) Dokumenten-ID
- * @param  {String} fileref    (optional) Dateiname
- * @param  {String} description (optional) Dokumenten-Beschreibung
+ * @param  {Number}  docID       (optional) Dokumenten-ID
+ * @param  {String}  fileref     (optional) Dateiname
+ * @param  {String}  description (optional) Dokumenten-Beschreibung
+ * @param  {Boolean} attach      (optional) An Abschluss-PDF anhängen?
  * @return {undefined}
  */
-function showDocumentAddDialog(docID = -1, fileref = '', description = '') {
+function showDocumentAddDialog(docID = -1, fileref = '', description = '', attach = false) {
   if(loadId === 0) {
     showError('Anhängen eines Dokuments', 'Die Dokumentation muss mindestens einmal abgespeichert werden, bevor Dokumente angehängt werden können.');
     return;
   }
+
   /**
    * Läd eine ausgewählte Datei hoch als Base64 String.
    *
    * @private
-   * @param  {Blob}   file        Datei
-   * @param  {Number} docID       (optional) Dokumenten-ID
-   * @param  {String} description (optional) Dokumenten-Beschreibung
+   * @param  {Blob}    file        Datei
+   * @param  {Number}  docID       (optional) Dokumenten-ID
+   * @param  {String}  description (optional) Dokumenten-Beschreibung
+   * @param  {Boolean} attach      (optional) An Abschluss-PDF anhängen?
    * @return {undefined}
    */
-  function uploadFile(file, docID = -1, description = '') {
+  function uploadFile(file, docID = -1, description = '', attach = false) {
     setOverlay(true);
 
     if(file === undefined) {
-      $.post(backendPath, JSON.stringify({'action': 'updateDocument', 'debug': debug, 'data': {'docid': docID, 'description': description}})).done(function(data) {
+      $.post(backendPath, JSON.stringify({'action': 'updateDocument', 'debug': debug, 'data': {'docid': docID, 'description': description, 'attach': attach}})).done(function(data) {
         if(data['success']) {
           loadDocuments();
           modal.modal('hide');
@@ -2042,7 +2045,7 @@ function showDocumentAddDialog(docID = -1, fileref = '', description = '') {
       let reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = function () {
-        $.post(backendPath, JSON.stringify({'action': (docID === -1 ? 'addDocument' : 'updateDocument'), 'id': loadId, 'debug': debug, 'data': {'filename': file.name, 'filecontent': reader.result.split(',')[1], 'docid': docID, 'description': description}})).done(function(data) {
+        $.post(backendPath, JSON.stringify({'action': (docID === -1 ? 'addDocument' : 'updateDocument'), 'id': loadId, 'debug': debug, 'data': {'filename': file.name, 'filecontent': reader.result.split(',')[1], 'docid': docID, 'description': description, 'attach': attach}})).done(function(data) {
           if(data['success']) {
             loadDocuments();
             modal.modal('hide');
@@ -2066,10 +2069,10 @@ function showDocumentAddDialog(docID = -1, fileref = '', description = '') {
   modal.find('.modal-title').html('<i class="fa fa-book"></i> Dokumenten-Verwaltung');
   let modalBody = modal.find('.modal-body');
   if(docID === -1) {
-    modalBody.html('<div><p>Wählen Sie ein PDF-Dokument aus und geben Sie eine optionale Beschreibung ein.</p><div class="form-group"><label>Beschreibung</label><textarea class="form-control" id="filedesc" placeholder="Beschreibt den Inhalt des Dokuments"></textarea></div><div class="form-group"><label for="uploadFile">Neues PDF-Dokument zum Anhängen auswählen</label><input type="file" id="uploadFile" accept=".pdf,application/pdf" class="btn center-block hidden" /><div id="dropFile" class="alert alert-info"></div><p><strong>Ausgewählte Datei:</strong> <span id="filename">Keine</span></p><p class="text-center"><button id="filesave" class=btn btn-fill btn-success">Speichern</button><button type="button" class="btn btn-danger ml" data-dismiss="modal" aria-label="Close">Schließen</button></p></div></div>');
+    modalBody.html('<div><p>Wählen Sie ein PDF-Dokument aus und geben Sie eine optionale Beschreibung ein.</p><div class="form-group"><label>Beschreibung</label><textarea class="form-control" id="filedesc" placeholder="Beschreibt den Inhalt des Dokuments"></textarea></div><div class="checkbox"><label><input type="checkbox" id="fileAttach" value="1" ' + (attach ? 'checked' : '') + ' /> <strong>An Abschluss-PDF anhängen</strong></label></div><div class="form-group"><label for="uploadFile">Neues PDF-Dokument zum Anhängen auswählen</label><input type="file" id="uploadFile" accept=".pdf,application/pdf" class="btn center-block hidden" /><div id="dropFile" class="text-center alert alert-info"></div><p><strong>Ausgewählte Datei:</strong> <span id="filename">Keine</span></p><p><button id="filesave" class=btn btn-fill btn-success">Speichern</button><button type="button" class="btn btn-danger ml" data-dismiss="modal" aria-label="Close">Schließen</button></p></div></div>');
   }
   else {
-    modalBody.html('<div><p>Wählen Sie ein neues PDF-Dokument zum Ersetzen von "' + fileref + '" aus oder passen Sie die Beschreibung an.</p><div class="form-group"><label>Beschreibung</label><textarea class="form-control" id="filedesc" placeholder="Beschreibt den Inhalt des Dokuments"></textarea></div><div class="form-group"><label for="uploadFile">Neues PDF-Dokument zum Ersetzen auswählen</label><input type="file" id="uploadFile" accept=".pdf,application/pdf" class="btn center-block hidden" /><div id="dropFile" class="alert alert-info"></div><p><strong>Ausgewählte Datei:</strong> <span id="filename">Keine</span></p><p class="text-center"><button id="filesave" class=btn btn-fill btn-success">Speichern</button><button type="button" class="btn btn-danger ml" data-dismiss="modal" aria-label="Close">Schließen</button></p></div></div>');
+    modalBody.html('<div><p>Wählen Sie ein neues PDF-Dokument zum Ersetzen von "' + fileref + '" aus oder passen Sie die Beschreibung an.</p><div class="form-group"><label>Beschreibung</label><textarea class="form-control" id="filedesc" placeholder="Beschreibt den Inhalt des Dokuments"></textarea></div><div class="checkbox text-center"><label><input type="checkbox" id="fileAttach" value="1" ' + (attach ? 'checked' : '') + ' /> <strong>An Abschluss-PDF anhängen</strong></label></div><div class="form-group"><label for="uploadFile">Neues PDF-Dokument zum Ersetzen auswählen</label><input type="file" id="uploadFile" accept=".pdf,application/pdf" class="btn center-block hidden" /><div id="dropFile" class="text-center alert alert-info"></div><p><strong>Ausgewählte Datei:</strong> <span id="filename">Keine</span></p><p><button id="filesave" class=btn btn-fill btn-success">Speichern</button></p><button type="button" class="btn btn-danger ml" data-dismiss="modal" aria-label="Close">Schließen</button></div></div>');
     $('#filedesc').val(description);
   }
 
@@ -2107,7 +2110,18 @@ function showDocumentAddDialog(docID = -1, fileref = '', description = '') {
   });
 
   modalBody.find('#filesave').click((evt) => {
-    uploadFile($(evt.target).data('file'), docID, modalBody.find('#filedesc').val());
+    let savePromise = saveOnServer();
+
+    if(!savePromise) {
+      setOverlay(false);
+      modal.modal('close');
+      return;
+    }
+    else {
+      savePromise.then(function() {
+        uploadFile($(evt.target).data('file'), docID, modalBody.find('#filedesc').val(), (modalBody.find('#fileAttach').prop('checked') ? true : false));
+      });
+    }
   });
 
   modal.modal();
@@ -2129,10 +2143,20 @@ function loadDocuments() {
       return;
     }
 
+    if(data['sizewarn']) {
+      $('#attached_documents_warning').html('<p><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Die Größe der Dokumente, welche an die Abschluss-PDF angehängt werden sollen, übersteigt die Maximalgröße (' + formatBytes(data['maxsize']) + ')! Bitte nutzen Sie kleinere Dokumente oder beschränken Sie die Auswahl der Dokumente, die an die Abschluss-PDF angehängt werden sollen. Wird die Dokumentation dennoch abgeschlossen, werden nicht alle Dokumente an die Abschluss-PDF angehangen!</p>');
+      $('#attached_documents_warning').removeClass('hidden');
+    }
+    else {
+      $('#attached_documents_warning').addClass('hidden');
+    }
+
     $('#attached_documents').find('tbody').empty();
     data['data'].forEach((val, idx) => {
       let lastUpdate = new Date(Date.parse(val['Date'].replace(' ', 'T')));
-      $('#attached_documents').find('tbody').append('<tr><td>' + htmlEncode(val['FileRef']) + '</td><td>' + htmlEncode(val['Description']) + '</td><td>' + lastUpdate.toLocaleDateString('de-DE', { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' }) + '</td><td class="text-center"><div class="btn-group"><button type="button" class="attached_documents_show btn" data-docid="' + val['DocID'] + '">Anzeigen</button><button type="button" class="attached_documents_edit btn btn-warning" data-docid="' + val['DocID'] + '" data-docdesc="' + val['Description'] + '" data-fileref="' + val['FileRef'] + '" '+ (canEdit ? '' : 'disabled') + '><i class="fa fa-pencil-square-o"></i> Bearbeiten</button><button type="button" class="attached_documents_del btn btn-danger" data-docid="' + val['DocID'] + '" '+ (canEdit ? '' : 'disabled') + '><i class="fa fa-minus"></i> Löschen</button></div></td></tr>');
+      let fileSize   = formatBytes(parseInt(val['FileSize']));
+      let attach     = val['Attach'] > 0 ? 'Ja' : 'Nein';
+      $('#attached_documents').find('tbody').append('<tr><td>' + htmlEncode(val['FileRef']) + '</td><td>' + fileSize + '</td><td>' + htmlEncode(val['Description']) + '</td><td>' + attach + '</td><td>' + lastUpdate.toLocaleDateString('de-DE', { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' }) + '</td><td class="text-center"><div class="btn-group"><button type="button" class="attached_documents_show btn" data-docid="' + val['DocID'] + '">Anzeigen</button><button type="button" class="attached_documents_edit btn btn-warning" data-docid="' + val['DocID'] + '" data-docdesc="' + val['Description'] + '" data-fileref="' + val['FileRef'] + '" data-attach="' + val['Attach'] + '"'+ (canEdit ? '' : 'disabled') + '><i class="fa fa-pencil-square-o"></i> Bearbeiten</button><button type="button" class="attached_documents_del btn btn-danger" data-docid="' + val['DocID'] + '" '+ (canEdit ? '' : 'disabled') + '><i class="fa fa-minus"></i> Löschen</button></div></td></tr>');
     });
 
     $('#attached_documents').find('.attached_documents_show').click((evt) => {
@@ -2174,11 +2198,18 @@ function loadDocuments() {
     });
 
     $('#attached_documents').find('.attached_documents_edit').click((evt) => {
-      showDocumentAddDialog(parseInt($(evt.target).data('docid')), $(evt.target).data('fileref'), $(evt.target).data('docdesc'));
+      showDocumentAddDialog(parseInt($(evt.target).data('docid')), $(evt.target).data('fileref'), $(evt.target).data('docdesc'), ($(evt.target).data('attach') > 0 ? true : false));
     });
 
     $('#attached_documents').find('.attached_documents_del').click((evt) => {
       setOverlay();
+
+      let confirmDelete = confirm('Wollen Sie das angehängte Dokument wirklich Löschen? Dies kann nur rückgängig gemacht werden, wenn Sie das Originaldokument erneut anhängen.');
+      if(!confirmDelete) {
+        setOverlay(false);
+        return;
+      }
+
       $.post(backendPath, JSON.stringify({'action': 'deleteDocument', 'debug': debug, 'data': {'docid': parseInt($(evt.target).data('docid'))}})).done(function(data) {
         if(!data['success']) {
           showError('Löschen eines angehängten Dokuments', data['error']);
@@ -2526,25 +2557,37 @@ Promise.all(promises).then(function() {
     $(this).prop('disabled', true);
     setOverlay();
 
-    if(canEdit) saveOnServer();
+    let savePromise = Promise.resolve();
+    if(canEdit && changedValues) {
+      savePromise = saveOnServer();
+    }
 
-    let htmlForPDF = genHTMLforPDF(true);
-
-    $.post(backendPath, JSON.stringify({'action':'gendraftpdf', 'id': loadId, 'data': {'title': $('[name="allgemein_bezeichnung"]').val(), 'pdfCode': htmlForPDF}, 'debug': debug})).done((data) => {
-      if(!data['success']) {
-        showError('Erzeugen der Vorschau-PDF', data['error']);
-        $(this).prop('disabled', false);
-        setOverlay(false);
-        return;
-      }
-
-      getPDFFromServer(loadId, true);
-      $(this).prop('disabled', false);
-    }).fail((jqXHR, error, errorThrown) => {
-      showError('Erzeugen der Vorschau-PDF', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
-      $(this).prop('disabled', false);
+    if(!savePromise) {
+      $('#dlDraftPDF').prop('disabled', false);
       setOverlay(false);
-    })
+      return;
+    }
+    else {
+      savePromise.then(function() {
+        let htmlForPDF = genHTMLforPDF(true);
+
+        $.post(backendPath, JSON.stringify({'action':'gendraftpdf', 'id': loadId, 'data': {'title': $('[name="allgemein_bezeichnung"]').val(), 'pdfCode': htmlForPDF}, 'debug': debug})).done((data) => {
+          if(!data['success']) {
+            showError('Erzeugen der Vorschau-PDF', data['error']);
+            $('#dlDraftPDF').prop('disabled', false);
+            setOverlay(false);
+            return;
+          }
+
+          getPDFFromServer(loadId, true);
+          $('#dlDraftPDF').prop('disabled', false);
+        }).fail((jqXHR, error, errorThrown) => {
+          showError('Erzeugen der Vorschau-PDF', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+          $('#dlDraftPDF').prop('disabled', false);
+          setOverlay(false);
+        });
+      });
+    }
   });
 
   // Titel anhand Bezeichnung aktualisieren
