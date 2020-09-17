@@ -349,10 +349,10 @@ function myFinish() {
       setOverlay(false);
 
       // Revisions-Kommentar abfragen
-      modal.find('.modal-title').text('Abschluss der Dokumentation');
+      modal.find('.modal-title').html('<i class="fa fa-archive"></i> Abschluss der Dokumentation');
       let modalBody = modal.find('.modal-body');
       modalBody.html('<p>Mit dem Abschluss wird eine neue Revision der Dokumentation angelegt. Es wird eine abschließende PDF-Version generiert und per E-Mail an alle eingetragenen Ansprechpartner und Ersteller verschickt. Sie können optional einen Kommentar zur aktuellen Bearbeitung angeben.</p>');
-      modalBody.append('<div class="form-group text-center"><label>Kommentar</label><textarea class="form-control" id="finishComment" placeholder="Beschreibt die aktuellen Änderungen"></textarea></div>')
+      modalBody.append('<div class="form-group"><label>Kommentar</label><textarea class="form-control" id="finishComment" placeholder="Beschreibt die aktuellen Änderungen"></textarea></div>')
       modalBody.append('<p><button type="button" class="center-block btn btn-fill btn-danger btn-wd" id="confirmFinish"><i class="fa fa-check-circle"></i> Abschließen</button></p>');
 
       modalBody.find('#confirmFinish').click((evt) => {
@@ -375,7 +375,7 @@ function myFinish() {
           $('#title').find('i').replaceWith(statusSymbol);
           $('#title').find('i').tooltip();
 
-          modal.find('.modal-title').text('Dokumentation abgeschlossen');
+          modal.find('.modal-title').html('<i class="fa fa-check-circle"></i> Dokumentation abgeschlossen');
           var modalBody = modal.find('.modal-body');
           modalBody.html('<p>Hiermit wurde die Dokumentation als abgeschlossen gekennzeichnet.</p>');
           if(data['genpdf'] && data['genmail']) modalBody.append('<p class="alert alert-success">Die eingetragenen Ansprechpartner wurden per E-Mail informiert und haben eine PDF-Version der Dokumentation erhalten. Die PDF wurde abgespeichert und kann über den folgenden Knopf oder jederzeit in der Liste der ' + modeName[1] + ' heruntergeladen werden.<br /><button class="center-block btn" id="download_pdf">PDF herunterladen</button></p>');
@@ -384,7 +384,7 @@ function myFinish() {
           if(!data['genmail']) modalBody.append('<p class="alert alert-danger">Beim Verschicken der E-Mail ist ein Fehler aufgetreten, bitte versuchen Sie es später erneut.</p>');
           if(mode === 'wizproc' && !data['gentxt']) modalBody.append('<p class="alert alert-danger">Beim Erzeugen des Informations-Textes zum Einbinden in Webseiten ist ein Fehler aufgetreten, bitte versuchen Sie es später erneut.</p>');
           modalBody.append('<p>Die Dokumentation kann jederzeit aktualisiert werden und über den "Abschluss"-Knopf eine neue E-Mail sowie PDF-Datei erzeugt werden.</p>');
-          modalBody.append('<p><button type="button" class="center-block btn btn-primary" data-dismiss="modal" aria-label="Close">Schließen</button></p>');
+          modalBody.append('<p><button type="button" class="center-block btn btn-danger" data-dismiss="modal" aria-label="Close">Schließen</button></p>');
 
           modalBody.find('#download_pdf').click((evt) => {
             getPDFFromServer(loadId);
@@ -914,9 +914,9 @@ function saveOnServer() {
 
         // Hinweis anzeigen, falls Status zurückgesetzt wurde
         if(markedAsFinished) {
-          modal.find('.modal-title').text('Status zurückgesetzt');
+          modal.find('.modal-title').html('<i class="fa fa-power-off"></i> Status zurückgesetzt');
           modal.find('.modal-body').html('<p>' + (mode === 'wizproc' ? 'Die Verarbeitungstätigkeit' : 'Das IT-Verfahren') + ' wurde zurück auf "In Bearbeitung" gesetzt und muss erneut abgeschlossen werden, um erneut als "In Betrieb" gekennzeichnet zu werden.</p>');
-          modal.find('.modal-body').append('<p><button type="button" class="center-block btn btn-primary" data-dismiss="modal" aria-label="Close">Schließen</button></p>');
+          modal.find('.modal-body').append('<p><button type="button" class="center-block btn btn-danger" data-dismiss="modal" aria-label="Close">Schließen</button></p>');
           modal.modal();
           markedAsFinished = false;
 
@@ -1355,8 +1355,8 @@ function importJSON(file) {
     }
 
     if(loadId !== 0) {
-      modal.find('.modal-title').text('Import einer Dokumentation');
-      modal.find('.modal-body').html('<div class="alert alert-warning">Sie haben bereits eine Dokumentation geladen. Soll eine neue Dokumentation angelegt oder die aktuell geladene Dokumentation überschrieben werden? (Hinweis: Evtl. gesetzte Zugriffsberechtigungen auf der letzten Seite werden nicht überschrieben.)</div>');
+      modal.find('.modal-title').html('<i class="fa fa-upload"></i> Import einer Dokumentation');
+      modal.find('.modal-body').html('<div class="alert alert-warning">Sie haben bereits eine Dokumentation geladen. Soll eine neue Dokumentation angelegt oder die aktuell geladene Dokumentation überschrieben werden?<br/><i class="fa fa-info-circle"></i> <strong>Hinweis:</strong> Evtl. gesetzte Zugriffsberechtigungen auf der letzten Seite werden nicht überschrieben.</div>');
       modal.find('.modal-body').append('<div class="text-center"><button id="importEmptyBtn" class="btn btn-success">Neue Dokumentation</button><button id="importCurrBtn" class="btn btn-danger ml">Vorhandene überschreiben</button></div>');
       modal.modal();
 
@@ -1384,8 +1384,9 @@ function importJSON(file) {
       }
 
       if(loadFromJSON(evt.target.result, true)) {
-        modal.find('.modal-title').text('Import erfolgreich');
+        modal.find('.modal-title').html('<i class="fa fa-check-circle"></i> Import erfolgreich');
         modal.find('.modal-body').html('<div class="alert alert-success">Der Import wurde erfolgreich durchgeführt. Die Änderungen müssen zum Übernehmen abgespeichert werden.</div>');
+        modal.find('.modal-body').append('<p class="text-center"><button type="button" class="btn btn-danger ml" data-dismiss="modal" aria-label="Close">Schließen</button></p>');
         modal.modal();
       }
       else {
@@ -1411,10 +1412,11 @@ function importJSON(file) {
 function showImportDialog() {
   setOverlay(true);
 
-  modal.find('.modal-title').text('Import einer Dokumentation');
+  modal.find('.modal-title').html('<i class="fa fa-upload"></i> Import einer Dokumentation');
   let modalBody = modal.find('.modal-body');
-  modalBody.html('<div class="text-center form-group"><label for="importFile">JSON Datei zum Importieren auswählen</label><input type="file" id="importFile" accept=".json,application/json" class="btn center-block hidden" /><div id="dropFile" class="text-center alert alert-info"></div></div>');
+  modalBody.html('<div class="form-group"><label for="importFile">JSON Datei zum Importieren auswählen</label><input type="file" id="importFile" accept=".json,application/json" class="btn center-block hidden" /><div id="dropFile" class="text-center alert alert-info"></div></div>');
   modalBody.find('#dropFile').append('<p class="text-center"><i class="fa fa-file fa-2x"></i></p><p class="text-center">Klicken für Auswahldialog oder Datei per Drag&Drop hineinziehen...</p>');
+  modalBody.append('<p class="text-center"><button type="button" class="btn btn-danger ml" data-dismiss="modal" aria-label="Close">Schließen</button></p>');
 
   modalBody.find('#dropFile').on('dragover', (evt) => {
     evt.preventDefault();
@@ -2138,10 +2140,10 @@ function showDocumentAddDialog(docID = -1, fileref = '', description = '', attac
   modal.find('.modal-title').html('<i class="fa fa-book"></i> Dokumenten-Verwaltung');
   let modalBody = modal.find('.modal-body');
   if(docID === -1) {
-    modalBody.html('<div><p>Wählen Sie ein PDF-Dokument aus und geben Sie eine optionale Beschreibung ein.</p><div class="form-group"><label>Beschreibung</label><textarea class="form-control" id="filedesc" placeholder="Beschreibt den Inhalt des Dokuments"></textarea></div><div class="checkbox"><label><input type="checkbox" id="fileAttach" value="1" ' + (attach ? 'checked' : '') + ' /> <strong>An Abschluss-PDF anhängen</strong></label></div><div class="form-group"><label for="uploadFile">Neues PDF-Dokument zum Anhängen auswählen</label><input type="file" id="uploadFile" accept=".pdf,application/pdf" class="btn center-block hidden" /><div id="dropFile" class="text-center alert alert-info"></div><p><strong>Ausgewählte Datei:</strong> <span id="filename">Keine</span></p><p><button id="filesave" class=btn btn-fill btn-success">Speichern</button><button type="button" class="btn btn-danger ml" data-dismiss="modal" aria-label="Close">Schließen</button></p></div></div>');
+    modalBody.html('<div><p>Wählen Sie ein PDF-Dokument aus und geben Sie eine optionale Beschreibung ein.</p><div class="form-group"><label>Beschreibung</label><textarea class="form-control" id="filedesc" placeholder="Beschreibt den Inhalt des Dokuments"></textarea></div><div class="checkbox"><label><input type="checkbox" id="fileAttach" value="1" ' + (attach ? 'checked' : '') + ' /> <strong>An Abschluss-PDF anhängen</strong></label></div><div class="form-group"><label for="uploadFile">Neues PDF-Dokument zum Anhängen auswählen</label><input type="file" id="uploadFile" accept=".pdf,application/pdf" class="btn center-block hidden" /><div id="dropFile" class="alert alert-info"></div><p><strong>Ausgewählte Datei:</strong> <span id="filename">Keine</span></p><p class="text-center"><button id="filesave" class=btn btn-fill btn-success">Speichern</button><button type="button" class="btn btn-danger ml" data-dismiss="modal" aria-label="Close">Schließen</button></p></div></div>');
   }
   else {
-    modalBody.html('<div><p>Wählen Sie ein neues PDF-Dokument zum Ersetzen von "' + fileref + '" aus oder passen Sie die Beschreibung an.</p><div class="form-group"><label>Beschreibung</label><textarea class="form-control" id="filedesc" placeholder="Beschreibt den Inhalt des Dokuments"></textarea></div><div class="checkbox text-center"><label><input type="checkbox" id="fileAttach" value="1" ' + (attach ? 'checked' : '') + ' /> <strong>An Abschluss-PDF anhängen</strong></label></div><div class="form-group"><label for="uploadFile">Neues PDF-Dokument zum Ersetzen auswählen</label><input type="file" id="uploadFile" accept=".pdf,application/pdf" class="btn center-block hidden" /><div id="dropFile" class="text-center alert alert-info"></div><p><strong>Ausgewählte Datei:</strong> <span id="filename">Keine</span></p><p><button id="filesave" class=btn btn-fill btn-success">Speichern</button></p><button type="button" class="btn btn-danger ml" data-dismiss="modal" aria-label="Close">Schließen</button></div></div>');
+    modalBody.html('<div><p>Wählen Sie ein neues PDF-Dokument zum Ersetzen von "' + fileref + '" aus oder passen Sie die Beschreibung an.</p><div class="form-group"><label>Beschreibung</label><textarea class="form-control" id="filedesc" placeholder="Beschreibt den Inhalt des Dokuments"></textarea></div><div class="checkbox"><label><input type="checkbox" id="fileAttach" value="1" ' + (attach ? 'checked' : '') + ' /> <strong>An Abschluss-PDF anhängen</strong></label></div><div class="form-group"><label for="uploadFile">Neues PDF-Dokument zum Ersetzen auswählen</label><input type="file" id="uploadFile" accept=".pdf,application/pdf" class="btn center-block hidden" /><div id="dropFile" class="alert alert-info"></div><p><strong>Ausgewählte Datei:</strong> <span id="filename">Keine</span></p><p class="text-center"><button id="filesave" class=btn btn-fill btn-success">Speichern</button><button type="button" class="btn btn-danger ml" data-dismiss="modal" aria-label="Close">Schließen</button></p></div></div>');
     $('#filedesc').val(description);
   }
 

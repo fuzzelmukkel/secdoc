@@ -266,7 +266,7 @@ function setOverlay(active = true) {
  */
 function showError(action, message = false, httperror = false) {
   console.error('Fehler beim ' + action + ' - Fehlermeldung: ' + message + (httperror ? (' - HTTP Error: ' + httperror) : ''));
-  modal.find('.modal-title').text('Fehler');
+  modal.find('.modal-title').html('<i class="fa fa-exclamation-circle"></i> Fehler');
   if(message) {
     modal.find('.modal-body').html('<div class="alert alert-danger"><h3>Beim ' + action + ' ist ein Fehler aufgetreten!</h3><p><strong>Fehlermeldung:</strong> ' + message + '</p></div>');
   }
@@ -286,7 +286,7 @@ function showError(action, message = false, httperror = false) {
       modal.find('.modal-body').html('<div class="alert alert-danger"><h3>Beim ' + action + ' ist ein unbekannter Fehler aufgetreten! Bitte versuchen Sie es in Kürze erneut!</h3></div>');
     }
   }
-  modal.find('.modal-body').append('<p><button type="button" class="center-block btn btn-primary" data-dismiss="modal" aria-label="Close">Schließen</button></p>');
+  modal.find('.modal-body').append('<p><button type="button" class="center-block btn btn-danger" data-dismiss="modal" aria-label="Close">Schließen</button></p>');
   modal.modal();
   modal.find('button[aria-label=Close]').focus();
 }
@@ -307,9 +307,9 @@ function getPDFFromServer(id, draft = false) {
     }
 
     if(!draft && data['data']['status'] === 0) {
-      modal.find('.modal-title').text('Hinweis');
+      modal.find('.modal-title').html('<i class="fa fa-info-circle"></i> Hinweis');
       modal.find('.modal-body').html('<div class="alert alert-warning"><p>Da sich das Verfahren wieder im Zustand "In Bearbeitung" befindet, stimmen die Angaben in der PDF-Datei unter Umständen nicht mehr mit der aktualisierten Version überein! Die PDF-Datei wird nur bei einem erneuten Abschluss des Verfahrens aktualisiert.</p></div>');
-      modal.find('.modal-body').append('<p><button type="button" class="center-block btn btn-primary" data-dismiss="modal" aria-label="Close">Schließen</button></p>');
+      modal.find('.modal-body').append('<p><button type="button" class="center-block btn btn-danger" data-dismiss="modal" aria-label="Close">Schließen</button></p>');
       modal.modal();
     }
 
