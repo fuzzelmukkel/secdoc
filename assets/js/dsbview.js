@@ -40,7 +40,7 @@ function getCombinedPDF() {
      pdfBuffer[i] = pdfData.charCodeAt(i);
    }
    let blob = new Blob([pdfBuffer], {type: "application/pdf"});
-   let lastUpdate = new Date();  // Safari benötigt das Format YYYY-MM-DDTHH:MM:SS (mit T)
+   let lastUpdate = new Date();
    let fileTitle = 'SecDoc_VVT_' + lastUpdate.getFullYear() + ('0' + (lastUpdate.getMonth() + 1)).slice(-2) + ('0' + lastUpdate.getDate()).slice(-2) + ('0' + lastUpdate.getHours()).slice(-2) + ('0' + lastUpdate.getMinutes()).slice(-2) + '.pdf';
 
    // PDF-Anzeige starten (Unterscheidung, ob Edge genutzt wird)
@@ -84,7 +84,7 @@ function getCompletePDF(docId) {
      pdfBuffer[i] = pdfData.charCodeAt(i);
    }
    let blob = new Blob([pdfBuffer], {type: "application/pdf"});
-   let lastUpdate = new Date();  // Safari benötigt das Format YYYY-MM-DDTHH:MM:SS (mit T)
+   let lastUpdate = new Date();
    let typeName = {1: 'Verarbeitungstätigkeit', 2: 'IT-Verfahren', 3: 'Fachapplikation', 4: 'Übergreifende_Massnahme'};
    let fileTitle = 'SecDoc_' + typeName[data['data']['type']] + '_(komplett)_' + docId + '_' + data['data']['title'].substr(0, 30) + '_' + lastUpdate.getFullYear() + ('0' + (lastUpdate.getMonth() + 1)).slice(-2) + ('0' + lastUpdate.getDate()).slice(-2) + ('0' + lastUpdate.getHours()).slice(-2) + ('0' + lastUpdate.getMinutes()).slice(-2);
    fileTitle = fileTitle.replace(/[/\\?%*:|"<>\.,;=\s]/g, '_');
@@ -141,6 +141,8 @@ function loadTables(tier) {
     for(var c=0; c < data['count']; c++) {
       if(parseInt(data['data'][c]['Typ']) !== tier) continue;
 
+      let lastUpdate = data['data'][c]['Aktualisierung'] ? formatDate(new Date(data['data'][c]['Aktualisierung'].replace(' ', 'T'))) : 'Unbekannt';
+
       var newEntry = $('<tr></tr>');
       newEntry.append('<td style="width: 16px;"></td>');
       newEntry.append('<td>' + data['data'][c]['Bezeichnung'] + ' <i data-toggle="tooltip" class="fa fa-info-circle" title="' + data['data'][c]['Beschreibung'] + '"></i></td>');
@@ -148,7 +150,7 @@ function loadTables(tier) {
       newEntry.append('<td>' + (data['data'][c]['FachKontakt'] ? data['data'][c]['FachKontakt'] : '-- nicht angegeben --') + '</td>');
       newEntry.append('<td>' + (data['data'][c]['TechKontakt'] ? data['data'][c]['TechKontakt'] : '-- nicht angegeben --') + '</td>');
       newEntry.append('<td>' + data['data'][c]['Erstelldatum'] + '</td>');
-      newEntry.append('<td>' + data['data'][c]['Aktualisierung'] + ' <i class="fa fa-history cursor-progress revisionload" data-id="' + data['data'][c]['ID'] + '"></i></td>');
+      newEntry.append('<td>' + lastUpdate + ' <i class="fa fa-history cursor-progress revisionload" data-id="' + data['data'][c]['ID'] + '"></i></td>');
       newEntry.append('<td><textarea class="form-control comment" data-id="' + data['data'][c]['ID'] + '" style="resize: both;">' + htmlDecode(data['data'][c]['DSBKommentar']) + '</textarea></td>');
       newEntry.append('<td><div class="btn-group inline"><a class="btn" href="?id=' + data['data'][c]['ID'] + (debug ? '&debug=true' : '') + '" target="_blank"><i class="fa fa-edit"></i> Bearbeiten</a><a class="btn" href="?copy=' + data['data'][c]['ID'] + (debug ? '&debug=true' : '') + '" target="_blank"><i class="fa fa-copy"></i> Kopieren</a><button type="button" class="btn pdfdownload" data-id="' + data['data'][c]['ID'] + '" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '><i class="fa fa-file-pdf-o"></i> ' + (parseInt(data['data'][c]['Status']) === 0 ? 'Letzte abgeschlossene PDF anzeigen' : 'PDF anzeigen') + '</button></div> <button type="button" data-id="' + data['data'][c]['ID'] +'" data-name="' + data['data'][c]['Bezeichnung'] +'" class="btn del btn-danger"><i class="fa fa-minus"></i> Löschen</button></td>');
 

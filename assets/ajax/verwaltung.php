@@ -287,11 +287,12 @@
     $mpdf->WriteHTML($style,1);
 
     # Ersetzungen durchführen
-    $lastEditor = $dbcon->getHistorie($verfahrensId)[0];
-    $lastEditor = !empty($lastEditor['Anzeigename']) ? $lastEditor['Anzeigename'] : $lastEditor['Kennung'];
+    $lastUpdate = $dbcon->getHistorie($verfahrensId)[0];
+    $lastEditor = !empty($lastUpdate['Anzeigename']) ? $lastUpdate['Anzeigename'] : $lastUpdate['Kennung'];
     $html = str_replace('$lasteditor$', $lastEditor, $html);
     $html = str_replace('$docurl$', $prog_url . "?id=$verfahrensId", $html);
     $html = str_replace('$baseurl$', $prog_url, $html);
+    $html = str_replace('$lastedited$', $lastUpdate['Datum'], $html);
 
     # Revisionen holen und einfügen
     $revisionsHTML = <<<EOH

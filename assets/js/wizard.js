@@ -448,6 +448,7 @@ function showVerfahrensliste(startup = false) {
       let newEntry = $('<tr></tr>');
       let statusSymbol = data['data'][c]['Status'] in statusSymbolMapping ? ' <i class="fa ' + statusSymbolMapping[data['data'][c]['Status']] + '"></i>' : '';
       let statusName   = data['data'][c]['Status'] in statusMapping ? statusMapping[data['data'][c]['Status']] : statusMapping['9'];
+      let lastUpdate   = data['data'][c]['Aktualisierung'] ? formatDate(new Date(data['data'][c]['Aktualisierung'].replace(' ', 'T'))) : 'Unbekannt';
 
       // Editierbare/Eigene Verfahren
       if(data['data'][c]['Editierbar'] === true) {
@@ -456,7 +457,7 @@ function showVerfahrensliste(startup = false) {
         newEntry.append('<td>' + data['data'][c]['Fachabteilung']  + '</td>');
         newEntry.append('<td>' + statusName + statusSymbol + '</td>');
         newEntry.append('<td>' + data['data'][c]['LetzterBearbeiter'] + ' <i data-toggle="tooltip" class="fa fa-info-circle" title="' + (data['data'][c]['BearbeiterDetails'] ? data['data'][c]['BearbeiterDetails'] : '<Keine Details vorhanden>') + '"></i></td>');
-        newEntry.append('<td>' + data['data'][c]['Aktualisierung'] + ' <i class="fa fa-history cursor-progress revisionload" data-id="' + currId + '"></i></td>');
+        newEntry.append('<td>' + lastUpdate + ' <i class="fa fa-history cursor-progress revisionload" data-id="' + currId + '"></i></td>');
         newEntry.append('<td><div class="btn-group inline"><a class="btn" href="?id=' + currId + (debug ? '&debug=true' : '') + '" target="_blank"><i class="fa fa-edit"></i> Bearbeiten</a><a class="btn" href="?copy=' + currId + '" target="_blank"><i class="fa fa-copy"></i> Kopieren</a><button type="button" title="Die PDF-Version repräsentiert das zuletzt abgeschlossene Verfahren!" data-id="' + currId + '" class="btn pdfdownload" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '><i class="fa fa-file-pdf-o"></i> ' + (parseInt(data['data'][c]['Status']) === 0 ? 'Letzte abgeschlossene PDF anzeigen' : 'PDF anzeigen') + '</button></div> <button type="button" data-id="' + currId +'" data-name="' + data['data'][c]['Bezeichnung'] +'" class="btn del btn-danger" ' + (data['data'][c]['Löschbar'] === true ? '' : 'disabled')  + '><i class="fa fa-minus"></i> Löschen</button></td>');
         modalBody.find('#editableprocesses tbody').append(newEntry);
       }
@@ -465,7 +466,7 @@ function showVerfahrensliste(startup = false) {
         newEntry.append('<td>' + data['data'][c]['Bezeichnung'] + ' <i data-toggle="tooltip" class="fa fa-info-circle" title="' + data['data'][c]['Beschreibung'] + '"></i></td>');
         newEntry.append('<td>' + data['data'][c]['Fachabteilung']  + '</td>');
         newEntry.append('<td>' + statusName + statusSymbol + '</td>');
-        newEntry.append('<td>' + data['data'][c]['Aktualisierung'] + ' <i class="fa fa-history cursor-progress revisionload" data-id="' + currId + '"></i></td>');
+        newEntry.append('<td>' + lastUpdate + ' <i class="fa fa-history cursor-progress revisionload" data-id="' + currId + '"></i></td>');
         newEntry.append('<td><div class="btn-group inline"><a class="btn" href="?id=' + currId + (debug ? '&debug=true' : '') + '" target="_blank"><i class="fa fa-edit"></i> Anzeigen</a><a class="btn" href="?copy=' + currId + '" target="_blank"><i class="fa fa-copy"></i> Kopieren</a><button type="button" data-id="' + currId + '" class="btn pdfdownload" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '><i class="fa fa-file-pdf-o"></i> ' + (parseInt(data['data'][c]['Status']) === 0 ? 'Letzte abgeschlossene PDF anzeigen' : 'PDF anzeigen') + '</button></div></td>');
         modalBody.find('#readableprocesses tbody').append(newEntry);
       }
@@ -512,7 +513,8 @@ function showVerfahrensliste(startup = false) {
           let revisions = $('<div><p>Letzte 5 Revisionen:</p><ul></ul></div>');
           let revList   = revisions.find('ul');
           for(let c=0; c < data['count'] && c < 5; c++) {
-            revList.append('<li>#' + data['data'][c]['Revision'] + ' - ' + data['data'][c]['Date'] + ' - ' + data['data'][c]['Editor'] + (data['data'][c]['Comment'] !== '' ? ' - ' + data['data'][c]['Comment'] : ''));
+            let revDate = formatDate(new Date(data['data'][c]['Date'].replace(' ', 'T')));
+            revList.append('<li>#' + data['data'][c]['Revision'] + ' - ' + revDate + ' - ' + data['data'][c]['Editor'] + (data['data'][c]['Comment'] !== '' ? ' - ' + data['data'][c]['Comment'] : ''));
           }
           if(data['count'] === 0) revList.replaceWith('<Keine Revisionen vorhanden>');
           evtTarget.prop('title', revisions[0].outerHTML);
@@ -526,7 +528,7 @@ function showVerfahrensliste(startup = false) {
       });
     });
     modalBody.find('i.revisionload').on('mouseleave', (evt) => { $(evt.target).removeClass('hover'); });
-    
+
     modalBody.find('[data-toggle="tooltip"]').tooltip({container: 'body'});
     modalBody.find('table').DataTable({
       language: {
@@ -1017,7 +1019,7 @@ function loadFromServer(id) {
           }
 
           data['data'].forEach(revision => {
-            let date = new Date(Date.parse(revision['Date'].replace(' ', 'T'))).toLocaleDateString('de-DE', { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' });
+            let date = formatDate(new Date(revision['Date'].replace(' ', 'T')));
             $('#abschluss_revisionen tbody').append('<tr><td>' + revision['Revision'] + '</td><td>' + date + '</td><td>' + revision['Editor'] + '</td><td>' + revision['Comment'] + '</td></tr>');
           });
         }).fail((jqXHR, error, errorThrown) => {
@@ -1085,7 +1087,7 @@ function genHTMLforPDF(draft = false) {
   toSend.append('<h3 class="text-center">' + htmlEncode($('[name="allgemein_bezeichnung"]').val()) + '</h3>');
 
   /* Nr. und Änderungsinfo */
-  toSend.append('<table class="table"><tbody><tr><td class="text-left">Nr.: <span style="background-color: lightyellow">' + loadId + '</span></td><td class="text-center">Letzter Bearbeiter: <span style="background-color: lightyellow">$lasteditor$</span></td><td class="text-right">Letzte Aktualisierung: <span style="background-color: lightyellow">' + $('#saveTime').text() + '</span></td></tr></tbody></table>');
+  toSend.append('<table class="table"><tbody><tr><td class="text-left">Nr.: <span style="background-color: lightyellow">' + loadId + '</span></td><td class="text-center">Letzter Bearbeiter: <span style="background-color: lightyellow">$lasteditor$</span></td><td class="text-right">Letzte Aktualisierung: <span style="background-color: lightyellow">$lastedited$</span></td></tr></tbody></table>');
 
   /* Daten aus Wizard einsammeln */
   $('#content').children('.tab-content').children('.tab-pane').each(function(idx) {
@@ -1157,7 +1159,7 @@ function genHTMLforPDF(draft = false) {
 
   /* Hinweis-Text bei keinen ausgewählten TOMs */
   if(toSend.find('#toggletoms').find('input[type=checkbox]:checked').length === 0 || toSend.find('#tom_accordion').find('tr').length === 0) {
-    toSend.find('#tom_accordion').append('<h5 class="text-center"><strong>Es wurden keine Technischen und Organisatorischen Maßnahmen ausgewählt.</strong></h5>');
+    toSend.find('#tom_accordion').append('<p class="text-center"><strong>Es wurden keine Technischen und Organisatorischen Maßnahmen ausgewählt.</strong></p>');
   }
 
   /* Link hinzufügen */
@@ -2228,10 +2230,10 @@ function loadDocuments() {
 
     $('#attached_documents').find('tbody').empty();
     data['data'].forEach((val, idx) => {
-      let lastUpdate = new Date(Date.parse(val['Date'].replace(' ', 'T')));
+      let lastUpdate = formatDate(new Date(val['Date'].replace(' ', 'T')));
       let fileSize   = formatBytes(parseInt(val['FileSize']));
       let attach     = val['Attach'] > 0 ? 'Ja' : 'Nein';
-      $('#attached_documents').find('tbody').append('<tr><td>' + htmlEncode(val['FileRef']) + '</td><td>' + fileSize + '</td><td>' + htmlEncode(val['Description']) + '</td><td>' + attach + '</td><td>' + lastUpdate.toLocaleDateString('de-DE', { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' }) + '</td><td class="text-center"><div class="btn-group"><button type="button" class="attached_documents_show btn" data-docid="' + val['DocID'] + '">Anzeigen</button><button type="button" class="attached_documents_edit btn btn-warning" data-docid="' + val['DocID'] + '" data-docdesc="' + val['Description'] + '" data-fileref="' + val['FileRef'] + '" data-attach="' + val['Attach'] + '"'+ (canEdit ? '' : 'disabled') + '><i class="fa fa-pencil-square-o"></i> Bearbeiten</button><button type="button" class="attached_documents_del btn btn-danger" data-docid="' + val['DocID'] + '" '+ (canEdit ? '' : 'disabled') + '><i class="fa fa-minus"></i> Löschen</button></div></td></tr>');
+      $('#attached_documents').find('tbody').append('<tr><td>' + htmlEncode(val['FileRef']) + '</td><td>' + fileSize + '</td><td>' + htmlEncode(val['Description']) + '</td><td>' + attach + '</td><td>' + lastUpdate + '</td><td class="text-center"><div class="btn-group"><button type="button" class="attached_documents_show btn" data-docid="' + val['DocID'] + '">Anzeigen</button><button type="button" class="attached_documents_edit btn btn-warning" data-docid="' + val['DocID'] + '" data-docdesc="' + val['Description'] + '" data-fileref="' + val['FileRef'] + '" data-attach="' + val['Attach'] + '"'+ (canEdit ? '' : 'disabled') + '><i class="fa fa-pencil-square-o"></i> Bearbeiten</button><button type="button" class="attached_documents_del btn btn-danger" data-docid="' + val['DocID'] + '" '+ (canEdit ? '' : 'disabled') + '><i class="fa fa-minus"></i> Löschen</button></div></td></tr>');
     });
 
     $('#attached_documents').find('.attached_documents_show').click((evt) => {
@@ -2575,7 +2577,7 @@ Promise.all(promises).then(function() {
     filterTOMList(parseInt($(this).val()));
   });
 
-  // Bearbeite Maßnahmen in TOM Liste anzeigen/verbergen
+  // Bearbeitete Maßnahmen in TOM Liste anzeigen/verbergen
   $('#showFinishedTOMs').change(function() {
     if(this.checked) {
       filterTOMList(parseInt($('[name=massnahmen_risiko]:checked').val()), true);  // default

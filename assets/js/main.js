@@ -205,6 +205,29 @@ function formatBytes(bytes, decimals = 2) {
 }
 
 /**
+ * Datum in ein gut lesbares Format bringen.
+ * @param  {Date} dateToFormat Datumsobjekt
+ * @return {String} Gut lesbares Datum als String
+ */
+function formatDate(dateToFormat) {
+  let currDate      = new Date();
+  let formattedDate = '';
+
+  if(dateToFormat.getFullYear() === currDate.getFullYear() && dateToFormat.getMonth() === currDate.getMonth()) {
+    if(dateToFormat.getDate() === currDate.getDate()) formattedDate = 'Heute ';
+    if(dateToFormat.getDate() === (currDate.getDate() - 1)) formattedDate = 'Gestern ';
+
+    formattedDate += ('0' + dateToFormat.getHours()).slice(-2) + ':' + ('0' + dateToFormat.getMinutes()).slice(-2) + ':' + ('0' + dateToFormat.getSeconds()).slice(-2);
+  }
+  else {
+    let dateOptions = { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' };
+    formattedDate = dateToFormat.toLocaleDateString('de-DE', dateOptions);
+  }
+
+  return formattedDate;
+}
+
+/**
  * Generiert eine Debug-Ausgabe, falls der globale debug-Parameter 'true' ist
  * @param {Object} msg Ausgabenachricht (kann null sein) (wird mittels console.log(msg) ausgegeben)
  * @param {Object} obj (optional) Objekt, was formatiert ausgegeben werden soll (wird mittels console.table(obj) ausgegeben)
@@ -223,8 +246,7 @@ function debugLog(msg, obj = null) {
  * @returns {undefined}
  */
 function setSaveLabel(action, currDate = new Date()) {
-  var options = { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' };
-  var saveTime = currDate.toLocaleDateString('de-DE', options);
+  var saveTime = formatDate(currDate);
   $('#successLabel, #savingLabel, #failedLabel, #refreshedLabel').addClass('hidden');
   switch(action) {
     case 'saving':

@@ -1,7 +1,7 @@
 # Get apache with php 7.4 as base image
 FROM php:7.4-apache
 # Install needed tools and php extensions
-RUN apt-get update && apt-get install -y libpng-dev git zip libonig-dev libldap2-dev nano
+RUN apt-get update && apt-get install -y libpng-dev git zip libonig-dev libldap2-dev nano sqlite3
 RUN docker-php-ext-install mbstring gd ldap
 # Install composer
 RUN curl -o /tmp/composer-setup.php https://getcomposer.org/installer \
@@ -13,9 +13,9 @@ RUN curl -o /tmp/composer-setup.php https://getcomposer.org/installer \
 # Copy SecDoc files and prepare folders
 COPY / /var/www/html/
 WORKDIR /var/www/
-RUN rm html/install.php && mkdir secdoc && mv html/assets/demo.db secdoc/demo.db && mv html/assets/ajax/secdoc.conf.php secdoc/secdoc.conf.php
+RUN rm html/install.php && mkdir secdoc temp && mv html/assets/demo.db secdoc/demo.db && mv html/assets/ajax/secdoc.conf.php secdoc/secdoc.conf.php
 RUN mkdir secdoc/PDF secdoc/inc secdoc/sessions
-RUN chmod -R 755 secdoc & chown -R www-data secdoc
+RUN chmod -R 755 secdoc && chown -R www-data secdoc && chmod -R 755 temp && chown -R www-data temp
 # Install dependencies with composer
 WORKDIR /var/www/html/assets
 RUN composer install
