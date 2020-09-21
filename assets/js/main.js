@@ -213,10 +213,12 @@ function formatDate(dateToFormat) {
   let currDate      = new Date();
   let formattedDate = '';
 
-  if(dateToFormat.getFullYear() === currDate.getFullYear() && dateToFormat.getMonth() === currDate.getMonth()) {
-    if(dateToFormat.getDate() === currDate.getDate()) formattedDate = 'Heute ';
-    if(dateToFormat.getDate() === (currDate.getDate() - 1)) formattedDate = 'Gestern ';
-
+  if(dateToFormat.getFullYear() === currDate.getFullYear() && dateToFormat.getMonth() === currDate.getMonth() && dateToFormat.getDate() === currDate.getDate()) {
+    formattedDate = 'Heute ';
+    formattedDate += ('0' + dateToFormat.getHours()).slice(-2) + ':' + ('0' + dateToFormat.getMinutes()).slice(-2) + ':' + ('0' + dateToFormat.getSeconds()).slice(-2);
+  }
+  else if(dateToFormat.getFullYear() === currDate.getFullYear() && dateToFormat.getMonth() === currDate.getMonth() && dateToFormat.getDate() === (currDate.getDate() - 1)) {
+    formattedDate = 'Gestern ';
     formattedDate += ('0' + dateToFormat.getHours()).slice(-2) + ':' + ('0' + dateToFormat.getMinutes()).slice(-2) + ':' + ('0' + dateToFormat.getSeconds()).slice(-2);
   }
   else {

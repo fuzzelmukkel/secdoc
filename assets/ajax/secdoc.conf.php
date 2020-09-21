@@ -109,4 +109,11 @@
      'active' => '(|(memberof=CN=u0shk,OU=Projekt-Gruppen,DC=wwu,DC=de)(memberof=CN=u0mitarb,OU=Projekt-Gruppen,DC=wwu,DC=de)(memberof=CN=e0mitwwu,OU=Projekt-Gruppen,DC=wwu,DC=de))(!(memberof=CN=y0msexma,OU=Projekt-Gruppen,DC=wwu,DC=de))',
      'employee' => '(|(memberof=CN=u0mitarb,OU=Projekt-Gruppen,DC=wwu,DC=de)(memberof=CN=e0mitwwu,OU=Projekt-Gruppen,DC=wwu,DC=de))'
    ];
+
+   # ----------------------------------------
+   # Konfiguration der Dokumentenverwaltung
+   # ----------------------------------------
+   $docmgmt_method        = 'local';  # Aktuell demo und local unterstützt
+   $docmgmt_maxAttachSize = 12 * 1024 * 1024; # Anhangsgröße in Bytes, ab wann eine Warnung angezeigt wird (Default: 12MB)
+   $docmgmt_class         = $docmgmt_method . 'DocMGMT';
 ?>

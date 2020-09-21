@@ -387,7 +387,7 @@ EOH;
             if($c !== $pageCount) $mpdf->WriteHTML('<pagebreak />');
           }
         } catch(\Exception $e) {
-          $mpdf->WriteHTML('<h3>Die angehängte PDF konnte nicht gelesen werden! Möglicherweise wird das Format nicht unterstützt.</h3>');
+          $mpdf->WriteHTML('<h6>Die angehängte PDF konnte nicht gelesen werden! Möglicherweise wird das Format nicht unterstützt.</h6>');
           error_log("[SecDoc] verwaltung.php -> PDF konnte nicht gelesen werden (Dokument #{$doc['DocID']}) (Fehler: " . $e->getMessage() . ")");
           unlink($tmpFile);
           continue;
@@ -1874,6 +1874,8 @@ EOH;
         $newFileRef  = $docDetails['FileRef'];
         $newFileSize = $docDetails['FileSize'];
       }
+
+      if(!array_key_exists('description', $data)) $data['description'] = $docDetails['Description'];
 
       if(!$dbcon->updateDocument($docDetails['DocID'], !empty($data['description']) ? $data['description'] : '', $newFileRef, $newFileSize, (array_key_exists('attach', $data) && $data['attach'] ? 1 : 0))) returnError('Konnte Document nicht in Datenbank aktualisieren!');
 

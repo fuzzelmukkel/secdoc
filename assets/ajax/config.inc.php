@@ -173,7 +173,7 @@
   # ----------------------------------------
   # Konfiguration der Dokumentenverwaltung
   # ----------------------------------------
-  $docmgmt_method        = 'local';  # Aktuell nur local unterstützt
+  $docmgmt_method        = 'local';  # Aktuell demo und local unterstützt
   $docmgmt_maxAttachSize = 12 * 1024 * 1024; # Anhangsgröße in Bytes, ab wann eine Warnung angezeigt wird (Default: 12MB)
   $docmgmt_class         = $docmgmt_method . 'DocMGMT';
 

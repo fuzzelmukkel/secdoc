@@ -1218,7 +1218,7 @@ function genHTMLforPDF(draft = false) {
   toSend.find('input[type=radio]').remove();
 
   /* Weitere Design-Anpassunge */
-  toSend.find('.printHide').addClass('hidden');
+  toSend.find('.printHide').remove();
   toSend.find('.printOnly').removeClass('hidden');
   toSend.find('h5').addClass('text-center');
   toSend.find('table, td, th').attr('style', 'border: 1px solid darkgray; padding: 5px;');
@@ -2232,8 +2232,26 @@ function loadDocuments() {
     data['data'].forEach((val, idx) => {
       let lastUpdate = formatDate(new Date(val['Date'].replace(' ', 'T')));
       let fileSize   = formatBytes(parseInt(val['FileSize']));
-      let attach     = val['Attach'] > 0 ? 'Ja' : 'Nein';
-      $('#attached_documents').find('tbody').append('<tr><td>' + htmlEncode(val['FileRef']) + '</td><td>' + fileSize + '</td><td>' + htmlEncode(val['Description']) + '</td><td>' + attach + '</td><td>' + lastUpdate + '</td><td class="text-center"><div class="btn-group"><button type="button" class="attached_documents_show btn" data-docid="' + val['DocID'] + '">Anzeigen</button><button type="button" class="attached_documents_edit btn btn-warning" data-docid="' + val['DocID'] + '" data-docdesc="' + val['Description'] + '" data-fileref="' + val['FileRef'] + '" data-attach="' + val['Attach'] + '"'+ (canEdit ? '' : 'disabled') + '><i class="fa fa-pencil-square-o"></i> Bearbeiten</button><button type="button" class="attached_documents_del btn btn-danger" data-docid="' + val['DocID'] + '" '+ (canEdit ? '' : 'disabled') + '><i class="fa fa-minus"></i> Löschen</button></div></td></tr>');
+      $('#attached_documents').find('tbody').append('<tr><td>' + htmlEncode(val['FileRef']) + '</td><td>' + fileSize + '</td><td>' + htmlEncode(val['Description']) + '</td><td><input class="form-check-input attached_documents_toggle" type="checkbox" data-docid="' + val['DocID'] + '" value="1" ' + (val['Attach'] > 0 ? 'checked' : '') + ' ' + (canEdit ? '' : 'disabled') + '></td><td>' + lastUpdate + '</td><td class="text-center"><div class="btn-group"><button type="button" class="attached_documents_show btn" data-docid="' + val['DocID'] + '">Anzeigen</button><button type="button" class="attached_documents_edit btn btn-warning" data-docid="' + val['DocID'] + '" data-docdesc="' + val['Description'] + '" data-fileref="' + val['FileRef'] + '" ' + (canEdit ? '' : 'disabled') + '><i class="fa fa-pencil-square-o"></i> Bearbeiten</button><button type="button" class="attached_documents_del btn btn-danger" data-docid="' + val['DocID'] + '" '+ (canEdit ? '' : 'disabled') + '><i class="fa fa-minus"></i> Löschen</button></div></td></tr>');
+    });
+
+    $('#attached_documents').find('.attached_documents_toggle').change((evt) => {
+      setOverlay();
+
+      let attach = evt.target.checked;
+
+      $.post(backendPath, JSON.stringify({'action': 'updateDocument', 'debug': debug, 'data': {'docid': parseInt($(evt.target).data('docid')), 'attach': attach}})).done((data) => {
+        if(!data['success']) {
+          showError('Bearbeiten des angehängten Dokuments', data['error']);
+          $(evt.target).prop('checked', (attach ? false : true));
+          return;
+        }
+      }).fail((jqXHR, error, errorThrown) => {
+        showError('Bearbeiten des angehängten Dokuments', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+        $(evt.target).prop('checked', (attach ? false : true));
+      }).always(() => {
+        setOverlay(false);
+      });
     });
 
     $('#attached_documents').find('.attached_documents_show').click((evt) => {
@@ -2275,7 +2293,7 @@ function loadDocuments() {
     });
 
     $('#attached_documents').find('.attached_documents_edit').click((evt) => {
-      showDocumentAddDialog(parseInt($(evt.target).data('docid')), $(evt.target).data('fileref'), $(evt.target).data('docdesc'), ($(evt.target).data('attach') > 0 ? true : false));
+      showDocumentAddDialog(parseInt($(evt.target).data('docid')), $(evt.target).data('fileref'), $(evt.target).data('docdesc'), $(evt.target).closest('tr').find('input.attached_documents_toggle').first()[0].checked);
     });
 
     $('#attached_documents').find('.attached_documents_del').click((evt) => {
