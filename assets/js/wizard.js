@@ -457,7 +457,7 @@ function showVerfahrensliste(startup = false) {
         newEntry.append('<td>' + data['data'][c]['Fachabteilung']  + '</td>');
         newEntry.append('<td>' + statusName + statusSymbol + '</td>');
         newEntry.append('<td>' + data['data'][c]['LetzterBearbeiter'] + ' <i data-toggle="tooltip" class="fa fa-info-circle" title="' + (data['data'][c]['BearbeiterDetails'] ? data['data'][c]['BearbeiterDetails'] : '<Keine Details vorhanden>') + '"></i></td>');
-        newEntry.append('<td>' + lastUpdate + ' <i class="fa fa-history cursor-progress revisionload" data-id="' + currId + '"></i></td>');
+        newEntry.append('<td data-order="' + (data['data'][c]['Aktualisierung'] ? new Date(data['data'][c]['Aktualisierung'].replace(' ', 'T')).getTime() : new Date().getTime()) + '">' + lastUpdate + ' <i class="fa fa-history cursor-progress revisionload" data-id="' + currId + '"></i></td>');
         newEntry.append('<td><div class="btn-group inline"><a class="btn" href="?id=' + currId + (debug ? '&debug=true' : '') + '" target="_blank"><i class="fa fa-edit"></i> Bearbeiten</a><a class="btn" href="?copy=' + currId + '" target="_blank"><i class="fa fa-copy"></i> Kopieren</a><button type="button" title="Die PDF-Version repräsentiert das zuletzt abgeschlossene Verfahren!" data-id="' + currId + '" class="btn pdfdownload" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '><i class="fa fa-file-pdf-o"></i> ' + (parseInt(data['data'][c]['Status']) === 0 ? 'Letzte abgeschlossene PDF anzeigen' : 'PDF anzeigen') + '</button></div> <button type="button" data-id="' + currId +'" data-name="' + data['data'][c]['Bezeichnung'] +'" class="btn del btn-danger" ' + (data['data'][c]['Löschbar'] === true ? '' : 'disabled')  + '><i class="fa fa-minus"></i> Löschen</button></td>');
         modalBody.find('#editableprocesses tbody').append(newEntry);
       }
@@ -466,7 +466,7 @@ function showVerfahrensliste(startup = false) {
         newEntry.append('<td>' + data['data'][c]['Bezeichnung'] + ' <i data-toggle="tooltip" class="fa fa-info-circle" title="' + data['data'][c]['Beschreibung'] + '"></i></td>');
         newEntry.append('<td>' + data['data'][c]['Fachabteilung']  + '</td>');
         newEntry.append('<td>' + statusName + statusSymbol + '</td>');
-        newEntry.append('<td>' + lastUpdate + ' <i class="fa fa-history cursor-progress revisionload" data-id="' + currId + '"></i></td>');
+        newEntry.append('<td data-order="' + (data['data'][c]['Aktualisierung'] ? new Date(data['data'][c]['Aktualisierung'].replace(' ', 'T')).getTime() : new Date().getTime()) + '">' + lastUpdate + ' <i class="fa fa-history cursor-progress revisionload" data-id="' + currId + '"></i></td>');
         newEntry.append('<td><div class="btn-group inline"><a class="btn" href="?id=' + currId + (debug ? '&debug=true' : '') + '" target="_blank"><i class="fa fa-edit"></i> Anzeigen</a><a class="btn" href="?copy=' + currId + '" target="_blank"><i class="fa fa-copy"></i> Kopieren</a><button type="button" data-id="' + currId + '" class="btn pdfdownload" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '><i class="fa fa-file-pdf-o"></i> ' + (parseInt(data['data'][c]['Status']) === 0 ? 'Letzte abgeschlossene PDF anzeigen' : 'PDF anzeigen') + '</button></div></td>');
         modalBody.find('#readableprocesses tbody').append(newEntry);
       }
