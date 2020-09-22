@@ -1302,6 +1302,8 @@ function exportJSON() {
     'allgemein_technisch_name'
   ];
 
+  let lastUpdate = currObj['meta_lastupdate'] ? new Date(currObj['meta_lastupdate'].replace(' ', 'T')) : new Date();
+
   // Unnötige Felder entfernen
   fieldsToRemove.forEach((field) => { delete currObj[field]; });
 
@@ -1323,7 +1325,8 @@ function exportJSON() {
 
     // Download-Dialog für JSON-Date
     let download = $('<a></a>');
-    download.attr('href', dataStr).attr('download', 'SecDoc_' + modeName[0] + '_' + currObj.allgemein_bezeichnung.replace(/\W/g, '_') + '_' + loadId + '.json').addClass('hidden');
+
+    download.attr('href', dataStr).attr('download', 'SecDoc_' + modeName[0] + '_' + loadId + '_' + currObj.allgemein_bezeichnung.replace(/\W/g, '_').substr(0, 40) + '_' + lastUpdate.getFullYear() + ('0' + (lastUpdate.getMonth() + 1)).slice(-2) + ('0' + lastUpdate.getDate()).slice(-2) + ('0' + lastUpdate.getHours()).slice(-2) + ('0' + lastUpdate.getMinutes()).slice(-2) + '.json').addClass('hidden');
     $('body').append(download);
     download[0].click();
     download.remove();

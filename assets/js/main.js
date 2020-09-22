@@ -346,7 +346,7 @@ function getPDFFromServer(id, draft = false) {
     let blob = new Blob([pdfBuffer], {type: "application/pdf"});
     let lastUpdate = data['data']['lastupdate'] ? new Date(data['data']['lastupdate'].replace(' ', 'T')) : new Date();  // Safari benötigt das Format YYYY-MM-DDTHH:MM:SS (mit T)
     let typeName = {1: 'Verarbeitungstätigkeit', 2: 'IT-Verfahren', 3: 'Fachapplikation', 4: 'Übergreifende_Massnahme'};
-    let fileTitle = 'SecDoc_' + typeName[data['data']['type']] + '_' + id + '_' + data['data']['title'].substr(0, 30) + '_' + lastUpdate.getFullYear() + ('0' + (lastUpdate.getMonth() + 1)).slice(-2) + ('0' + lastUpdate.getDate()).slice(-2) + ('0' + lastUpdate.getHours()).slice(-2) + ('0' + lastUpdate.getMinutes()).slice(-2) + (draft ? '_DRAFT' : '' );
+    let fileTitle = 'SecDoc_' + typeName[data['data']['type']] + '_' + id + '_' + data['data']['title'].replace(/\W/g, '_').substr(0, 40) + '_' + lastUpdate.getFullYear() + ('0' + (lastUpdate.getMonth() + 1)).slice(-2) + ('0' + lastUpdate.getDate()).slice(-2) + ('0' + lastUpdate.getHours()).slice(-2) + ('0' + lastUpdate.getMinutes()).slice(-2) + (draft ? '_DRAFT' : '' );
     fileTitle = fileTitle.replace(/[/\\?%*:|"<>\.,;=\s]/g, '_');
     fileTitle += '.pdf';
 

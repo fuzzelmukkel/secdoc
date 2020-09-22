@@ -492,11 +492,15 @@ EOH;
 
     for($p = 0; $p < $procCount; $p++) {
       $filePath = $pdf_dir . DIRECTORY_SEPARATOR . $processes[$p]['ID'] . '.pdf';
+      $procName = trim($processes[$p]['Bezeichnung']);
+      if(strlen($procName) > 43) {
+        $procName = trim(substr($procName, 0, 40)) . '...';
+      }
 
       if(file_exists($filePath)) {
-        $mpdf->setFooter(htmlspecialchars("#{$processes[$p]['ID']}|{$processes[$p]['Bezeichnung']}") . '|{PAGENO}');
-        $mpdf->TOC_Entry(htmlspecialchars("#{$processes[$p]['ID']} - {$processes[$p]['Bezeichnung']}"));
-        $mpdf->Bookmark(htmlspecialchars("#{$processes[$p]['ID']} - {$processes[$p]['Bezeichnung']}", ENT_QUOTES), 0);
+        $mpdf->setFooter(htmlspecialchars("#{$processes[$p]['ID']}|$procName") . '|{PAGENO}');
+        $mpdf->TOC_Entry(htmlspecialchars("$procName (#{$processes[$p]['ID']})"));
+        $mpdf->Bookmark(htmlspecialchars("$procName (#{$processes[$p]['ID']})", ENT_QUOTES), 0);
 
         $pageCount = $mpdf->SetSourceFile($filePath);
 
@@ -508,9 +512,9 @@ EOH;
       }
       # Fehlende PDF, obwohl als "abgeschlossen" gekennzeichnet
       elseif(intval($processes[$p]['Status']) === 2) {
-        $mpdf->setFooter(htmlspecialchars("#{$processes[$p]['ID']}|{$processes[$p]['Bezeichnung']}") . '|{PAGENO}');
-        $mpdf->TOC_Entry(htmlspecialchars("#{$processes[$p]['ID']} - {$processes[$p]['Bezeichnung']}"));
-        $mpdf->Bookmark(htmlspecialchars("#{$processes[$p]['ID']} - {$processes[$p]['Bezeichnung']}", ENT_QUOTES), 0);
+        $mpdf->setFooter(htmlspecialchars("#{$processes[$p]['ID']}|$procName") . '|{PAGENO}');
+        $mpdf->TOC_Entry(htmlspecialchars("$procName (#{$processes[$p]['ID']})"));
+        $mpdf->Bookmark(htmlspecialchars("$procName (#{$processes[$p]['ID']})", ENT_QUOTES), 0);
 
         $mpdf->WriteHTML("<h2>Die PDF-Datei für die Dokumentation #{$processes[$p]['ID']} - '" . htmlspecialchars("{$processes[$p]['Bezeichnung']}") . "' fehlt</h2><p>Die Dokumentation #{$processes[$p]['ID']} ist als abgeschlossen markiert, aber es ist keine PDF-Datei vorhanden!</p><p>Bitte schließen Sie die Dokumentation erneut ab, um eine vollständige PDF-Version zu erzeugen.</p><pagebreak />");
       }
@@ -590,7 +594,12 @@ EOH;
     $titlePage = file_get_contents('../html/pdf_titlepage.inc.html');
     $titlePage = preg_replace('/<h1>.*<\/h1>/', "<h1>Gesamtdokumentation</h1><br /><h2>#{$process['ID']} - {$process['Bezeichnung']}</h2>", $titlePage);
     $titlePage .= '<pagebreak resetpagenum="1" pagenumstyle="1" suppress="off" />';
-    $mpdf->Bookmark(htmlspecialchars("Gesamtdokumentation #{$process['ID']} - {$process['Bezeichnung']}", ENT_QUOTES), 0);
+
+    $docName = trim($process['Bezeichnung']);
+    if(strlen($docName) > 43) {
+      $docName = trim(substr($docName, 0, 40)) . '...';
+    }
+    $mpdf->Bookmark(htmlspecialchars("Gesamtdokumentation #{$process['ID']} - $docName", ENT_QUOTES), 0);
     $mpdf->WriteHTML($titlePage);
 
     # TOC einfügen
@@ -609,9 +618,9 @@ EOH;
     # Hauptverarbeitungstätigkeit hinzufügen
     $filePath = $pdf_dir . DIRECTORY_SEPARATOR . $process['ID'] . '.pdf';
     if(file_exists($filePath)) {
-      $mpdf->SetFooter(htmlspecialchars("#{$process['ID']}|{$process['Bezeichnung']}") . '|{PAGENO}');
-      $mpdf->TOC_Entry(htmlspecialchars("Hauptverarbeitungstätigkeit #{$process['ID']} - {$process['Bezeichnung']}"));
-      $mpdf->Bookmark(htmlspecialchars("Hauptverarbeitungstätigkeit #{$process['ID']} - {$process['Bezeichnung']}", ENT_QUOTES), 0);
+      $mpdf->SetFooter(htmlspecialchars("#{$process['ID']}|$docName") . '|{PAGENO}');
+      $mpdf->TOC_Entry(htmlspecialchars("Hauptverarbeitungstätigkeit #{$process['ID']} - $docName"));
+      $mpdf->Bookmark(htmlspecialchars("Hauptverarbeitungstätigkeit #{$process['ID']} - $docName", ENT_QUOTES), 0);
 
       $pageCount = $mpdf->SetSourceFile($filePath);
 
@@ -647,10 +656,15 @@ EOH;
       for($doc = 0; $doc < $docCount; $doc++) {
         $filePath = $pdf_dir . DIRECTORY_SEPARATOR . $deps[$doc]['id'] . '.pdf';
 
+        $docName = trim($deps[$doc]['name']);
+        if(strlen($docName) > 43) {
+          $docName = trim(substr($docName, 0, 40)) . '...';
+        }
+
         if(file_exists($filePath)) {
-          $mpdf->setFooter(htmlspecialchars("#{$deps[$doc]['id']}|{$deps[$doc]['name']}") . '|{PAGENO}');
-          $mpdf->TOC_Entry(htmlspecialchars("#{$deps[$doc]['id']} - {$deps[$doc]['name']}"), 1);
-          $mpdf->Bookmark(htmlspecialchars("#{$deps[$doc]['id']} - {$deps[$doc]['name']}", ENT_QUOTES), 1);
+          $mpdf->setFooter(htmlspecialchars("#{$deps[$doc]['id']}|$docName") . '|{PAGENO}');
+          $mpdf->TOC_Entry(htmlspecialchars("$docName (#{$deps[$doc]['id']})"), 1);
+          $mpdf->Bookmark(htmlspecialchars("$docName (#{$deps[$doc]['id']})", ENT_QUOTES), 1);
 
           $pageCount = $mpdf->SetSourceFile($filePath);
 
@@ -661,17 +675,17 @@ EOH;
         }
         # Fehlende PDF, obwohl abgeschlossen
         elseif(intval($deps[$doc]['status']) === 2) {
-          $mpdf->setFooter(htmlspecialchars("#{$deps[$doc]['id']}|{$deps[$doc]['name']}") . '|{PAGENO}');
-          $mpdf->TOC_Entry(htmlspecialchars("#{$deps[$doc]['id']} - {$deps[$doc]['name']}"), 1);
-          $mpdf->Bookmark(htmlspecialchars("#{$deps[$doc]['id']} - {$deps[$doc]['name']}", ENT_QUOTES), 1);
+          $mpdf->setFooter(htmlspecialchars("#{$deps[$doc]['id']}|$docName") . '|{PAGENO}');
+          $mpdf->TOC_Entry(htmlspecialchars("$docName (#{$deps[$doc]['id']})"), 1);
+          $mpdf->Bookmark(htmlspecialchars("$docName (#{$deps[$doc]['id']})", ENT_QUOTES), 1);
 
           $mpdf->WriteHTML("<h2>Die PDF-Datei für die Dokumentation #{$deps[$doc]['id']} - '" . htmlspecialchars("{$deps[$doc]['name']}") . "' fehlt</h2><p>Die Dokumentation #{$deps[$doc]['id']} ist als abgeschlossen markiert, aber es ist keine PDF-Datei vorhanden!</p><p>Bitte schließen Sie die Dokumentation erneut ab, um eine vollständige PDF-Version zu erzeugen.</p><p><a href=\"$prog_url?id={$deps[$doc]['id']}\">Dokumentation online einsehen</a></p><pagebreak />");
         }
         # Fehlende PDF, da noch nicht abgeschlossen
         elseif(intval($deps[$doc]['status']) === 0) {
-          $mpdf->setFooter(htmlspecialchars("#{$deps[$doc]['id']}|{$deps[$doc]['name']}") . '|{PAGENO}');
-          $mpdf->TOC_Entry(htmlspecialchars("#{$deps[$doc]['id']} - {$deps[$doc]['name']}"), 1);
-          $mpdf->Bookmark(htmlspecialchars("#{$deps[$doc]['id']} - {$deps[$doc]['name']}", ENT_QUOTES), 1);
+          $mpdf->setFooter(htmlspecialchars("#{$deps[$doc]['id']}|$docName") . '|{PAGENO}');
+          $mpdf->TOC_Entry(htmlspecialchars("$docName (#{$deps[$doc]['id']})"), 1);
+          $mpdf->Bookmark(htmlspecialchars("$docName (#{$deps[$doc]['id']})", ENT_QUOTES), 1);
 
           $mpdf->WriteHTML("<h2>Die PDF-Datei für die Dokumentation #{$deps[$doc]['id']} - '" . htmlspecialchars("{$deps[$doc]['name']}") . "' fehlt</h2><p>Die Dokumentation #{$deps[$doc]['id']} wurde noch nicht abgeschlossen, so dass bisher keine PDF-Datei existiert.</p><p>Bitte schließen Sie die Dokumentation ab, um eine vollständige PDF-Version zu erzeugen.</p><p><a href=\"$prog_url?id={$deps[$doc]['id']}\">Dokumentation online einsehen</a></p><pagebreak />");
         }
