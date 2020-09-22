@@ -2657,7 +2657,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="wizard.js.html">wizard.js</a>, <a href="wizard.js.html#line1599">line 1599</a>
+        <a href="wizard.js.html">wizard.js</a>, <a href="wizard.js.html#line1708">line 1708</a>
     </li></ul></dd>
     
 
@@ -2812,7 +2812,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="wizard.js.html">wizard.js</a>, <a href="wizard.js.html#line966">line 966</a>
+        <a href="wizard.js.html">wizard.js</a>, <a href="wizard.js.html#line1045">line 1045</a>
     </li></ul></dd>
     
 
@@ -3002,7 +3002,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="main.js.html">main.js</a>, <a href="main.js.html#line194">line 194</a>
+        <a href="main.js.html">main.js</a>, <a href="main.js.html#line238">line 238</a>
     </li></ul></dd>
     
 
@@ -3157,7 +3157,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="main.js.html">main.js</a>, <a href="main.js.html#line335">line 335</a>
+        <a href="main.js.html">main.js</a>, <a href="main.js.html#line378">line 378</a>
     </li></ul></dd>
     
 
@@ -3263,7 +3263,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="wizard.js.html">wizard.js</a>, <a href="wizard.js.html#line1170">line 1170</a>
+        <a href="wizard.js.html">wizard.js</a>, <a href="wizard.js.html#line1274">line 1274</a>
     </li></ul></dd>
     
 
@@ -3317,7 +3317,7 @@
     
 
     
-    <h4 class="name" id="filterTOMList"><span class="type-signature"></span>filterTOMList<span class="signature">(risklevel)</span><span class="type-signature"> &rarr; {undefined}</span></h4>
+    <h4 class="name" id="filterTOMList"><span class="type-signature"></span>filterTOMList<span class="signature">(risklevel, showFinished)</span><span class="type-signature"> &rarr; {undefined}</span></h4>
     
 
     
@@ -3351,6 +3351,8 @@
         
 
         
+        <th>Default</th>
+        
 
         <th class="last">Description</th>
     </tr>
@@ -3376,8 +3378,41 @@
             
 
             
+                <td class="default">
+                
+                </td>
+            
 
             <td class="description last">Risikolevel des Verfahrens</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>showFinished</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Boolean</span>
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                    true
+                
+                </td>
+            
+
+            <td class="description last">(optional) Bearbeitete Massnahmen einblenden</td>
         </tr>
 
     
@@ -3418,7 +3453,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="wizard.js.html">wizard.js</a>, <a href="wizard.js.html#line1807">line 1807</a>
+        <a href="wizard.js.html">wizard.js</a>, <a href="wizard.js.html#line1917">line 1917</a>
     </li></ul></dd>
     
 
@@ -3455,6 +3490,366 @@
     <dd>
         
 <span class="param-type">undefined</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="formatBytes"><span class="type-signature"></span>formatBytes<span class="signature">(bytes, decimals)</span><span class="type-signature"> &rarr; {String}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Wandelt Dateigrößen in Bytes in eine lesbare Größenanzeige um
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+        <th>Default</th>
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>bytes</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">Dateigröße in Bytes</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>decimals</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                    2
+                
+                </td>
+            
+
+            <td class="description last">(optional) Nachkommanstellen</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="main.js.html">main.js</a>, <a href="main.js.html#line195">line 195</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li><a href="https://stackoverflow.com/a/18650828">https://stackoverflow.com/a/18650828</a></li>
+        </ul>
+    </dd>
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    Dateigröße (human-readable)
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">String</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="formatDate"><span class="type-signature"></span>formatDate<span class="signature">(dateToFormat)</span><span class="type-signature"> &rarr; {String}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Datum in ein gut lesbares Format bringen.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>dateToFormat</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Date</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">Datumsobjekt</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="main.js.html">main.js</a>, <a href="main.js.html#line212">line 212</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    Gut lesbares Datum als String
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">String</span>
 
 
     </dd>
@@ -3524,7 +3919,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="wizard.js.html">wizard.js</a>, <a href="wizard.js.html#line1752">line 1752</a>
+        <a href="wizard.js.html">wizard.js</a>, <a href="wizard.js.html#line1861">line 1861</a>
     </li></ul></dd>
     
 
@@ -3687,7 +4082,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="wizard.js.html">wizard.js</a>, <a href="wizard.js.html#line993">line 993</a>
+        <a href="wizard.js.html">wizard.js</a>, <a href="wizard.js.html#line1072">line 1072</a>
     </li></ul></dd>
     
 
@@ -4142,7 +4537,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="main.js.html">main.js</a>, <a href="main.js.html#line281">line 281</a>
+        <a href="main.js.html">main.js</a>, <a href="main.js.html#line324">line 324</a>
     </li></ul></dd>
     
 
@@ -4813,7 +5208,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="wizard.js.html">wizard.js</a>, <a href="wizard.js.html#line1237">line 1237</a>
+        <a href="wizard.js.html">wizard.js</a>, <a href="wizard.js.html#line1344">line 1344</a>
     </li></ul></dd>
     
 
@@ -4919,7 +5314,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="wizard.js.html">wizard.js</a>, <a href="wizard.js.html#line1580">line 1580</a>
+        <a href="wizard.js.html">wizard.js</a>, <a href="wizard.js.html#line1689">line 1689</a>
     </li></ul></dd>
     
 
@@ -5074,7 +5469,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="wizard.js.html">wizard.js</a>, <a href="wizard.js.html#line1357">line 1357</a>
+        <a href="wizard.js.html">wizard.js</a>, <a href="wizard.js.html#line1466">line 1466</a>
     </li></ul></dd>
     
 
@@ -5114,6 +5509,112 @@
 |
 
 <span class="param-type">Object</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="loadDocuments"><span class="type-signature"></span>loadDocuments<span class="signature">()</span><span class="type-signature"> &rarr; {undefined}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Listet angehängte Dokumente auf.
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="wizard.js.html">wizard.js</a>, <a href="wizard.js.html#line2217">line 2217</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">undefined</span>
 
 
     </dd>
@@ -5183,7 +5684,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="wizard.js.html">wizard.js</a>, <a href="wizard.js.html#line530">line 530</a>
+        <a href="wizard.js.html">wizard.js</a>, <a href="wizard.js.html#line587">line 587</a>
     </li></ul></dd>
     
 
@@ -5338,7 +5839,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="wizard.js.html">wizard.js</a>, <a href="wizard.js.html#line630">line 630</a>
+        <a href="wizard.js.html">wizard.js</a>, <a href="wizard.js.html#line687">line 687</a>
     </li></ul></dd>
     
 
@@ -5493,7 +5994,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="wizard.js.html">wizard.js</a>, <a href="wizard.js.html#line885">line 885</a>
+        <a href="wizard.js.html">wizard.js</a>, <a href="wizard.js.html#line945">line 945</a>
     </li></ul></dd>
     
 
@@ -5599,7 +6100,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="main.js.html">main.js</a>, <a href="main.js.html#line359">line 359</a>
+        <a href="main.js.html">main.js</a>, <a href="main.js.html#line402">line 402</a>
     </li></ul></dd>
     
 
@@ -6960,7 +7461,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="wizard.js.html">wizard.js</a>, <a href="wizard.js.html#line1724">line 1724</a>
+        <a href="wizard.js.html">wizard.js</a>, <a href="wizard.js.html#line1833">line 1833</a>
     </li></ul></dd>
     
 
@@ -7066,7 +7567,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="wizard.js.html">wizard.js</a>, <a href="wizard.js.html#line591">line 591</a>
+        <a href="wizard.js.html">wizard.js</a>, <a href="wizard.js.html#line648">line 648</a>
     </li></ul></dd>
     
 
@@ -7177,7 +7678,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="wizard.js.html">wizard.js</a>, <a href="wizard.js.html#line729">line 729</a>
+        <a href="wizard.js.html">wizard.js</a>, <a href="wizard.js.html#line789">line 789</a>
     </li></ul></dd>
     
 
@@ -7347,7 +7848,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="main.js.html">main.js</a>, <a href="main.js.html#line236">line 236</a>
+        <a href="main.js.html">main.js</a>, <a href="main.js.html#line279">line 279</a>
     </li></ul></dd>
     
 
@@ -7525,7 +8026,251 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="main.js.html">main.js</a>, <a href="main.js.html#line206">line 206</a>
+        <a href="main.js.html">main.js</a>, <a href="main.js.html#line250">line 250</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">undefined</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="showDocumentAddDialog"><span class="type-signature"></span>showDocumentAddDialog<span class="signature">(docID, fileref, description, attach)</span><span class="type-signature"> &rarr; {undefined}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Zeigt den Dokumenten-Verwaltungs-Dialog an.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+        <th>Default</th>
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>docID</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">(optional) Dokumenten-ID</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>fileref</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">(optional) Dateiname</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>description</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">(optional) Dokumenten-Beschreibung</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>attach</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Boolean</span>
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                    false
+                
+                </td>
+            
+
+            <td class="description last">(optional) An Abschluss-PDF anhängen?</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="wizard.js.html">wizard.js</a>, <a href="wizard.js.html#line2088">line 2088</a>
     </li></ul></dd>
     
 
@@ -7744,7 +8489,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="main.js.html">main.js</a>, <a href="main.js.html#line248">line 248</a>
+        <a href="main.js.html">main.js</a>, <a href="main.js.html#line291">line 291</a>
     </li></ul></dd>
     
 
@@ -7850,7 +8595,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="wizard.js.html">wizard.js</a>, <a href="wizard.js.html#line1309">line 1309</a>
+        <a href="wizard.js.html">wizard.js</a>, <a href="wizard.js.html#line1417">line 1417</a>
     </li></ul></dd>
     
 
@@ -8013,7 +8758,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="wizard.js.html">wizard.js</a>, <a href="wizard.js.html#line393">line 393</a>
+        <a href="wizard.js.html">wizard.js</a>, <a href="wizard.js.html#line412">line 412</a>
     </li></ul></dd>
     
 
@@ -8119,7 +8864,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="wizard.js.html">wizard.js</a>, <a href="wizard.js.html#line1836">line 1836</a>
+        <a href="wizard.js.html">wizard.js</a>, <a href="wizard.js.html#line1948">line 1948</a>
     </li></ul></dd>
     
 
@@ -8183,13 +8928,13 @@
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#addTableRow">addTableRow</a></li><li><a href="global.html#autoSaveTimer">autoSaveTimer</a></li><li><a href="global.html#autoSaveWait">autoSaveWait</a></li><li><a href="global.html#backendPath">backendPath</a></li><li><a href="global.html#canEdit">canEdit</a></li><li><a href="global.html#changedFields">changedFields</a></li><li><a href="global.html#changedValues">changedValues</a></li><li><a href="global.html#copyFromServer">copyFromServer</a></li><li><a href="global.html#copyId">copyId</a></li><li><a href="global.html#copyIdMain">copyIdMain</a></li><li><a href="global.html#debug">debug</a></li><li><a href="global.html#debugLog">debugLog</a></li><li><a href="global.html#deleteFromServer">deleteFromServer</a></li><li><a href="global.html#endlessCounts">endlessCounts</a></li><li><a href="global.html#endlessTables">endlessTables</a></li><li><a href="global.html#endlessTemplates">endlessTemplates</a></li><li><a href="global.html#exportJSON">exportJSON</a></li><li><a href="global.html#filterTOMList">filterTOMList</a></li><li><a href="global.html#generateTOMList">generateTOMList</a></li><li><a href="global.html#genHTMLforPDF">genHTMLforPDF</a></li><li><a href="global.html#getCombinedPDF">getCombinedPDF</a></li><li><a href="global.html#getCompletePDF">getCompletePDF</a></li><li><a href="global.html#getPDFFromServer">getPDFFromServer</a></li><li><a href="global.html#GetURLParameter">GetURLParameter</a></li><li><a href="global.html#getUserPromise">getUserPromise</a></li><li><a href="global.html#globalClear">globalClear</a></li><li><a href="global.html#htmlDecode">htmlDecode</a></li><li><a href="global.html#htmlEncode">htmlEncode</a></li><li><a href="global.html#importJSON">importJSON</a></li><li><a href="global.html#initEndlessTables">initEndlessTables</a></li><li><a href="global.html#initTypeahead">initTypeahead</a></li><li><a href="global.html#loadEmpty">loadEmpty</a></li><li><a href="global.html#loadFromJSON">loadFromJSON</a></li><li><a href="global.html#loadFromServer">loadFromServer</a></li><li><a href="global.html#loadId">loadId</a></li><li><a href="global.html#loadIdMain">loadIdMain</a></li><li><a href="global.html#loadSubpage">loadSubpage</a></li><li><a href="global.html#loadTables">loadTables</a></li><li><a href="global.html#markedAsFinished">markedAsFinished</a></li><li><a href="global.html#modal">modal</a></li><li><a href="global.html#mode">mode</a></li><li><a href="global.html#modeMapping">modeMapping</a></li><li><a href="global.html#modeName">modeName</a></li><li><a href="global.html#modeNum">modeNum</a></li><li><a href="global.html#myFinish">myFinish</a></li><li><a href="global.html#myInit">myInit</a></li><li><a href="global.html#myNext">myNext</a></li><li><a href="global.html#myPrevious">myPrevious</a></li><li><a href="global.html#myTabChange">myTabChange</a></li><li><a href="global.html#myTabClick">myTabClick</a></li><li><a href="global.html#page">page</a></li><li><a href="global.html#promises">promises</a></li><li><a href="global.html#removeTableRows">removeTableRows</a></li><li><a href="global.html#saveAsObject">saveAsObject</a></li><li><a href="global.html#saveOnServer">saveOnServer</a></li><li><a href="global.html#selectedTier">selectedTier</a></li><li><a href="global.html#setOverlay">setOverlay</a></li><li><a href="global.html#setSaveLabel">setSaveLabel</a></li><li><a href="global.html#showError">showError</a></li><li><a href="global.html#showImportDialog">showImportDialog</a></li><li><a href="global.html#showVerfahrensliste">showVerfahrensliste</a></li><li><a href="global.html#status">status</a></li><li><a href="global.html#statusMapping">statusMapping</a></li><li><a href="global.html#statusSymbolMapping">statusSymbolMapping</a></li><li><a href="global.html#toggleTOMList">toggleTOMList</a></li><li><a href="global.html#tomsMapping">tomsMapping</a></li><li><a href="global.html#typeaheadCache">typeaheadCache</a></li><li><a href="global.html#userCanDSB">userCanDSB</a></li><li><a href="global.html#userIsDSB">userIsDSB</a></li><li><a href="global.html#userIsManager">userIsManager</a></li><li><a href="global.html#version">version</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#addTableRow">addTableRow</a></li><li><a href="global.html#autoSaveTimer">autoSaveTimer</a></li><li><a href="global.html#autoSaveWait">autoSaveWait</a></li><li><a href="global.html#backendPath">backendPath</a></li><li><a href="global.html#canEdit">canEdit</a></li><li><a href="global.html#changedFields">changedFields</a></li><li><a href="global.html#changedValues">changedValues</a></li><li><a href="global.html#copyFromServer">copyFromServer</a></li><li><a href="global.html#copyId">copyId</a></li><li><a href="global.html#copyIdMain">copyIdMain</a></li><li><a href="global.html#debug">debug</a></li><li><a href="global.html#debugLog">debugLog</a></li><li><a href="global.html#deleteFromServer">deleteFromServer</a></li><li><a href="global.html#endlessCounts">endlessCounts</a></li><li><a href="global.html#endlessTables">endlessTables</a></li><li><a href="global.html#endlessTemplates">endlessTemplates</a></li><li><a href="global.html#exportJSON">exportJSON</a></li><li><a href="global.html#filterTOMList">filterTOMList</a></li><li><a href="global.html#formatBytes">formatBytes</a></li><li><a href="global.html#formatDate">formatDate</a></li><li><a href="global.html#generateTOMList">generateTOMList</a></li><li><a href="global.html#genHTMLforPDF">genHTMLforPDF</a></li><li><a href="global.html#getCombinedPDF">getCombinedPDF</a></li><li><a href="global.html#getCompletePDF">getCompletePDF</a></li><li><a href="global.html#getPDFFromServer">getPDFFromServer</a></li><li><a href="global.html#GetURLParameter">GetURLParameter</a></li><li><a href="global.html#getUserPromise">getUserPromise</a></li><li><a href="global.html#globalClear">globalClear</a></li><li><a href="global.html#htmlDecode">htmlDecode</a></li><li><a href="global.html#htmlEncode">htmlEncode</a></li><li><a href="global.html#importJSON">importJSON</a></li><li><a href="global.html#initEndlessTables">initEndlessTables</a></li><li><a href="global.html#initTypeahead">initTypeahead</a></li><li><a href="global.html#loadDocuments">loadDocuments</a></li><li><a href="global.html#loadEmpty">loadEmpty</a></li><li><a href="global.html#loadFromJSON">loadFromJSON</a></li><li><a href="global.html#loadFromServer">loadFromServer</a></li><li><a href="global.html#loadId">loadId</a></li><li><a href="global.html#loadIdMain">loadIdMain</a></li><li><a href="global.html#loadSubpage">loadSubpage</a></li><li><a href="global.html#loadTables">loadTables</a></li><li><a href="global.html#markedAsFinished">markedAsFinished</a></li><li><a href="global.html#modal">modal</a></li><li><a href="global.html#mode">mode</a></li><li><a href="global.html#modeMapping">modeMapping</a></li><li><a href="global.html#modeName">modeName</a></li><li><a href="global.html#modeNum">modeNum</a></li><li><a href="global.html#myFinish">myFinish</a></li><li><a href="global.html#myInit">myInit</a></li><li><a href="global.html#myNext">myNext</a></li><li><a href="global.html#myPrevious">myPrevious</a></li><li><a href="global.html#myTabChange">myTabChange</a></li><li><a href="global.html#myTabClick">myTabClick</a></li><li><a href="global.html#page">page</a></li><li><a href="global.html#promises">promises</a></li><li><a href="global.html#removeTableRows">removeTableRows</a></li><li><a href="global.html#saveAsObject">saveAsObject</a></li><li><a href="global.html#saveOnServer">saveOnServer</a></li><li><a href="global.html#selectedTier">selectedTier</a></li><li><a href="global.html#setOverlay">setOverlay</a></li><li><a href="global.html#setSaveLabel">setSaveLabel</a></li><li><a href="global.html#showDocumentAddDialog">showDocumentAddDialog</a></li><li><a href="global.html#showError">showError</a></li><li><a href="global.html#showImportDialog">showImportDialog</a></li><li><a href="global.html#showVerfahrensliste">showVerfahrensliste</a></li><li><a href="global.html#status">status</a></li><li><a href="global.html#statusMapping">statusMapping</a></li><li><a href="global.html#statusSymbolMapping">statusSymbolMapping</a></li><li><a href="global.html#toggleTOMList">toggleTOMList</a></li><li><a href="global.html#tomsMapping">tomsMapping</a></li><li><a href="global.html#typeaheadCache">typeaheadCache</a></li><li><a href="global.html#userCanDSB">userCanDSB</a></li><li><a href="global.html#userIsDSB">userIsDSB</a></li><li><a href="global.html#userIsManager">userIsManager</a></li><li><a href="global.html#version">version</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.5</a> on Fri Aug 14 2020 09:53:05 GMT+0200 (Mitteleuropäische Sommerzeit)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.5</a> on Tue Sep 22 2020 16:20:44 GMT+0200 (Mitteleuropäische Sommerzeit)
 </footer>
 
 <script> prettyPrint(); </script>

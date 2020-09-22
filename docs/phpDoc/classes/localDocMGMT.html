@@ -126,9 +126,9 @@
 <div id="___" class="container-fluid">    <section class="row-fluid">
         <div class="span2 sidebar">    <div class="accordion" style="margin-bottom: 0">
         <div class="accordion-group">
-            <div class="accordion-heading">                    <a class="accordion-toggle" data-toggle="collapse" data-target="#namespace-46485772"></a>                <a href="../namespaces/default.html" style="margin-left: 30px; padding-left: 0">\</a>
+            <div class="accordion-heading">                    <a class="accordion-toggle" data-toggle="collapse" data-target="#namespace-1867114206"></a>                <a href="../namespaces/default.html" style="margin-left: 30px; padding-left: 0">\</a>
             </div>
-            <div id="namespace-46485772" class="accordion-body collapsein">
+            <div id="namespace-1867114206" class="accordion-body collapsein">
                 <div class="accordion-inner">
                     <ul>                            <li class="class"><a href="../classes/Auth.html">Auth</a></li>                            <li class="class"><a href="../classes/DBCon.html">DBCon</a></li>                            <li class="class"><a href="../classes/demoAuth.html">demoAuth</a></li>                            <li class="class"><a href="../classes/demoDocMGMT.html">demoDocMGMT</a></li>                            <li class="class"><a href="../classes/DocMGMT.html">DocMGMT</a></li>                            <li class="class"><a href="../classes/ldapAuth.html">ldapAuth</a></li>                            <li class="class"><a href="../classes/localDocMGMT.html">localDocMGMT</a></li>                            <li class="class"><a href="../classes/openidAuth.html">openidAuth</a></li>                            <li class="class"><a href="../classes/ssoAuth.html">ssoAuth</a></li>                            <li class="class"><a href="../classes/Utils.html">Utils</a></li>                    </ul>
                 </div>
@@ -144,8 +144,8 @@
                     <nav><a href="../namespaces/default.html">\</a> <i class="icon-level-up"></i>                    </nav>
                     <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal"><i class="icon-code"></i></a>
 
-                    <h1><small>\</small>Auth</h1>
-                    <p><em>Abstrakte Klasse als Vorlage für Authentifizierungsmethoden.</em></p>                    
+                    <h1><small>\</small>localDocMGMT</h1>
+                    <p><em>Klasse zur Implementierung einer lokalen Dateiverwaltung.</em></p><p>Erweitert die Grundklasse <a href="../classes/DocMGMT.html">DocMGMT</a>.</p>                    
                     <section id="summary">
                         <h2>Summary</h2>
                         <section class="row-fluid heading">
@@ -160,7 +160,7 @@
                             </section>
                         </section>
                         <section class="row-fluid public">
-                            <section class="span4">                                    <a href="../classes/Auth.html#method_loginUser" class="">loginUser()</a><br />                                    <a href="../classes/Auth.html#method_logoutUser" class="">logoutUser()</a><br />                                    <a href="../classes/Auth.html#method_checkSession" class="">checkSession()</a><br />                                    <a href="../classes/Auth.html#method_checkUsePerm" class="">checkUsePerm()</a><br />                                    <a href="../classes/Auth.html#method_checkAdminPerm" class="">checkAdminPerm()</a><br />                                    <a href="../classes/Auth.html#method_checkDPOPerm" class="">checkDPOPerm()</a><br />                                    <a href="../classes/Auth.html#method_checkManagerPerm" class="">checkManagerPerm()</a><br />                                    <a href="../classes/Auth.html#method_getUserGroups" class="">getUserGroups()</a><br />                                    <a href="../classes/Auth.html#method_getUserID" class="">getUserID()</a><br />                            </section>
+                            <section class="span4">                                    <a href="../classes/localDocMGMT.html#method_getDocument" class="">getDocument()</a><br />                                    <a href="../classes/localDocMGMT.html#method_addDocument" class="">addDocument()</a><br />                                    <a href="../classes/localDocMGMT.html#method_updateDocument" class="">updateDocument()</a><br />                                    <a href="../classes/localDocMGMT.html#method_deleteDocument" class="">deleteDocument()</a><br />                            </section>
                             <section class="span4">                                    <em>No public properties found</em>                            </section>
                             <section class="span4">                                    <em>No constants found</em>                            </section>
                         </section>
@@ -180,12 +180,13 @@
                         </section>
                     </section>
                 </div>
-                <aside class="span4 detailsbar">                        <span class="label label-info">abstract</span>
+                <aside class="span4 detailsbar">
                     <dl>
                         <dt>File</dt>
-                            <dd><a href="../files/assets.ajax.auth.Auth.class.html"><div class="path-wrapper">assets/ajax/auth/Auth.class.php</div></a></dd>                        <dt>Package</dt>
+                            <dd><a href="../files/assets.ajax.docmgmt.localDocMGMT.class.html"><div class="path-wrapper">assets/ajax/docmgmt/localDocMGMT.class.php</div></a></dd>                        <dt>Package</dt>
                             <dd><div class="namespace-wrapper">Default</div></dd>                        <dt>Class hierarchy</dt>
-                            <dd class="hierarchy">                                <div class="namespace-wrapper">\Auth</div>
+                            <dd class="hierarchy">
+                                        <div class="namespace-wrapper"><a href="../classes/DocMGMT.html">\DocMGMT</a></div>                                <div class="namespace-wrapper">\localDocMGMT</div>
                             </dd>                    </dl>
                     <h2>Tags</h2>
                     <table class="table table-condensed">                        <tr><td colspan="2"><em>None found</em></td></tr>                    </table>
@@ -196,136 +197,113 @@
                 <aside class="span4 detailsbar"></aside>
             </div>    <div class="row-fluid">
         <div class="span8 content class">
-            <a id="method_loginUser" name="method_loginUser" class="anchor"></a>
+            <a id="method_getDocument" name="method_getDocument" class="anchor"></a>
             <article class="method">
-                <h3 class="public">loginUser()</h3>
+                <h3 class="public">getDocument()</h3>
                 <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
-                <pre class="signature" style="margin-right: 54px;">loginUser(string  <span class="argument">$user</span>,string  <span class="argument">$pass</span>): boolean</pre>
-                <p><em>Überprüft die Zugangsdaten eines Nutzers und erstellt eine neue Session.</em></p>                    <h4>Parameters</h4>
+                <pre class="signature" style="margin-right: 54px;">getDocument(integer  <span class="argument">$processID</span>,string  <span class="argument">$fileRef</span>): array&lt;mixed,string&gt;</pre>
+                <p><em>Holt den Inhalt eines Dokuments.</em></p>                    <h4>Parameters</h4>
                     <table class="table table-condensed table-hover">                            <tr>
-                                <td>string</td>
-                                <td>$user</td>
-                                <td><p>Nutzerkennung</p></td>
+                                <td>integer</td>
+                                <td>$processID</td>
+                                <td><p>ID der Dokumentation</p></td>
                             </tr>                            <tr>
                                 <td>string</td>
-                                <td>$pass</td>
-                                <td><p>Nutzerpasswort</p></td>
-                            </tr>                    </table>                    <h4>Returns</h4>boolean                        &mdash;<p>TRUE bei erfolgreicher Anmeldung, sonst FALSE</p>            </article>
+                                <td>$fileRef</td>
+                                <td><p>Dateireferenz</p></td>
+                            </tr>                    </table>                    <h4>Throws</h4>
+                    <dl>                            <dt>\Exception</dt>
+                            <dd></dd>                    </dl>                    <h4>Returns</h4>array&lt;mixed,string&gt;                        &mdash;<p>Dateiname und Dateiinhalt (base64 kodiert) (['fileName' =&gt; 'test.pdf', 'fileContent' =&gt; '...'])</p>            </article>
         </div>
         <aside class="span4 detailsbar">
-            <h1><i class="icon-arrow-down"></i></h1>                <span class="label label-info">abstract</span>            <dl>            </dl>
+            <h1><i class="icon-arrow-down"></i></h1>            <dl>            </dl>
             <h2>Tags</h2>
             <table class="table table-condensed">                    <tr><td colspan="2"><em>None found</em></td></tr>            </table>
         </aside>
     </div>    <div class="row-fluid">
         <div class="span8 content class">
-            <a id="method_logoutUser" name="method_logoutUser" class="anchor"></a>
+            <a id="method_addDocument" name="method_addDocument" class="anchor"></a>
             <article class="method">
-                <h3 class="public">logoutUser()</h3>
+                <h3 class="public">addDocument()</h3>
                 <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
-                <pre class="signature" style="margin-right: 54px;">logoutUser(): boolean</pre>
-                <p><em>Beendet die Session eines Nutzers.</em></p>                    <h4>Returns</h4>boolean                        &mdash;<p>TRUE bei erfolgreicher Abmeldung, sonst FALSE</p>            </article>
+                <pre class="signature" style="margin-right: 54px;">addDocument(integer  <span class="argument">$processID</span>,string  <span class="argument">$fileName</span>,string  <span class="argument">$fileContent</span>): string</pre>
+                <p><em>Fügt ein neues Dokument hinzu.</em></p>                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">                            <tr>
+                                <td>integer</td>
+                                <td>$processID</td>
+                                <td><p>ID der Dokumentation</p></td>
+                            </tr>                            <tr>
+                                <td>string</td>
+                                <td>$fileName</td>
+                                <td><p>Dateiname</p></td>
+                            </tr>                            <tr>
+                                <td>string</td>
+                                <td>$fileContent</td>
+                                <td><p>Dateiinhalt (base64 kodiert)</p></td>
+                            </tr>                    </table>                    <h4>Throws</h4>
+                    <dl>                            <dt>\Exception</dt>
+                            <dd></dd>                    </dl>                    <h4>Returns</h4>string                        &mdash;<p>Referenz zum Dokument</p>            </article>
         </div>
         <aside class="span4 detailsbar">
-            <h1><i class="icon-arrow-down"></i></h1>                <span class="label label-info">abstract</span>            <dl>            </dl>
+            <h1><i class="icon-arrow-down"></i></h1>            <dl>            </dl>
             <h2>Tags</h2>
             <table class="table table-condensed">                    <tr><td colspan="2"><em>None found</em></td></tr>            </table>
         </aside>
     </div>    <div class="row-fluid">
         <div class="span8 content class">
-            <a id="method_checkSession" name="method_checkSession" class="anchor"></a>
+            <a id="method_updateDocument" name="method_updateDocument" class="anchor"></a>
             <article class="method">
-                <h3 class="public">checkSession()</h3>
+                <h3 class="public">updateDocument()</h3>
                 <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
-                <pre class="signature" style="margin-right: 54px;">checkSession(): boolean</pre>
-                <p><em>Überprüft, ob der Nutzer eine aktive Sitzung besitzt.</em></p>                    <h4>Returns</h4>boolean                        &mdash;<p>TRUE falls der Nutzer eingeloggt ist, sonst FALSE</p>            </article>
+                <pre class="signature" style="margin-right: 54px;">updateDocument(integer  <span class="argument">$processID</span>,string  <span class="argument">$fileRef</span>,string  <span class="argument">$fileName</span>,string  <span class="argument">$fileContent</span>): boolean</pre>
+                <p><em>Aktualisiert ein Dokument.</em></p>                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">                            <tr>
+                                <td>integer</td>
+                                <td>$processID</td>
+                                <td><p>ID der Dokumentation</p></td>
+                            </tr>                            <tr>
+                                <td>string</td>
+                                <td>$fileRef</td>
+                                <td><p>Dateireferenz</p></td>
+                            </tr>                            <tr>
+                                <td>string</td>
+                                <td>$fileName</td>
+                                <td><p>Dateiname</p></td>
+                            </tr>                            <tr>
+                                <td>string</td>
+                                <td>$fileContent</td>
+                                <td><p>Dateiinhalt (base64 kodiert)</p></td>
+                            </tr>                    </table>                    <h4>Throws</h4>
+                    <dl>                            <dt>\Exception</dt>
+                            <dd></dd>                    </dl>                    <h4>Returns</h4>boolean                        &mdash;<p>Neue Referenz zum Dokument</p>            </article>
         </div>
         <aside class="span4 detailsbar">
-            <h1><i class="icon-arrow-down"></i></h1>                <span class="label label-info">abstract</span>            <dl>            </dl>
+            <h1><i class="icon-arrow-down"></i></h1>            <dl>            </dl>
             <h2>Tags</h2>
             <table class="table table-condensed">                    <tr><td colspan="2"><em>None found</em></td></tr>            </table>
         </aside>
     </div>    <div class="row-fluid">
         <div class="span8 content class">
-            <a id="method_checkUsePerm" name="method_checkUsePerm" class="anchor"></a>
+            <a id="method_deleteDocument" name="method_deleteDocument" class="anchor"></a>
             <article class="method">
-                <h3 class="public">checkUsePerm()</h3>
+                <h3 class="public">deleteDocument()</h3>
                 <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
-                <pre class="signature" style="margin-right: 54px;">checkUsePerm(): boolean</pre>
-                <p><em>Überprüft, ob Nutzer Berechtigung zur Verwendung des Tools besitzt.</em></p>                    <h4>Returns</h4>boolean                        &mdash;<p>TRUE falls der Nutzer zur Verwendung berechtigt ist, sonst FALSE</p>            </article>
+                <pre class="signature" style="margin-right: 54px;">deleteDocument(integer  <span class="argument">$processID</span>,string  <span class="argument">$fileRef</span>): boolean</pre>
+                <p><em>Löscht ein Dokument.</em></p>                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">                            <tr>
+                                <td>integer</td>
+                                <td>$processID</td>
+                                <td><p>ID der Dokumentation</p></td>
+                            </tr>                            <tr>
+                                <td>string</td>
+                                <td>$fileRef</td>
+                                <td><p>Dateireferenz</p></td>
+                            </tr>                    </table>                    <h4>Throws</h4>
+                    <dl>                            <dt>\Exception</dt>
+                            <dd></dd>                    </dl>                    <h4>Returns</h4>boolean                        &mdash;<p>TRUE bei Erfolg, sonst FALSE</p>            </article>
         </div>
         <aside class="span4 detailsbar">
-            <h1><i class="icon-arrow-down"></i></h1>                <span class="label label-info">abstract</span>            <dl>            </dl>
-            <h2>Tags</h2>
-            <table class="table table-condensed">                    <tr><td colspan="2"><em>None found</em></td></tr>            </table>
-        </aside>
-    </div>    <div class="row-fluid">
-        <div class="span8 content class">
-            <a id="method_checkAdminPerm" name="method_checkAdminPerm" class="anchor"></a>
-            <article class="method">
-                <h3 class="public">checkAdminPerm()</h3>
-                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
-                <pre class="signature" style="margin-right: 54px;">checkAdminPerm(): boolean</pre>
-                <p><em>Überprüft Admin-Berechtigungen.</em></p>                    <h4>Returns</h4>boolean                        &mdash;<p>TRUE falls der Nutzer zur Administration berechtigt ist, sonst FALSE</p>            </article>
-        </div>
-        <aside class="span4 detailsbar">
-            <h1><i class="icon-arrow-down"></i></h1>                <span class="label label-info">abstract</span>            <dl>            </dl>
-            <h2>Tags</h2>
-            <table class="table table-condensed">                    <tr><td colspan="2"><em>None found</em></td></tr>            </table>
-        </aside>
-    </div>    <div class="row-fluid">
-        <div class="span8 content class">
-            <a id="method_checkDPOPerm" name="method_checkDPOPerm" class="anchor"></a>
-            <article class="method">
-                <h3 class="public">checkDPOPerm()</h3>
-                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
-                <pre class="signature" style="margin-right: 54px;">checkDPOPerm(): boolean</pre>
-                <p><em>Überprüft Datenschutzbeauftragten-Berechtigung.</em></p>                    <h4>Returns</h4>boolean                        &mdash;<p>TRUE fallse der Nutzer ein Datenschutzbeauftragter ist, sonst FALSE</p>            </article>
-        </div>
-        <aside class="span4 detailsbar">
-            <h1><i class="icon-arrow-down"></i></h1>                <span class="label label-info">abstract</span>            <dl>            </dl>
-            <h2>Tags</h2>
-            <table class="table table-condensed">                    <tr><td colspan="2"><em>None found</em></td></tr>            </table>
-        </aside>
-    </div>    <div class="row-fluid">
-        <div class="span8 content class">
-            <a id="method_checkManagerPerm" name="method_checkManagerPerm" class="anchor"></a>
-            <article class="method">
-                <h3 class="public">checkManagerPerm()</h3>
-                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
-                <pre class="signature" style="margin-right: 54px;">checkManagerPerm(): boolean</pre>
-                <p><em>Überprüft Bereichsleiter-Berechtigung.</em></p>                    <h4>Returns</h4>boolean                        &mdash;<p>TRUE fallse der Nutzer ein Bereichsleiter ist, sonst FALSE</p>            </article>
-        </div>
-        <aside class="span4 detailsbar">
-            <h1><i class="icon-arrow-down"></i></h1>                <span class="label label-info">abstract</span>            <dl>            </dl>
-            <h2>Tags</h2>
-            <table class="table table-condensed">                    <tr><td colspan="2"><em>None found</em></td></tr>            </table>
-        </aside>
-    </div>    <div class="row-fluid">
-        <div class="span8 content class">
-            <a id="method_getUserGroups" name="method_getUserGroups" class="anchor"></a>
-            <article class="method">
-                <h3 class="public">getUserGroups()</h3>
-                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
-                <pre class="signature" style="margin-right: 54px;">getUserGroups(): array</pre>
-                <p><em>Gibt die Nutzergruppen der eingeloggten Person zurück.</em></p>                    <h4>Returns</h4>array                        &mdash;<p>String-Array der Nutzergruppen</p>            </article>
-        </div>
-        <aside class="span4 detailsbar">
-            <h1><i class="icon-arrow-down"></i></h1>                <span class="label label-info">abstract</span>            <dl>            </dl>
-            <h2>Tags</h2>
-            <table class="table table-condensed">                    <tr><td colspan="2"><em>None found</em></td></tr>            </table>
-        </aside>
-    </div>    <div class="row-fluid">
-        <div class="span8 content class">
-            <a id="method_getUserID" name="method_getUserID" class="anchor"></a>
-            <article class="method">
-                <h3 class="public">getUserID()</h3>
-                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
-                <pre class="signature" style="margin-right: 54px;">getUserID(): string</pre>
-                <p><em>Gibt die Nutzerkennung der eingeloggten Person zurück.</em></p>                    <h4>Returns</h4>string                        &mdash;<p>Nutzerkennung</p>            </article>
-        </div>
-        <aside class="span4 detailsbar">
-            <h1><i class="icon-arrow-down"></i></h1>                <span class="label label-info">abstract</span>            <dl>            </dl>
+            <h1><i class="icon-arrow-down"></i></h1>            <dl>            </dl>
             <h2>Tags</h2>
             <table class="table table-condensed">                    <tr><td colspan="2"><em>None found</em></td></tr>            </table>
         </aside>
@@ -335,10 +313,10 @@
     <div id="source-view" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="source-view-label" aria-hidden="true">
         <div class="modal-header">
             <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-            <h3 id="source-view-label">Auth.class.php</h3>
+            <h3 id="source-view-label">localDocMGMT.class.php</h3>
         </div>
         <div class="modal-body">
-            <pre data-src="../files/assets/ajax/auth/Auth.class.php.txt" class="language-php line-numbers"></pre>
+            <pre data-src="../files/assets/ajax/docmgmt/localDocMGMT.class.php.txt" class="language-php line-numbers"></pre>
         </div>
     </div>
     <footer class="row-fluid">

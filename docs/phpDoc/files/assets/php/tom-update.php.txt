@@ -8,7 +8,7 @@
    * @license AGPL-3.0-or-later <https://www.gnu.org/licenses/agpl.html>
    *
    */
-
+  if(php_sapi_name() !== 'cli') die('cli execution only!');
   $file = new SplFileObject("ENISA_TOM_List.txt");
 
   print "BEGIN TRANSACTION;\n";

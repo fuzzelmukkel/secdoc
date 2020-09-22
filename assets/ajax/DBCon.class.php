@@ -1986,8 +1986,8 @@
      * @param  int      $verfahrensId ID einer Dokumentation
      * @param  string   $description  Beschreibung des Dokuments
      * @param  string   $fileRef      Dateireferenz
-     * @param  bool     $attach       Gibt an, ob die Datei an die Abschluss-PDF angehängt werden soll
      * @param  int      $fileSize     Dateigröße in Bytes
+     * @param  bool     $attach       Gibt an, ob die Datei an die Abschluss-PDF angehängt werden soll
      * @return int ID des neuen Dokuments; -1 bei fehlenden Berechtigungen
      * @throws PDOException
      * @throws Exception
@@ -2037,6 +2037,8 @@
      * @param  int      $docID        ID eines Dokuments
      * @param  string   $description  Neue Beschreibung des Dokuments
      * @param  string   $fileRef      Neue Dateireferenz
+     * @param  int      $fileSize     Dateigröße in Bytes
+     * @param  bool     $attach       Gibt an, ob die Datei an die Abschluss-PDF angehängt werden soll
      * @return bool TRUE bei Erfolg, sonst FALSE
      * @throws PDOException
      * @throws Exception

@@ -17,6 +17,10 @@
    $prog_name    = "SecDoc Demosystem";
    $prog_url     = 'http://localhost/';
 
+   # Wartungsmodus
+   $maintenanceMode    = FALSE;
+   $maintenanceMessage = 'Aktuell wird eine Wartung durchgeführt. Bitte probieren Sie es später nochmal.';
+
    # ----------------------------------------
    # E-Mail-Konfiguration
    # ----------------------------------------
@@ -47,9 +51,9 @@
    $auth_method      = 'demo';         # Aktuell werden die Werte 'ldap', 'sso', 'openid' und 'demo' unterstützt
    $auth_class       = $auth_method . 'Auth';
    $auth_ldap_config = [
-     'host' => '',                     # Utils::getDomainController('xyz.de') oder Servername/-adresse direkt angeben
+     'host' => Utils::getDomainController('wwu.de'),                     # Utils::getDomainController('xyz.de') oder Servername/-adresse direkt angeben
      'port' => 389,
-     'domain' => '',                   # z.B. '@xyz.de'
+     'domain' => '@wwu.de',                   # z.B. '@xyz.de'
      'startTLS' => FALSE,              # Im Betrieb auf TRUE setzen
      'check_user_ip' => TRUE,
      'check_user_agent' => TRUE,
@@ -82,10 +86,10 @@
    # LDAP Datenquelle Konfiguration (anstelle von lokaler SQLite DB)
    # ----------------------------------------
    $ldap_use      = FALSE;       # Für Demo-Modus auf FALSE setzen
-   $ldap_host     = '';          # Utils::getDomainController('xyz.de') oder Servername/-adresse direkt angeben
+   $ldap_host     = Utils::getDomainController('wwu.de');          # Utils::getDomainController('xyz.de') oder Servername/-adresse direkt angeben
    $ldap_port     = 389;
-   $ldap_user     = '';
-   $ldap_pass     = '';
+   $ldap_user     = 'CN=wwuit.cert_ldap_read,OU=Admins,DC=wwu,DC=de';
+   $ldap_pass     = 'bMYLS7#hzJN+E7sp!YBzj?C0G';
    $ldap_startTLS = FALSE;       # Im Betrieb auf TRUE setzen
 
    # Suchparameter für die verschiedenen LDAP-Abrufe ($ als Placeholder für Suchstrings in ldap_filter)
@@ -105,5 +109,12 @@
      'active' => '(|(memberof=CN=u0shk,OU=Projekt-Gruppen,DC=wwu,DC=de)(memberof=CN=u0mitarb,OU=Projekt-Gruppen,DC=wwu,DC=de)(memberof=CN=e0mitwwu,OU=Projekt-Gruppen,DC=wwu,DC=de))(!(memberof=CN=y0msexma,OU=Projekt-Gruppen,DC=wwu,DC=de))',
      'employee' => '(|(memberof=CN=u0mitarb,OU=Projekt-Gruppen,DC=wwu,DC=de)(memberof=CN=e0mitwwu,OU=Projekt-Gruppen,DC=wwu,DC=de))'
    ];
+
+   # ----------------------------------------
+   # Konfiguration der Dokumentenverwaltung
+   # ----------------------------------------
+   $docmgmt_method        = 'demo';  # Aktuell demo und local unterstützt
+   $docmgmt_maxAttachSize = 12 * 1024 * 1024; # Anhangsgröße in Bytes, ab wann eine Warnung angezeigt wird (Default: 12MB)
+   $docmgmt_class         = $docmgmt_method . 'DocMGMT';
 ?>
 

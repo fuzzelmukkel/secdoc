@@ -2,7 +2,7 @@
 <?php
   /**
    * cpe-update.php - CPE-Feed von NIST holen
-   * 
+   *
    * https://nvd.nist.gov/products/cpe
    * wget -O- https://nvd.nist.gov/feeds/xml/cpe/dictionary/official-cpe-dictionary_v2.3.xml.gz | gunzip > cpe.xml
    * cd /www/data/ZIVtest/htdocs/ZIVtest/secdoc/assets/ajax && ./cpe-update.php > /dev/null
@@ -13,7 +13,9 @@
    *
    * TK, 13.06.2018 - Erste Version
    */
-  
+
+  if(php_sapi_name() !== 'cli') die('cli execution only!');
+
   $debug = 0;
 
   # Vorhandenes Verzeichnis laden
@@ -40,7 +42,7 @@
   # Stand überprüfen und ausgeben
   $timestamp = date('Y-m-d H:i:s', strtotime(strval($xml->generator->timestamp)));
   if ($debug) { print "Notice: Common Platform Enumeration (CPE) Dictionary (Stand: $timestamp).\n"; }
-  
+
   print "DELETE FROM CPE;\n";
   print "BEGIN TRANSACTION;\n";
   # Alle Einträge durchgehen und in SQL umwandeln
@@ -55,5 +57,6 @@
       print "INSERT INTO CPE VALUES ('$item_value', '$item_label', '$item_typ');\n";
     }
   }
-  print "END TRANSACTION;\n";  
+  print "END TRANSACTION;\n";
 ?>
+
