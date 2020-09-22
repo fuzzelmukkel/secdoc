@@ -249,7 +249,7 @@
 
     require_once '../vendor/autoload.php';
 
-    global $dbcon, $userId, $pdf_dir, $prog_name, $prog_version, $prog_url;
+    global $dbcon, $userId, $pdf_dir, $prog_name, $prog_version, $prog_url, $docmgmtClass, $docmgmt_maxAttachSize, $temp_dir;
     $res = Utils::searchUsers($userId, TRUE);
     $author = !empty($res) ? $res[0]['name'] : '';
 
@@ -287,11 +287,42 @@
     $mpdf->WriteHTML($style,1);
 
     # Ersetzungen durchführen
-    $lastEditor = $dbcon->getHistorie($verfahrensId)[0];
-    $lastEditor = !empty($lastEditor['Anzeigename']) ? $lastEditor['Anzeigename'] : $lastEditor['Kennung'];
+    $lastUpdate = $dbcon->getHistorie($verfahrensId)[0];
+    $lastEditor = !empty($lastUpdate['Anzeigename']) ? $lastUpdate['Anzeigename'] : $lastUpdate['Kennung'];
     $html = str_replace('$lasteditor$', $lastEditor, $html);
     $html = str_replace('$docurl$', $prog_url . "?id=$verfahrensId", $html);
     $html = str_replace('$baseurl$', $prog_url, $html);
+    $html = str_replace('$lastedited$', $lastUpdate['Datum'], $html);
+
+    # Revisionen holen und einfügen
+    $revisionsHTML = <<<EOH
+      <p class="info-text text-ul text-center">Revisionen</p>
+      <table id="abschluss_revisionen" class="table table-hover btn-table" style="border: 1px solid darkgray; padding: 5px;">
+        <thead>
+          <tr>
+            <th style="border: 1px solid darkgray; padding: 5px; background-color: lightgray;">Revision</th>
+            <th style="border: 1px solid darkgray; padding: 5px; background-color: lightgray;">Datum</th>
+            <th style="border: 1px solid darkgray; padding: 5px; background-color: lightgray;">Bearbeiter</th>
+            <th style="border: 1px solid darkgray; padding: 5px; background-color: lightgray;">Kommentar</th>
+          </tr>
+        </thead>
+        <tbody>
+EOH;
+    foreach($dbcon->listRevisions($verfahrensId) as $revision) {
+      $revisionsHTML .= <<<EOH
+          <tr>
+            <td style="border: 1px solid darkgray; padding: 5px;">{$revision['Revision']}</td>
+            <td style="border: 1px solid darkgray; padding: 5px;">{$revision['Date']}</td>
+            <td style="border: 1px solid darkgray; padding: 5px;">{$revision['Editor']}</td>
+            <td style="border: 1px solid darkgray; padding: 5px;">{$revision['Comment']}</td>
+          </tr>
+EOH;
+    }
+    $revisionsHTML .= <<<EOH
+        </tbody>
+      </table>
+EOH;
+    $html = str_replace('$docrevisions$', $revisionsHTML, $html);
 
     # HTML aufbauen
     $finalHTML = <<<EOH
@@ -318,6 +349,52 @@ EOH;
     $htmlParts = explode('<span class="snip"></span>', $finalHTML);
     foreach($htmlParts as $part) {
       $mpdf->WriteHTML($part,2);
+    }
+
+    if(!$isDraft) {
+      # Angehängte PDF-Dokumente einbetten
+      $attachedDocs = $dbcon->listDocuments($verfahrensId);
+      $attachedDocs = array_filter($attachedDocs, function($doc) { return ($doc['Attach'] > 0 ? TRUE : FALSE); });
+      $attachedSize = 0;
+      if(count($attachedDocs) > 0) {
+        $mpdf->Bookmark("Angehängte Dokumente", 0);
+      }
+      foreach($attachedDocs as $doc) {
+        # Prüfen, ob Anhanggröße überschritten wird
+        $attachedSize += $doc['FileSize'];
+        if($attachedSize > $docmgmt_maxAttachSize) break;
+
+        $file = $docmgmtClass->getDocument($verfahrensId, $doc['FileRef']);
+        $tmpFile = $temp_dir . DIRECTORY_SEPARATOR . "{$verfahrensId}_{$doc['DocID']}.pdf";
+        if(file_put_contents($tmpFile, base64_decode($file['fileContent'])) === FALSE) {
+          error_log("[SecDoc] verwaltung.php -> Konnte temporäre PDF von angehängtem Dokument nicht erstellen (Dokumentation #{$verfahrensId} - Dokument #{$doc['DocID']})");
+          continue;
+        }
+
+        $mpdf->WriteHTML('<pagebreak />');
+
+        $tocTitle = empty($doc['Description']) ? $doc['FileRef'] : $doc['Description'];
+        if(strlen($tocTitle) > 43) {
+          $tocTitle = trim(substr($tocTitle, 0, 40)) . '...';
+        }
+        $mpdf->Bookmark(htmlspecialchars($tocTitle), 1);
+
+        try {
+          $pageCount = $mpdf->SetSourceFile($tmpFile);
+
+          for($c = 1; $c <= $pageCount; $c++) {
+            $mpdf->UseTemplate($mpdf->ImportPage($c));
+            if($c !== $pageCount) $mpdf->WriteHTML('<pagebreak />');
+          }
+        } catch(\Exception $e) {
+          $mpdf->WriteHTML('<h6>Die angehängte PDF konnte nicht gelesen werden! Möglicherweise wird das Format nicht unterstützt.</h6>');
+          error_log("[SecDoc] verwaltung.php -> PDF konnte nicht gelesen werden (Dokument #{$doc['DocID']}) (Fehler: " . $e->getMessage() . ")");
+          unlink($tmpFile);
+          continue;
+        }
+
+        unlink($tmpFile);
+      }
     }
 
     # PDF generieren und zurückgeben
@@ -415,11 +492,15 @@ EOH;
 
     for($p = 0; $p < $procCount; $p++) {
       $filePath = $pdf_dir . DIRECTORY_SEPARATOR . $processes[$p]['ID'] . '.pdf';
+      $procName = trim($processes[$p]['Bezeichnung']);
+      if(strlen($procName) > 43) {
+        $procName = trim(substr($procName, 0, 40)) . '...';
+      }
 
       if(file_exists($filePath)) {
-        $mpdf->setFooter(htmlspecialchars("#{$processes[$p]['ID']}|{$processes[$p]['Bezeichnung']}") . '|{PAGENO}');
-        $mpdf->TOC_Entry(htmlspecialchars("#{$processes[$p]['ID']} - {$processes[$p]['Bezeichnung']}"));
-        $mpdf->Bookmark(htmlspecialchars("#{$processes[$p]['ID']} - {$processes[$p]['Bezeichnung']}", ENT_QUOTES), 0);
+        $mpdf->setFooter(htmlspecialchars("#{$processes[$p]['ID']}|$procName") . '|{PAGENO}');
+        $mpdf->TOC_Entry(htmlspecialchars("$procName (#{$processes[$p]['ID']})"));
+        $mpdf->Bookmark(htmlspecialchars("$procName (#{$processes[$p]['ID']})", ENT_QUOTES), 0);
 
         $pageCount = $mpdf->SetSourceFile($filePath);
 
@@ -431,9 +512,9 @@ EOH;
       }
       # Fehlende PDF, obwohl als "abgeschlossen" gekennzeichnet
       elseif(intval($processes[$p]['Status']) === 2) {
-        $mpdf->setFooter(htmlspecialchars("#{$processes[$p]['ID']}|{$processes[$p]['Bezeichnung']}") . '|{PAGENO}');
-        $mpdf->TOC_Entry(htmlspecialchars("#{$processes[$p]['ID']} - {$processes[$p]['Bezeichnung']}"));
-        $mpdf->Bookmark(htmlspecialchars("#{$processes[$p]['ID']} - {$processes[$p]['Bezeichnung']}", ENT_QUOTES), 0);
+        $mpdf->setFooter(htmlspecialchars("#{$processes[$p]['ID']}|$procName") . '|{PAGENO}');
+        $mpdf->TOC_Entry(htmlspecialchars("$procName (#{$processes[$p]['ID']})"));
+        $mpdf->Bookmark(htmlspecialchars("$procName (#{$processes[$p]['ID']})", ENT_QUOTES), 0);
 
         $mpdf->WriteHTML("<h2>Die PDF-Datei für die Dokumentation #{$processes[$p]['ID']} - '" . htmlspecialchars("{$processes[$p]['Bezeichnung']}") . "' fehlt</h2><p>Die Dokumentation #{$processes[$p]['ID']} ist als abgeschlossen markiert, aber es ist keine PDF-Datei vorhanden!</p><p>Bitte schließen Sie die Dokumentation erneut ab, um eine vollständige PDF-Version zu erzeugen.</p><pagebreak />");
       }
@@ -513,7 +594,12 @@ EOH;
     $titlePage = file_get_contents('../html/pdf_titlepage.inc.html');
     $titlePage = preg_replace('/<h1>.*<\/h1>/', "<h1>Gesamtdokumentation</h1><br /><h2>#{$process['ID']} - {$process['Bezeichnung']}</h2>", $titlePage);
     $titlePage .= '<pagebreak resetpagenum="1" pagenumstyle="1" suppress="off" />';
-    $mpdf->Bookmark(htmlspecialchars("Gesamtdokumentation #{$process['ID']} - {$process['Bezeichnung']}", ENT_QUOTES), 0);
+
+    $docName = trim($process['Bezeichnung']);
+    if(strlen($docName) > 43) {
+      $docName = trim(substr($docName, 0, 40)) . '...';
+    }
+    $mpdf->Bookmark(htmlspecialchars("Gesamtdokumentation #{$process['ID']} - $docName", ENT_QUOTES), 0);
     $mpdf->WriteHTML($titlePage);
 
     # TOC einfügen
@@ -532,9 +618,9 @@ EOH;
     # Hauptverarbeitungstätigkeit hinzufügen
     $filePath = $pdf_dir . DIRECTORY_SEPARATOR . $process['ID'] . '.pdf';
     if(file_exists($filePath)) {
-      $mpdf->SetFooter(htmlspecialchars("#{$process['ID']}|{$process['Bezeichnung']}") . '|{PAGENO}');
-      $mpdf->TOC_Entry(htmlspecialchars("Hauptverarbeitungstätigkeit #{$process['ID']} - {$process['Bezeichnung']}"));
-      $mpdf->Bookmark(htmlspecialchars("Hauptverarbeitungstätigkeit #{$process['ID']} - {$process['Bezeichnung']}", ENT_QUOTES), 0);
+      $mpdf->SetFooter(htmlspecialchars("#{$process['ID']}|$docName") . '|{PAGENO}');
+      $mpdf->TOC_Entry(htmlspecialchars("Hauptverarbeitungstätigkeit #{$process['ID']} - $docName"));
+      $mpdf->Bookmark(htmlspecialchars("Hauptverarbeitungstätigkeit #{$process['ID']} - $docName", ENT_QUOTES), 0);
 
       $pageCount = $mpdf->SetSourceFile($filePath);
 
@@ -570,10 +656,15 @@ EOH;
       for($doc = 0; $doc < $docCount; $doc++) {
         $filePath = $pdf_dir . DIRECTORY_SEPARATOR . $deps[$doc]['id'] . '.pdf';
 
+        $docName = trim($deps[$doc]['name']);
+        if(strlen($docName) > 43) {
+          $docName = trim(substr($docName, 0, 40)) . '...';
+        }
+
         if(file_exists($filePath)) {
-          $mpdf->setFooter(htmlspecialchars("#{$deps[$doc]['id']}|{$deps[$doc]['name']}") . '|{PAGENO}');
-          $mpdf->TOC_Entry(htmlspecialchars("#{$deps[$doc]['id']} - {$deps[$doc]['name']}"), 1);
-          $mpdf->Bookmark(htmlspecialchars("#{$deps[$doc]['id']} - {$deps[$doc]['name']}", ENT_QUOTES), 1);
+          $mpdf->setFooter(htmlspecialchars("#{$deps[$doc]['id']}|$docName") . '|{PAGENO}');
+          $mpdf->TOC_Entry(htmlspecialchars("$docName (#{$deps[$doc]['id']})"), 1);
+          $mpdf->Bookmark(htmlspecialchars("$docName (#{$deps[$doc]['id']})", ENT_QUOTES), 1);
 
           $pageCount = $mpdf->SetSourceFile($filePath);
 
@@ -584,17 +675,17 @@ EOH;
         }
         # Fehlende PDF, obwohl abgeschlossen
         elseif(intval($deps[$doc]['status']) === 2) {
-          $mpdf->setFooter(htmlspecialchars("#{$deps[$doc]['id']}|{$deps[$doc]['name']}") . '|{PAGENO}');
-          $mpdf->TOC_Entry(htmlspecialchars("#{$deps[$doc]['id']} - {$deps[$doc]['name']}"), 1);
-          $mpdf->Bookmark(htmlspecialchars("#{$deps[$doc]['id']} - {$deps[$doc]['name']}", ENT_QUOTES), 1);
+          $mpdf->setFooter(htmlspecialchars("#{$deps[$doc]['id']}|$docName") . '|{PAGENO}');
+          $mpdf->TOC_Entry(htmlspecialchars("$docName (#{$deps[$doc]['id']})"), 1);
+          $mpdf->Bookmark(htmlspecialchars("$docName (#{$deps[$doc]['id']})", ENT_QUOTES), 1);
 
           $mpdf->WriteHTML("<h2>Die PDF-Datei für die Dokumentation #{$deps[$doc]['id']} - '" . htmlspecialchars("{$deps[$doc]['name']}") . "' fehlt</h2><p>Die Dokumentation #{$deps[$doc]['id']} ist als abgeschlossen markiert, aber es ist keine PDF-Datei vorhanden!</p><p>Bitte schließen Sie die Dokumentation erneut ab, um eine vollständige PDF-Version zu erzeugen.</p><p><a href=\"$prog_url?id={$deps[$doc]['id']}\">Dokumentation online einsehen</a></p><pagebreak />");
         }
         # Fehlende PDF, da noch nicht abgeschlossen
         elseif(intval($deps[$doc]['status']) === 0) {
-          $mpdf->setFooter(htmlspecialchars("#{$deps[$doc]['id']}|{$deps[$doc]['name']}") . '|{PAGENO}');
-          $mpdf->TOC_Entry(htmlspecialchars("#{$deps[$doc]['id']} - {$deps[$doc]['name']}"), 1);
-          $mpdf->Bookmark(htmlspecialchars("#{$deps[$doc]['id']} - {$deps[$doc]['name']}", ENT_QUOTES), 1);
+          $mpdf->setFooter(htmlspecialchars("#{$deps[$doc]['id']}|$docName") . '|{PAGENO}');
+          $mpdf->TOC_Entry(htmlspecialchars("$docName (#{$deps[$doc]['id']})"), 1);
+          $mpdf->Bookmark(htmlspecialchars("$docName (#{$deps[$doc]['id']})", ENT_QUOTES), 1);
 
           $mpdf->WriteHTML("<h2>Die PDF-Datei für die Dokumentation #{$deps[$doc]['id']} - '" . htmlspecialchars("{$deps[$doc]['name']}") . "' fehlt</h2><p>Die Dokumentation #{$deps[$doc]['id']} wurde noch nicht abgeschlossen, so dass bisher keine PDF-Datei existiert.</p><p>Bitte schließen Sie die Dokumentation ab, um eine vollständige PDF-Version zu erzeugen.</p><p><a href=\"$prog_url?id={$deps[$doc]['id']}\">Dokumentation online einsehen</a></p><pagebreak />");
         }
@@ -897,6 +988,11 @@ EOH;
     returnError('Es konnte keine DB-Verbindung hergestellt werden! Versuchen Sie es später erneut.');
   }
 
+  # Im Wartungs Fehler bei schreibenden Funktionen ausgeben
+  if($maintenanceMode && in_array($action, ['create', 'update', 'finish', 'delete', 'updatecomment', 'gendraftpdf', 'adddocument', 'updatedocument', 'deletedocument'])) {
+    returnError('Funktion steht im Wartungsmodus nicht zur Verfügung!');
+  }
+
   # Gewünschte Aktion ausführen
   switch($action) {
     # Liest alle Verfahren aus, auf die $userId Zugriff hat
@@ -1052,6 +1148,10 @@ EOH;
 
       if(empty($proc)) {
         returnError('Kein Verfahren mit der angebenen ID konnte gefunden werden oder Sie haben keinen Zugriff darauf!');
+      }
+
+      if($maintenanceMode) {
+        $proc[0]['Editierbar'] = FALSE;
       }
 
       $output['count'] = 1;
@@ -1284,8 +1384,8 @@ EOH;
         returnError('Keine ID für ein Verfahren wurde übergeben!');
       }
 
-      if(empty($data)) {
-        returnError('Kein JSON-kodierter Inhalt zum Abschluss wurde übergeben (title, pdfCode)!');
+      if(empty($data) || !array_key_exists('title', $data) || !array_key_exists('pdfCode', $data) || !array_key_exists('lastupdate', $data) || !array_key_exists('comment', $data)) {
+        returnError('Kein JSON-kodierter Inhalt zum Abschluss wurde übergeben (title, pdfCode, lastupdate, comment)!');
       }
 
       // Überprüfen, ob das Verfahren nicht durch eine andere Person seit dem letzten Laden bearbeitet wurde
@@ -1301,6 +1401,11 @@ EOH;
         returnError('Kein Verfahren wurde aktualisiert, da entweder das Verfahren nicht gefunden wurde oder Sie keine Berechtigung haben!');
       }
 
+      # Revision anlegen
+      $editor = Utils::searchUsers($userId, TRUE);
+      $editor = (empty($editor) || empty($editor[0]['name'])) ? $userId : $editor[0]['name'];
+      $dbcon->addRevision($verfahrensId, htmlspecialchars($data['comment'], ENT_QUOTES, 'UTF-8', FALSE), $editor);
+
       if($success) {
         $output['gentxt'] = generateTXT($dbcon, $userId, $userGroups, $userIsDSB, $verfahrensId);
         $output['genpdf'] = generatePDF(htmlspecialchars($data['title'], ENT_QUOTES, 'UTF-8', FALSE), $data['pdfCode'], $verfahrensId);
@@ -1314,10 +1419,14 @@ EOH;
       break;
     }
 
-    # Löscht ein Verfahren
+    # Löscht ein Verfahren (es wird aktuell nur als gelöscht markiert)
     case 'delete': {
       if(empty($verfahrensId)) {
         returnError('Keine ID für ein Verfahren wurde übergeben!');
+      }
+
+      if(!$userIsDSB && $dbcon->getPermissionLevel($verfahrensId, $userId, $userGroups) < 2) {
+        returnError('Keine Schreibberechtigung für die gewählte Dokumentation!');
       }
 
       $dependencies = $dbcon->getDependencies($verfahrensId, $userId, $userGroups, $userIsDSB);
@@ -1327,20 +1436,6 @@ EOH;
       }
 
       $success = $dbcon->delVerfahren($verfahrensId, $userId, $userGroups, $userIsDSB);
-
-      if($success) {
-        if(!unlink($includes_dir . DIRECTORY_SEPARATOR . $verfahrensId . '.txt')) {
-          error_log('[SecDoc] verwaltung.php -> Konnte Include-Textbaustein zur ID "' . $verfahrensId . '" nicht löschen!');
-        }
-
-        if(!unlink($pdf_dir . DIRECTORY_SEPARATOR . $verfahrensId . '.pdf')) {
-          error_log('[SecDoc] verwaltung.php -> Konnte PDF zur ID "' . $verfahrensId . '" nicht löschen!');
-        }
-
-        if(!unlink($pdf_dir . DIRECTORY_SEPARATOR . $verfahrensId . '_DRAFT.pdf')) {
-          error_log('[SecDoc] verwaltung.php -> Konnte Vorschau-PDF zur ID "' . $verfahrensId . '" nicht löschen!');
-        }
-      }
 
       if(!$success) {
         returnError('Kein Verfahren wurde gelöscht, da entweder das Verfahren nicht gefunden wurde oder Sie keine Berechtigung haben!');
@@ -1729,6 +1824,173 @@ EOH;
       break;
     }
 
+    case 'adddocument': {
+      if(empty($verfahrensId)) {
+        returnError('Keine ID für ein Verfahren wurde übergeben!');
+      }
+      if(empty($data) || empty($data['filename']) || empty($data['filecontent'])) {
+        returnError('Dateiinformationen fehlen!');
+      }
+      if(!$userIsDSB && $dbcon->getPermissionLevel($verfahrensId, $userId, $userGroups) < 2) {
+        returnError('Keine Schreibberechtigung für die gewählte Dokumentation!');
+      }
+
+      # Dateityp prüfen
+      $finfo = finfo_open();
+      if(!in_array(finfo_buffer($finfo, base64_decode($data['filecontent']), FILEINFO_MIME_TYPE), ['application/pdf'])) {
+        returnError('Es können nur PDF Dateien hinterlegt werden!');
+      }
+
+      global $docmgmtClass;
+
+      $newFileRef = $docmgmtClass->addDocument($verfahrensId, $data['filename'], $data['filecontent']);
+
+      if(empty($newFileRef)) returnError('Konnte Dokument nicht abspeichern!');
+
+      $newDocID = $dbcon->addDocument($verfahrensId, (!empty($data['description']) ? $data['description'] : ''), $newFileRef, strlen(base64_decode($data['filecontent'])), (!empty($data['attach']) ? intval($data['attach']) : 0));
+
+      if($newDocID === -1) returnError('Konnte Document nicht in Datenbank anlegen!');
+
+      $output['success'] = TRUE;
+      break;
+    }
+
+    case 'updatedocument': {
+      if(empty($data) || empty($data['docid'])) {
+        returnError('Dokumentinformationen fehlen!');
+      }
+
+      $docDetails = $dbcon->getDocumentDetails(intval($data['docid']));
+
+      if(empty($docDetails)) {
+        returnError('Zu aktualisierendes Dokument existiert nicht!');
+      }
+
+      if(!$userIsDSB && $dbcon->getPermissionLevel($docDetails['ProcessID'], $userId, $userGroups) < 2) {
+        returnError('Keine Schreibberechtigung für die gewählte Dokumentation!');
+      }
+
+      if(!empty($data['filename']) && !empty($data['filecontent'])) {
+        # Dateityp prüfen
+        $finfo = finfo_open();
+        if(!in_array(finfo_buffer($finfo, base64_decode($data['filecontent']), FILEINFO_MIME_TYPE), ['application/pdf'])) {
+          returnError('Es können nur PDF Dateien hinterlegt werden!');
+        }
+
+        global $docmgmtClass;
+
+        $newFileRef  = $docmgmtClass->updateDocument($docDetails['ProcessID'], $docDetails['FileRef'], $data['filename'], $data['filecontent']);
+        $newFileSize = strlen(base64_decode($data['filecontent']));
+
+        if(empty($newFileRef)) returnError('Konnte Dokument nicht abspeichern!');
+      }
+      else {
+        $newFileRef  = $docDetails['FileRef'];
+        $newFileSize = $docDetails['FileSize'];
+      }
+
+      if(!array_key_exists('description', $data)) $data['description'] = $docDetails['Description'];
+
+      if(!$dbcon->updateDocument($docDetails['DocID'], !empty($data['description']) ? $data['description'] : '', $newFileRef, $newFileSize, (array_key_exists('attach', $data) && $data['attach'] ? 1 : 0))) returnError('Konnte Document nicht in Datenbank aktualisieren!');
+
+      $output['success'] = TRUE;
+      break;
+    }
+
+    case 'getdocument': {
+      if(empty($data['docid'])) {
+        returnError('Dokumenten ID fehlt!');
+      }
+
+      $docDetails = $dbcon->getDocumentDetails(intval($data['docid']));
+
+      if(empty($docDetails)) {
+        returnError('Angefragtes Dokument existiert nicht!');
+      }
+
+      if(!$userIsDSB && $dbcon->getPermissionLevel($docDetails['ProcessID'], $userId, $userGroups) < 1) {
+        returnError('Keine Leseberechtigung für das angefragte Dokument!');
+      }
+
+      global $docmgmtClass;
+
+      $file = $docmgmtClass->getDocument($docDetails['ProcessID'], $docDetails['FileRef']);
+
+      if(empty($file) || empty($file['fileName']) || empty($file['fileContent'])) returnError('Dokument konnte nicht gelesen werden!');
+
+      $output['success'] = TRUE;
+      $output['data']    = $file;
+      break;
+    }
+
+    case 'deletedocument': {
+      if(empty($data['docid'])) {
+        returnError('Dokumenten ID fehlt!');
+      }
+
+      $docDetails = $dbcon->getDocumentDetails(intval($data['docid']));
+
+      if(empty($docDetails)) {
+        returnError('Angefragtes Dokument existiert nicht!');
+      }
+
+      if(!$userIsDSB && $dbcon->getPermissionLevel($docDetails['ProcessID'], $userId, $userGroups) < 2) {
+        returnError('Keine Schreibberechtigung für das angefragte Dokument!');
+      }
+
+      global $docmgmtClass;
+
+      $delSuccess = $docmgmtClass->deleteDocument($docDetails['ProcessID'], $docDetails['FileRef']);
+
+      if(!$delSuccess) returnError('Dokument konnte nicht gelöscht werden!');
+
+      $dbcon->deleteDocument(intval($data['docid']));
+
+      $output['success'] = TRUE;
+      break;
+    }
+
+    case 'listdocuments': {
+      if(empty($verfahrensId)) {
+        returnError('Keine ID für ein Verfahren wurde übergeben!');
+      }
+
+      if(!$userIsDSB && $dbcon->getPermissionLevel($verfahrensId, $userId, $userGroups) < 1) {
+        returnError('Keine Leseberechtigung für die angefragte Dokumentation!');
+      }
+
+      $documents = $dbcon->listDocuments($verfahrensId);
+
+      $combinedSize = 0;
+      foreach($documents as $doc) {
+        if($doc['Attach'] > 0) $combinedSize += $doc['FileSize'];
+      }
+
+      $output['success']  = TRUE;
+      $output['data']     = $documents;
+      $output['sizewarn'] = $combinedSize > $docmgmt_maxAttachSize ? TRUE : FALSE;
+      $output['maxsize']  = $docmgmt_maxAttachSize;
+      $output['count']    = count($documents);
+      break;
+    }
+
+    case 'listrevisions': {
+      if(empty($verfahrensId)) {
+        returnError('Keine ID für ein Verfahren wurde übergeben!');
+      }
+
+      if(!$userIsDSB && $dbcon->getPermissionLevel($verfahrensId, $userId, $userGroups) < 1) {
+        returnError('Keine Leseberechtigung für die angefragte Dokumentation!');
+      }
+
+      $revisions = $dbcon->listRevisions($verfahrensId);
+
+      $output['success']  = TRUE;
+      $output['data']     = $revisions;
+      $output['count']    = count($revisions);
+      break;
+    }
+
     case 'login': {
       $output['data']['msg'] = 'Erfolgreich eingeloggt';
       break;
@@ -1741,12 +2003,14 @@ EOH;
 
     case 'loggedin': {
       $output['success'] = TRUE;
+      $output['maintenance'] = $maintenanceMode;
+      if($maintenanceMode) $output['maintenanceMessage'] = $maintenanceMessage;
       break;
     }
 
     # Falls keine bekannte Aktion angegeben wurde
     default: {
-      $output['error'] = 'Es wurde kein oder kein unterstützter Modus (list, listdsb, get, create, update, delete, finish, updatecomment, history, dependencies, searchperson, serachabteilung, searchivv, getusergroups, searchapp, searchos, searchipdns, getaufstellungsort, getstats, gettoms, getsuggestions, gencombinedpdf) angegeben!';
+      $output['error'] = 'Es wurde kein oder kein unterstützter Modus (list, listdsb, get, create, update, delete, finish, updatecomment, history, dependencies, searchperson, serachabteilung, searchivv, getusergroups, searchapp, searchos, searchipdns, getaufstellungsort, getstats, gettoms, getsuggestions, gencombinedpdf, addDocument, listDocuments, updateDocument, deleteDocument, listRevisions) angegeben!';
       break;
     }
   }

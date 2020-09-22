@@ -21,6 +21,7 @@
   require_once('DBCon.class.php');
   require_once('Utils.class.php');
   require_once('auth/Auth.class.php');
+  require_once('docmgmt/DocMGMT.class.php');
 
   # ----------------------------------------
   # Globale Konfiguration setzen
@@ -75,6 +76,10 @@
 
   # Zeitmessung starten
   $timer = array(array('Skript-Start', microtime(TRUE)));
+
+  # Wartungsmodus
+  $maintenanceMode    = FALSE;
+  $maintenanceMessage = 'Aktuell wird eine Wartung durchgeführt. Bitte probieren Sie es später nochmal.';
 
   # ----------------------------------------
   # E-Mail-Konfiguration
@@ -166,9 +171,22 @@
   ];
 
   # ----------------------------------------
+  # Konfiguration der Dokumentenverwaltung
+  # ----------------------------------------
+  $docmgmt_method        = 'local';  # Aktuell demo und local unterstützt
+  $docmgmt_maxAttachSize = 12 * 1024 * 1024; # Anhangsgröße in Bytes, ab wann eine Warnung angezeigt wird (Default: 12MB)
+  $docmgmt_class         = $docmgmt_method . 'DocMGMT';
+
+  # ----------------------------------------
   # Lokale Konfiguration laden
   # ----------------------------------------
   include_once("$secret_dir/secdoc.conf.php");
+
+  # ----------------------------------------
+  # Dokumentenverwaltungsklasse laden
+  # ----------------------------------------
+  if(!@require_once("docmgmt/{$docmgmt_class}.class.php")) throw new Exception("config.inc.php Fehler: Dokumentenverwaltungsklasse '{$docmgmt_class}.class.php' wurde nicht gefunden oder konnte nicht eingebunden werden!");
+  $docmgmtClass = new $docmgmt_class;
 
   # ----------------------------------------
   # Authentifizierungsklasse laden

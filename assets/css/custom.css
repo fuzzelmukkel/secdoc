@@ -63,7 +63,7 @@
     text-align: left;
 }
 
-i[data-toggle="tooltip"] {
+i[data-toggle="tooltip"], .cursor-help {
     cursor: help;
 }
 
@@ -168,8 +168,17 @@ input.customError {
   margin-left: 5px !important;
 }
 
+.mx-10 {
+  margin-left: 10px !important;
+  margin-right: 10px !important;
+}
+
 .pointer {
   cursor: pointer !important;
+}
+
+.cursor-progress {
+  cursor: progress !important;
 }
 
 .strong {

@@ -321,12 +321,14 @@ function myFinish() {
   }
   else {
     savePromise.then(() => {
+      /*
       // Bestätigung zum Abschluss erfragen
       var confirmFinish = confirm('Wollen Sie die Dokumentation abschließen? Im Anschluss wird eine PDF-Version generiert und per E-Mail an alle eingetragenen Ansprechpartner und Ersteller verschickt.');
       if(!confirmFinish) {
         setOverlay(false);
         return;
       }
+      */
 
       // Zeigt eine Fehlermeldung an, wenn Datenkategorien ohne Betroffene vorhanden sind (nur bei Verarbeitungstätigkeiten)
       let currentState = saveAsObject();
@@ -344,40 +346,57 @@ function myFinish() {
         }
       }
 
-      // HTML-Code für PDF-Version generieren
-      var pdfCode = genHTMLforPDF();
+      setOverlay(false);
 
-      $.post(backendPath, JSON.stringify({'action': 'finish', 'debug': debug, 'id':  loadId, 'data': { 'title': $('[name="allgemein_bezeichnung"]').val(), 'pdfCode': pdfCode, 'lastupdate': $('[name="meta_lastupdate"]').val()} })).done((data) => {
-        if(!data['success']) {
-          showError('Abschließen des Verfahrens', data['error']);
-          return;
-        }
-        markedAsFinished = true;
-        status = 2;
+      // Revisions-Kommentar abfragen
+      modal.find('.modal-title').html('<i class="fa fa-archive"></i> Abschluss der Dokumentation');
+      let modalBody = modal.find('.modal-body');
+      modalBody.html('<p>Mit dem Abschluss wird eine neue Revision der Dokumentation angelegt. Es wird eine abschließende PDF-Version generiert und per E-Mail an alle eingetragenen Ansprechpartner und Ersteller verschickt. Sie können optional einen Kommentar zur aktuellen Bearbeitung angeben.</p>');
+      modalBody.append('<div class="form-group"><label>Kommentar</label><textarea class="form-control" id="finishComment" placeholder="Beschreibt die aktuellen Änderungen"></textarea></div>')
+      modalBody.append('<p><button type="button" class="center-block btn btn-fill btn-danger btn-wd" id="confirmFinish"><i class="fa fa-check-circle"></i> Abschließen</button></p>');
 
-        let statusSymbol = status in statusSymbolMapping ? ' <i data-toggle="tooltip" class="fa ' + statusSymbolMapping[status] + '" title="' + statusMapping[status]  + '"></i>' : '';
-        $('#title').find('i').replaceWith(statusSymbol);
-        $('#title').find('i').tooltip();
+      modalBody.find('#confirmFinish').click((evt) => {
+        $(evt.target).prop('disabled', true);
+        setOverlay();
 
-        modal.find('.modal-title').text('Dokumentation abgeschlossen');
-        var modalBody = modal.find('.modal-body');
-        modalBody.html('<p>Hiermit wurde die Dokumentation als abgeschlossen gekennzeichnet.</p>');
-        if(data['genpdf'] && data['genmail']) modalBody.append('<p class="alert alert-success">Die eingetragenen Ansprechpartner wurden per E-Mail informiert und haben eine PDF-Version der Dokumentation erhalten. Die PDF wurde abgespeichert und kann über den folgenden Knopf oder jederzeit in der Liste der ' + modeName[1] + ' heruntergeladen werden.<br /><button class="center-block btn" id="download_pdf">PDF herunterladen</button></p>');
-        if(mode === 'wizproc' && data['gentxt']) modalBody.append('<p class="alert alert-success">Es wurde ein Include-Baustein zur Verwendung in Webseiten bzw. Webanwendungen als Ergänzung zur zentralen Datenschutzerklärung erstellt. Sie können den passenden Text im Webserverpark mit Hilfe von SSI per <code>&lt;!--#include virtual="/sys/secdoc/' + loadId + '.txt" --&gt;</code> bzw. PHP per <code>readfile("/www/data/sys/includes/secdoc/' + loadId + '.txt")</code> einbinden.</p>');
-        if(!data['genpdf']) modalBody.append('<p class="alert alert-danger">Bei der Erstellung der PDF-Datei ist ein Fehler aufgetreten, bitte versuchen Sie es später erneut.</p>');
-        if(!data['genmail']) modalBody.append('<p class="alert alert-danger">Beim Verschicken der E-Mail ist ein Fehler aufgetreten, bitte versuchen Sie es später erneut.</p>');
-        if(mode === 'wizproc' && !data['gentxt']) modalBody.append('<p class="alert alert-danger">Beim Erzeugen des Informations-Textes zum Einbinden in Webseiten ist ein Fehler aufgetreten, bitte versuchen Sie es später erneut.</p>');
-        modalBody.append('<p>Die Dokumentation kann jederzeit aktualisiert werden und über den "Abschluss"-Knopf eine neue E-Mail sowie PDF-Datei erzeugt werden.</p>');
-        modalBody.append('<p><button type="button" class="center-block btn btn-primary" data-dismiss="modal" aria-label="Close">Schließen</button></p>');
+        // HTML-Code für PDF-Version generieren
+        let pdfCode = genHTMLforPDF();
 
-        modalBody.find('#download_pdf').click((evt) => {
-          getPDFFromServer(loadId);
-        });
+        // Abschluss API Aufruf
+        $.post(backendPath, JSON.stringify({'action': 'finish', 'debug': debug, 'id':  loadId, 'data': { 'title': $('[name="allgemein_bezeichnung"]').val(), 'pdfCode': pdfCode, 'lastupdate': $('[name="meta_lastupdate"]').val(), 'comment': modalBody.find('#finishComment').val()} })).done((data) => {
+          if(!data['success']) {
+            showError('Abschließen des Verfahrens', data['error']);
+            return;
+          }
+          markedAsFinished = true;
+          status = 2;
 
-        modal.modal();
-      }).fail((jqXHR, error, errorThrown) => {
-        showError('Abschließen des Verfahrens', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
-      }).always(() => { setOverlay(false); });
+          let statusSymbol = status in statusSymbolMapping ? ' <i data-toggle="tooltip" class="fa ' + statusSymbolMapping[status] + '" title="' + statusMapping[status]  + '"></i>' : '';
+          $('#title').find('i').replaceWith(statusSymbol);
+          $('#title').find('i').tooltip();
+
+          modal.find('.modal-title').html('<i class="fa fa-check-circle"></i> Dokumentation abgeschlossen');
+          var modalBody = modal.find('.modal-body');
+          modalBody.html('<p>Hiermit wurde die Dokumentation als abgeschlossen gekennzeichnet.</p>');
+          if(data['genpdf'] && data['genmail']) modalBody.append('<p class="alert alert-success">Die eingetragenen Ansprechpartner wurden per E-Mail informiert und haben eine PDF-Version der Dokumentation erhalten. Die PDF wurde abgespeichert und kann über den folgenden Knopf oder jederzeit in der Liste der ' + modeName[1] + ' heruntergeladen werden.<br /><button class="center-block btn" id="download_pdf">PDF herunterladen</button></p>');
+          if(mode === 'wizproc' && data['gentxt']) modalBody.append('<p class="alert alert-success">Es wurde ein Include-Baustein zur Verwendung in Webseiten bzw. Webanwendungen als Ergänzung zur zentralen Datenschutzerklärung erstellt. Sie können den passenden Text im Webserverpark mit Hilfe von SSI per <code>&lt;!--#include virtual="/sys/secdoc/' + loadId + '.txt" --&gt;</code> bzw. PHP per <code>readfile("/www/data/sys/includes/secdoc/' + loadId + '.txt")</code> einbinden.</p>');
+          if(!data['genpdf']) modalBody.append('<p class="alert alert-danger">Bei der Erstellung der PDF-Datei ist ein Fehler aufgetreten, bitte versuchen Sie es später erneut.</p>');
+          if(!data['genmail']) modalBody.append('<p class="alert alert-danger">Beim Verschicken der E-Mail ist ein Fehler aufgetreten, bitte versuchen Sie es später erneut.</p>');
+          if(mode === 'wizproc' && !data['gentxt']) modalBody.append('<p class="alert alert-danger">Beim Erzeugen des Informations-Textes zum Einbinden in Webseiten ist ein Fehler aufgetreten, bitte versuchen Sie es später erneut.</p>');
+          modalBody.append('<p>Die Dokumentation kann jederzeit aktualisiert werden und über den "Abschluss"-Knopf eine neue E-Mail sowie PDF-Datei erzeugt werden.</p>');
+          modalBody.append('<p><button type="button" class="center-block btn btn-danger" data-dismiss="modal" aria-label="Close">Schließen</button></p>');
+
+          modalBody.find('#download_pdf').click((evt) => {
+            getPDFFromServer(loadId);
+          });
+
+          modal.modal();
+        }).fail((jqXHR, error, errorThrown) => {
+          showError('Abschließen des Verfahrens', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+        }).always(() => { setOverlay(false); });
+      });
+
+      modal.modal();
     });
   }
 }
@@ -393,7 +412,7 @@ function myFinish() {
 function showVerfahrensliste(startup = false) {
   console.time('Verfahrensliste laden');
   var show = true;
-  modal.find('.modal-title').text('Liste bestehender ' + modeName[1]);
+  modal.find('.modal-title').html('<i class="fa fa-list"></i> Liste bestehender ' + modeName[1]);
   var modalBody = modal.find('.modal-body');
   modalBody.html('<p>Wählen Sie eine Dokumentation aus der Liste, um sie zu bearbeiten oder einzusehen, oder legen Sie eine neue Dokumentation an.</p>');
   modalBody.append('<ul class="nav nav-tabs" role="tablist"><li role="presentation" class="active"><a href="#listeditable" aria-controls="listeditable" role="tab" data-toggle="tab"><i class="fa fa-edit"></i> Editierbare ' + modeName[1] + '</a></li><li role="presentation"><a href="#listreadable" aria-controls="listreadable" role="tab" data-toggle="tab"><i class="fa fa-eye"></i> Einsehbare ' + modeName[1] + '</a></li></ul>');
@@ -428,26 +447,27 @@ function showVerfahrensliste(startup = false) {
       let currId = parseInt(data['data'][c]['ID']);
       let newEntry = $('<tr></tr>');
       let statusSymbol = data['data'][c]['Status'] in statusSymbolMapping ? ' <i class="fa ' + statusSymbolMapping[data['data'][c]['Status']] + '"></i>' : '';
-      data['data'][c]['Status'] = data['data'][c]['Status'] in statusMapping ? statusMapping[data['data'][c]['Status']] : statusMapping['9'];
+      let statusName   = data['data'][c]['Status'] in statusMapping ? statusMapping[data['data'][c]['Status']] : statusMapping['9'];
+      let lastUpdate   = data['data'][c]['Aktualisierung'] ? formatDate(new Date(data['data'][c]['Aktualisierung'].replace(' ', 'T'))) : 'Unbekannt';
 
       // Editierbare/Eigene Verfahren
       if(data['data'][c]['Editierbar'] === true) {
         newEntry.append('<td style="width: 16px;"></td>');
         newEntry.append('<td>' + data['data'][c]['Bezeichnung'] + ' <i data-toggle="tooltip" class="fa fa-info-circle" title="' + data['data'][c]['Beschreibung'] + '"></i></td>');
         newEntry.append('<td>' + data['data'][c]['Fachabteilung']  + '</td>');
-        newEntry.append('<td>' + data['data'][c]['Status'] + statusSymbol + '</td>');
+        newEntry.append('<td>' + statusName + statusSymbol + '</td>');
         newEntry.append('<td>' + data['data'][c]['LetzterBearbeiter'] + ' <i data-toggle="tooltip" class="fa fa-info-circle" title="' + (data['data'][c]['BearbeiterDetails'] ? data['data'][c]['BearbeiterDetails'] : '<Keine Details vorhanden>') + '"></i></td>');
-        newEntry.append('<td>' + data['data'][c]['Aktualisierung'] + '</td>');
-        newEntry.append('<td><div class="btn-group inline"><a class="btn" href="?id=' + currId + (debug ? '&debug=true' : '') + '" target="_blank"><i class="fa fa-edit"></i> Bearbeiten</a><a class="btn" href="?copy=' + currId + '" target="_blank"><i class="fa fa-copy"></i> Kopieren</a><button type="button" title="Die PDF-Version repräsentiert das zuletzt abgeschlossene Verfahren!" data-id="' + currId + '" class="btn pdfdownload" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '><i class="fa fa-file-pdf-o"></i> PDF anzeigen</button></div> <button type="button" data-id="' + currId +'" data-name="' + data['data'][c]['Bezeichnung'] +'" class="btn del btn-danger" ' + (data['data'][c]['Löschbar'] === true ? '' : 'disabled')  + '><i class="fa fa-minus"></i> Löschen</button></td>');
+        newEntry.append('<td>' + lastUpdate + ' <i class="fa fa-history cursor-progress revisionload" data-id="' + currId + '"></i></td>');
+        newEntry.append('<td><div class="btn-group inline"><a class="btn" href="?id=' + currId + (debug ? '&debug=true' : '') + '" target="_blank"><i class="fa fa-edit"></i> Bearbeiten</a><a class="btn" href="?copy=' + currId + '" target="_blank"><i class="fa fa-copy"></i> Kopieren</a><button type="button" title="Die PDF-Version repräsentiert das zuletzt abgeschlossene Verfahren!" data-id="' + currId + '" class="btn pdfdownload" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '><i class="fa fa-file-pdf-o"></i> ' + (parseInt(data['data'][c]['Status']) === 0 ? 'Letzte abgeschlossene PDF anzeigen' : 'PDF anzeigen') + '</button></div> <button type="button" data-id="' + currId +'" data-name="' + data['data'][c]['Bezeichnung'] +'" class="btn del btn-danger" ' + (data['data'][c]['Löschbar'] === true ? '' : 'disabled')  + '><i class="fa fa-minus"></i> Löschen</button></td>');
         modalBody.find('#editableprocesses tbody').append(newEntry);
       }
       else {
         newEntry.append('<td style="width: 16px;"></td>');
         newEntry.append('<td>' + data['data'][c]['Bezeichnung'] + ' <i data-toggle="tooltip" class="fa fa-info-circle" title="' + data['data'][c]['Beschreibung'] + '"></i></td>');
         newEntry.append('<td>' + data['data'][c]['Fachabteilung']  + '</td>');
-        newEntry.append('<td>' + data['data'][c]['Status'] + statusSymbol + '</td>');
-        newEntry.append('<td>' + data['data'][c]['Aktualisierung'] + '</td>');
-        newEntry.append('<td><div class="btn-group inline"><a class="btn" href="?id=' + currId + (debug ? '&debug=true' : '') + '" target="_blank"><i class="fa fa-edit"></i> Anzeigen</a><a class="btn" href="?copy=' + currId + '" target="_blank"><i class="fa fa-copy"></i> Kopieren</a><button type="button" data-id="' + currId + '" class="btn pdfdownload" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '><i class="fa fa-file-pdf-o"></i> PDF anzeigen</button></div></td>');
+        newEntry.append('<td>' + statusName + statusSymbol + '</td>');
+        newEntry.append('<td>' + lastUpdate + ' <i class="fa fa-history cursor-progress revisionload" data-id="' + currId + '"></i></td>');
+        newEntry.append('<td><div class="btn-group inline"><a class="btn" href="?id=' + currId + (debug ? '&debug=true' : '') + '" target="_blank"><i class="fa fa-edit"></i> Anzeigen</a><a class="btn" href="?copy=' + currId + '" target="_blank"><i class="fa fa-copy"></i> Kopieren</a><button type="button" data-id="' + currId + '" class="btn pdfdownload" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '><i class="fa fa-file-pdf-o"></i> ' + (parseInt(data['data'][c]['Status']) === 0 ? 'Letzte abgeschlossene PDF anzeigen' : 'PDF anzeigen') + '</button></div></td>');
         modalBody.find('#readableprocesses tbody').append(newEntry);
       }
     }
@@ -477,6 +497,38 @@ function showVerfahrensliste(startup = false) {
     });
 
     // Tooltips und DataTables initialisieren
+    modalBody.find('i.revisionload').on('mouseover', (evt) => {
+      let evtTarget = $(evt.target);
+
+      if(!evtTarget.hasClass('revisionload')) return;
+
+      evtTarget.addClass('hover');
+      evtTarget.removeClass('revisionload');
+
+      $.get(backendPath, {'action': 'listrevisions', 'debug': debug, 'id':  evtTarget.data('id')}).done((data) => {
+        if(!data['success']) {
+          evtTarget.prop('title', '<Fehler beim Holen der Revisionen>');
+        }
+        else {
+          let revisions = $('<div><p>Letzte 5 Revisionen:</p><ul></ul></div>');
+          let revList   = revisions.find('ul');
+          for(let c=0; c < data['count'] && c < 5; c++) {
+            let revDate = formatDate(new Date(data['data'][c]['Date'].replace(' ', 'T')));
+            revList.append('<li>#' + data['data'][c]['Revision'] + ' - ' + revDate + ' - ' + data['data'][c]['Editor'] + (data['data'][c]['Comment'] !== '' ? ' - ' + data['data'][c]['Comment'] : ''));
+          }
+          if(data['count'] === 0) revList.replaceWith('<Keine Revisionen vorhanden>');
+          evtTarget.prop('title', revisions[0].outerHTML);
+        }
+      }).fail((jqXHR, error, errorThrown) => {
+        evtTarget.prop('title', '<Fehler beim Holen der Revisionen>');
+      }).always(() => {
+        evtTarget.removeClass('cursor-progress').addClass('cursor-help');
+        evtTarget.tooltip({container: 'body', html: true});
+        if(evtTarget.hasClass('hover')) evtTarget.tooltip('show');
+      });
+    });
+    modalBody.find('i.revisionload').on('mouseleave', (evt) => { $(evt.target).removeClass('hover'); });
+
     modalBody.find('[data-toggle="tooltip"]').tooltip({container: 'body'});
     modalBody.find('table').DataTable({
       language: {
@@ -509,11 +561,16 @@ function showVerfahrensliste(startup = false) {
     setOverlay(false);
     console.timeEnd('Verfahrensliste laden');
     if(show) {
-      modalBody.append('<p><span><button type="button" class="btn loadEmpty btn-success btn-fill"><i class="fa fa-plus"></i> Neue Dokumentation anlegen</button></span></p>');
+      modalBody.append('<p><button type="button" class="btn btn-success btn-fill loadEmpty"><i class="fa fa-plus"></i> Neue Dokumentation für ' + modeName[0] + '  anlegen</button><button type="button" class="btn btn-danger ml pull-right" data-dismiss="modal" aria-label="Close">Schließen</button></p>');
       modalBody.find('.loadEmpty').click(function() {
-        history.replaceState({}, document.title, window.location.href.split('?')[0]);
-        loadEmpty();
-        modal.modal('hide');
+        if(!canEdit) {
+          window.location.href = "?page=" + mode;
+        }
+        else {
+          history.replaceState({}, document.title, window.location.href.split('?')[0]);
+          loadEmpty();
+          modal.modal('hide');
+        }
       });
       modal.modal();
     }
@@ -561,7 +618,7 @@ function loadEmpty() {
     removeTableRows(table);
   });
   $('input[type=text], textarea').not('[name$="_nummer[]"]').val('');
-  $('input[type=checkbox]').prop('checked', false).trigger('change');
+  $('input[type=checkbox]:not(#showFinishedTOMs)').prop('checked', false).trigger('change');
   $('.wizard-navigation li a').first().click();
   endlessTables.forEach(function(table) {
     addTableRow(table);
@@ -719,6 +776,9 @@ function loadFromJSON(values, keepAccess = false) {
     showError('Zuordnen gespeicherter Felder', 'Folgende gespeicherte Felder existieren nicht mehr und die eingegebenen Daten gehen beim Speichern verloren: <ul>' + missingFieldsHTML + '</ul>');
   }
 
+  // Angehängte Dokumente laden
+  loadDocuments();
+
   return true;
 }
 
@@ -856,9 +916,9 @@ function saveOnServer() {
 
         // Hinweis anzeigen, falls Status zurückgesetzt wurde
         if(markedAsFinished) {
-          modal.find('.modal-title').text('Status zurückgesetzt');
+          modal.find('.modal-title').html('<i class="fa fa-power-off"></i> Status zurückgesetzt');
           modal.find('.modal-body').html('<p>' + (mode === 'wizproc' ? 'Die Verarbeitungstätigkeit' : 'Das IT-Verfahren') + ' wurde zurück auf "In Bearbeitung" gesetzt und muss erneut abgeschlossen werden, um erneut als "In Betrieb" gekennzeichnet zu werden.</p>');
-          modal.find('.modal-body').append('<p><button type="button" class="center-block btn btn-primary" data-dismiss="modal" aria-label="Close">Schließen</button></p>');
+          modal.find('.modal-body').append('<p><button type="button" class="center-block btn btn-danger" data-dismiss="modal" aria-label="Close">Schließen</button></p>');
           modal.modal();
           markedAsFinished = false;
 
@@ -948,6 +1008,24 @@ function loadFromServer(id) {
           console.error('Fehler beim Abruf von abhängigen Verfahren! HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
         });
       }
+
+      // Revisionen anzeigen
+      if(userIsDSB) {
+        $('#abschluss_revisionen tbody tr').remove();
+        $.get(backendPath, { 'action': 'listrevisions', 'id':  loadId, 'debug': debug}).done(function(data) {
+          if(!data['success']) {
+            console.error('Fehler beim Abruf der Revisionen! Fehler: ' + data['error']);
+            return;
+          }
+
+          data['data'].forEach(revision => {
+            let date = formatDate(new Date(revision['Date'].replace(' ', 'T')));
+            $('#abschluss_revisionen tbody').append('<tr><td>' + revision['Revision'] + '</td><td>' + date + '</td><td>' + revision['Editor'] + '</td><td>' + revision['Comment'] + '</td></tr>');
+          });
+        }).fail((jqXHR, error, errorThrown) => {
+          console.error('Fehler beim Abruf der Revisionen! HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
+        });
+      }
     }
     else {
       loadId = 0;
@@ -994,6 +1072,9 @@ function copyFromServer(id) {
 function genHTMLforPDF(draft = false) {
   console.time('HTML-Code-Generierung für PDF-Datei');
 
+  /* Bearbeitete TOMs wieder einblenden */
+  $('#showFinishedTOMs:not(:checked)').prop('checked', true).trigger('change');
+
   /* Alle leeren Tabellenzeilen entfernen */
   endlessTables.forEach(function(table) {
     removeTableRows(table, true);
@@ -1006,7 +1087,7 @@ function genHTMLforPDF(draft = false) {
   toSend.append('<h3 class="text-center">' + htmlEncode($('[name="allgemein_bezeichnung"]').val()) + '</h3>');
 
   /* Nr. und Änderungsinfo */
-  toSend.append('<table class="table"><tbody><tr><td class="text-left">Nr.: <span style="background-color: lightyellow">' + loadId + '</span></td><td class="text-center">Letzter Bearbeiter: <span style="background-color: lightyellow">$lasteditor$</span></td><td class="text-right">Letzte Aktualisierung: <span style="background-color: lightyellow">' + $('#saveTime').text() + '</span></td></tr></tbody></table>');
+  toSend.append('<table class="table"><tbody><tr><td class="text-left">Nr.: <span style="background-color: lightyellow">' + loadId + '</span></td><td class="text-center">Letzter Bearbeiter: <span style="background-color: lightyellow">$lasteditor$</span></td><td class="text-right">Letzte Aktualisierung: <span style="background-color: lightyellow">$lastedited$</span></td></tr></tbody></table>');
 
   /* Daten aus Wizard einsammeln */
   $('#content').children('.tab-content').children('.tab-pane').each(function(idx) {
@@ -1034,7 +1115,9 @@ function genHTMLforPDF(draft = false) {
   if(draft) {
     toSend.find('#tom_accordion').find('option').each(function() {
       let selectName = $(this).closest('select')[0].name;
-      let selectedValue = $('select[name="' + selectName + '"]').val();
+      let selectedValue = $('select[name="' + selectName + '"]').val(); // .val() funktioniert in Kopie nicht richtig, deswegen Abfrage im Live-DOM
+
+      if(this.value === '-1') return;
 
       if(this.value === selectedValue) {
         $(this).closest('td').append('<p>&#9746; ' + this.text + '</p>');
@@ -1052,20 +1135,40 @@ function genHTMLforPDF(draft = false) {
     if(parseInt($(this).data('risk')) > currRiskLevel) $(this).remove();
   });
 
+  /* Ausgeblendete, bearbeitete TOMs wieder anzeigen */
+  toSend.find('#tom_accordion tr.hidden').removeClass('hidden');
+  toSend.find('#showFinishedTOMs').closest('div').remove();
+
+  /* Bei Abschluss-PDF unbearbeitete Massnahmen entfernen */
+  if(!draft) toSend.find('#tom_accordion select').each(function() {
+    if($('select[name="' + this.name + '"]').val() === '-1') $(this).closest('tr').remove();
+  });
+
   /* Bei Abschluss-PDF Volltexte entfernen */
   if(!draft) toSend.find('#tom_accordion').find('tbody td:nth-child(2) div.tom_desc').remove();
   if(!draft) toSend.find('#tom_accordion').find('tbody td:nth-child(2) p').removeClass('strong');
   if(!draft) toSend.find('#tom_accordion').find('.panel-body > p, .panel-body > a').remove();
 
+  /* Leere TOM-Kategorien entfernen */
+  if(!draft) toSend.find('#tom_accordion table').each(function() {
+    if($(this).find('tbody tr').length === 0) {
+      $(this).closest('.panel-collapse').prev('h6').remove();
+      $(this).closest('.panel-collapse').remove();
+    }
+  });
+
   /* Hinweis-Text bei keinen ausgewählten TOMs */
   if(toSend.find('#toggletoms').find('input[type=checkbox]:checked').length === 0 || toSend.find('#tom_accordion').find('tr').length === 0) {
-    toSend.find('#tom_accordion').append('<h5 class="text-center"><strong>Es wurden keine Technischen und Organisatorischen Maßnahmen ausgewählt.</strong></h5>');
+    toSend.find('#tom_accordion').append('<p class="text-center"><strong>Es wurden keine Technischen und Organisatorischen Maßnahmen ausgewählt.</strong></p>');
   }
 
   /* Link hinzufügen */
   let baseURL = window.location.href.split('?')[0].replace(/x?sso/i, 'www');
   let link = baseURL + '?id=' + loadId;
   toSend.append('<div class="text-center"><p class="info-text text-ul">Dokumentation online einsehen</p><p><a href="$docurl$">$docurl$</a></p></div>');
+
+  /* Platzhalter für Revisionen Hinzufügen */
+  toSend.append('<div>$docrevisions$</div>');
 
   /* Links in Abhängigkeiten anpassen */
   toSend.find('table#abschluss_vonabhaengig tr, table#abschluss_abhaengigkeit tr, table#itverfahren_abhaengigkeit tr, table#verarbeitung_abhaengigkeit tr, table#massnahmen_abhaengigkeit tr').each(function(idx) {
@@ -1115,7 +1218,7 @@ function genHTMLforPDF(draft = false) {
   toSend.find('input[type=radio]').remove();
 
   /* Weitere Design-Anpassunge */
-  toSend.find('.printHide').addClass('hidden');
+  toSend.find('.printHide').remove();
   toSend.find('.printOnly').removeClass('hidden');
   toSend.find('h5').addClass('text-center');
   toSend.find('table, td, th').attr('style', 'border: 1px solid darkgray; padding: 5px;');
@@ -1199,6 +1302,8 @@ function exportJSON() {
     'allgemein_technisch_name'
   ];
 
+  let lastUpdate = currObj['meta_lastupdate'] ? new Date(currObj['meta_lastupdate'].replace(' ', 'T')) : new Date();
+
   // Unnötige Felder entfernen
   fieldsToRemove.forEach((field) => { delete currObj[field]; });
 
@@ -1220,7 +1325,8 @@ function exportJSON() {
 
     // Download-Dialog für JSON-Date
     let download = $('<a></a>');
-    download.attr('href', dataStr).attr('download', 'SecDoc_' + modeName[0] + '_' + currObj.allgemein_bezeichnung.replace(/\W/g, '_') + '_' + loadId + '.json').addClass('hidden');
+
+    download.attr('href', dataStr).attr('download', 'SecDoc_' + modeName[0] + '_' + loadId + '_' + currObj.allgemein_bezeichnung.replace(/\W/g, '_').substr(0, 40) + '_' + lastUpdate.getFullYear() + ('0' + (lastUpdate.getMonth() + 1)).slice(-2) + ('0' + lastUpdate.getDate()).slice(-2) + ('0' + lastUpdate.getHours()).slice(-2) + ('0' + lastUpdate.getMinutes()).slice(-2) + '.json').addClass('hidden');
     $('body').append(download);
     download[0].click();
     download.remove();
@@ -1254,8 +1360,8 @@ function importJSON(file) {
     }
 
     if(loadId !== 0) {
-      modal.find('.modal-title').text('Import einer Dokumentation');
-      modal.find('.modal-body').html('<div class="alert alert-warning">Sie haben bereits eine Dokumentation geladen. Soll eine neue Dokumentation angelegt oder die aktuell geladene Dokumentation überschrieben werden? (Hinweis: Evtl. gesetzte Zugriffsberechtigungen auf der letzten Seite werden nicht überschrieben.)</div>');
+      modal.find('.modal-title').html('<i class="fa fa-upload"></i> Import einer Dokumentation');
+      modal.find('.modal-body').html('<div class="alert alert-warning">Sie haben bereits eine Dokumentation geladen. Soll eine neue Dokumentation angelegt oder die aktuell geladene Dokumentation überschrieben werden?<br/><i class="fa fa-info-circle"></i> <strong>Hinweis:</strong> Evtl. gesetzte Zugriffsberechtigungen auf der letzten Seite werden nicht überschrieben.</div>');
       modal.find('.modal-body').append('<div class="text-center"><button id="importEmptyBtn" class="btn btn-success">Neue Dokumentation</button><button id="importCurrBtn" class="btn btn-danger ml">Vorhandene überschreiben</button></div>');
       modal.modal();
 
@@ -1283,8 +1389,9 @@ function importJSON(file) {
       }
 
       if(loadFromJSON(evt.target.result, true)) {
-        modal.find('.modal-title').text('Import erfolgreich');
+        modal.find('.modal-title').html('<i class="fa fa-check-circle"></i> Import erfolgreich');
         modal.find('.modal-body').html('<div class="alert alert-success">Der Import wurde erfolgreich durchgeführt. Die Änderungen müssen zum Übernehmen abgespeichert werden.</div>');
+        modal.find('.modal-body').append('<p class="text-center"><button type="button" class="btn btn-danger ml" data-dismiss="modal" aria-label="Close">Schließen</button></p>');
         modal.modal();
       }
       else {
@@ -1310,10 +1417,11 @@ function importJSON(file) {
 function showImportDialog() {
   setOverlay(true);
 
-  modal.find('.modal-title').text('Import einer Dokumentation');
+  modal.find('.modal-title').html('<i class="fa fa-upload"></i> Import einer Dokumentation');
   let modalBody = modal.find('.modal-body');
-  modalBody.html('<div class="text-center form-group"><label for="importFile">JSON Datei zum Importieren auswählen</label><input type="file" id="importFile" accept=".json,application/json" class="btn center-block hidden" /><div id="dropFile" class="text-center alert alert-info"></div></div>');
+  modalBody.html('<div class="form-group"><label for="importFile">JSON Datei zum Importieren auswählen</label><input type="file" id="importFile" accept=".json,application/json" class="btn center-block hidden" /><div id="dropFile" class="text-center alert alert-info"></div></div>');
   modalBody.find('#dropFile').append('<p class="text-center"><i class="fa fa-file fa-2x"></i></p><p class="text-center">Klicken für Auswahldialog oder Datei per Drag&Drop hineinziehen...</p>');
+  modalBody.append('<p class="text-center"><button type="button" class="btn btn-danger ml" data-dismiss="modal" aria-label="Close">Schließen</button></p>');
 
   modalBody.find('#dropFile').on('dragover', (evt) => {
     evt.preventDefault();
@@ -1525,7 +1633,7 @@ function initTypeahead(node) {
         }*/
       } :
       { // Einmal alle Daten holen und dann cachen lassen
-        [nodeData['url'] + '_' + nodeData['path']]: {
+        [window.location.origin + '/' + nodeData['url'] + '_' + nodeData['path']]: {
           data: [{"label": "-- keine --"}],
           ajax: {
             type: 'GET',
@@ -1802,14 +1910,15 @@ function generateTOMList() {
 
 /**
  * Filtert die Liste der TOMs anhand des gewählten Risikolevels
- * @param  {Number} risklevel Risikolevel des Verfahrens
+ * @param  {Number}  risklevel    Risikolevel des Verfahrens
+ * @param  {Boolean} showFinished (optional) Bearbeitete Massnahmen einblenden
  * @return {undefined}
  */
-function filterTOMList(risklevel) {
+function filterTOMList(risklevel, showFinished = true) {
   let riskTexts = {
-    '1': 'Der Schutzbedarf ' + (modeNum === 2 ? 'des ' + modeName[0] + 's' : 'der ' + modeName[0]) + ' ist normal. Es sind die <em>Basis</em>-Anforderungen umzusetzen.',
-    '2': 'Der Schutzbedarf ' + (modeNum === 2 ? 'des ' + modeName[0] + 's' : 'der ' + modeName[0]) + ' ist hoch. Es sind vorrangig die <em>Basis</em>-Anforderungen umzusetzen. Darüber hinaus sollten die <em>Standard</em>-Anforderungen umgesetzt werden.',
-    '3': 'Der Schutzbedarf ' + (modeNum === 2 ? 'des ' + modeName[0] + 's' : 'der ' + modeName[0]) + ' ist sehr hoch. Es sind vorrangig die <em>Basis</em>-Anforderungen umzusetzen. Darüber hinaus sollten die <em>Standard</em>-Anforderungen sowie die Anforderungen bei <em>erhöhtem</em> Schutzbedarf umgesetzt werden.'
+    '1': 'Der Schutzbedarf ' + (modeNum === 2 ? 'des ' + modeName[0] + 's' : 'der ' + modeName[0]) + ' ist <em>niedrig</em>. Es sind die <em>Basis</em>-Anforderungen umzusetzen, sofern nicht gravierende Gründe dagegen sprechen.',
+    '2': 'Der Schutzbedarf ' + (modeNum === 2 ? 'des ' + modeName[0] + 's' : 'der ' + modeName[0]) + ' ist <em>normal</em>. Es sind die <em>Basis</em>- sowie die <em>Standard</em>-Anforderungen umzusetzen, sofern sie nicht durch mindestens gleichwertige Alternativen oder die bewusste Akzeptanz des Restrisikos ersetzt werden.',
+    '3': 'Der Schutzbedarf ' + (modeNum === 2 ? 'des ' + modeName[0] + 's' : 'der ' + modeName[0]) + ' ist <em>hoch</em>. Es sind die <em>Basis</em>- sowie die <em>Standard</em>-Anforderungen umzusetzen. Darüber hinaus stellen die Anforderungen bei <em>erhöhtem</em> Schutzbedarf exemplarische Vorschläge dar, was zur Absicherung sinnvoll umzusetzen ist.'
   };
   let tomRows = $('#tom_accordion').find('tbody tr');
 
@@ -1821,6 +1930,8 @@ function filterTOMList(risklevel) {
     let tomRisklevel = parseInt($(this).data('risk'));
     if(tomRisklevel <= risklevel) $(this).removeClass('hidden');
     if(tomRisklevel > risklevel) $(this).addClass('hidden');
+
+    if(!showFinished && $(this).find('select').val() !== '-1') $(this).addClass('hidden');
   });
 
   $('#tom_accordion').find('div.panel').each((idx, elem) => {
@@ -1898,8 +2009,9 @@ function toggleTOMList(evt) {
 
       // Umsetzung
       let tomDropdown = $('<select data-tool="selectpicker" name="massnahmen_' + tomID + '"></select>')
+        .append('<option value="-1" selected>Unbearbeitet</option>')
         .append('<option value="1">Ja</option>')
-        .append('<option value="0" selected>Nein</option>')
+        .append('<option value="0">Nein</option>')
         .append('<option value="2">Teilweise</option>')
         .append('<option value="4">Entbehrlich</option>');
 
@@ -1962,6 +2074,256 @@ function toggleTOMList(evt) {
       }
     }
   }
+}
+
+/**
+ * Zeigt den Dokumenten-Verwaltungs-Dialog an.
+ *
+ * @param  {Number}  docID       (optional) Dokumenten-ID
+ * @param  {String}  fileref     (optional) Dateiname
+ * @param  {String}  description (optional) Dokumenten-Beschreibung
+ * @param  {Boolean} attach      (optional) An Abschluss-PDF anhängen?
+ * @return {undefined}
+ */
+function showDocumentAddDialog(docID = -1, fileref = '', description = '', attach = false) {
+  if(loadId === 0) {
+    showError('Anhängen eines Dokuments', 'Die Dokumentation muss mindestens einmal abgespeichert werden, bevor Dokumente angehängt werden können.');
+    return;
+  }
+
+  /**
+   * Läd eine ausgewählte Datei hoch als Base64 String.
+   *
+   * @private
+   * @param  {Blob}    file        Datei
+   * @param  {Number}  docID       (optional) Dokumenten-ID
+   * @param  {String}  description (optional) Dokumenten-Beschreibung
+   * @param  {Boolean} attach      (optional) An Abschluss-PDF anhängen?
+   * @return {undefined}
+   */
+  function uploadFile(file, docID = -1, description = '', attach = false) {
+    setOverlay(true);
+
+    if(file === undefined) {
+      $.post(backendPath, JSON.stringify({'action': 'updateDocument', 'debug': debug, 'data': {'docid': docID, 'description': description, 'attach': attach}})).done(function(data) {
+        if(data['success']) {
+          loadDocuments();
+        }
+        else {
+          showError('Anhängen eines Dokuments', data['error']);
+        }
+        setOverlay(false);
+      }).fail((jqXHR, error, errorThrown) => {
+        showError('Anhängen eines Dokuments', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+        setOverlay(false);
+      });
+    }
+    else {
+      let reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = function () {
+        $.post(backendPath, JSON.stringify({'action': (docID === -1 ? 'addDocument' : 'updateDocument'), 'id': loadId, 'debug': debug, 'data': {'filename': file.name, 'filecontent': reader.result.split(',')[1], 'docid': docID, 'description': description, 'attach': attach}})).done(function(data) {
+          if(data['success']) {
+            loadDocuments();
+          }
+          else {
+            showError('Anhängen eines Dokuments', data['error']);
+          }
+          setOverlay(false);
+        }).fail((jqXHR, error, errorThrown) => {
+          showError('Anhängen eines Dokuments', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+          setOverlay(false);
+        });
+      };
+      reader.onerror = function (error) {
+        showError('Anhängen eines Dokuments', 'Quelldatei konnte nicht gelesen werden');
+      };
+    }
+  }
+  setOverlay(true);
+
+  modal.find('.modal-title').html('<i class="fa fa-book"></i> Dokumenten-Verwaltung');
+  let modalBody = modal.find('.modal-body');
+  if(docID === -1) {
+    modalBody.html('<div><p>Wählen Sie ein PDF-Dokument aus und geben Sie eine optionale Beschreibung ein.</p><div class="form-group"><label>Beschreibung</label><textarea class="form-control" id="filedesc" placeholder="Beschreibt den Inhalt des Dokuments"></textarea></div><div class="checkbox"><label><input type="checkbox" id="fileAttach" value="1" ' + (attach ? 'checked' : '') + ' /> <strong>An Abschluss-PDF anhängen</strong></label></div><div class="form-group"><label for="uploadFile">Neues PDF-Dokument zum Anhängen auswählen</label><input type="file" id="uploadFile" accept=".pdf,application/pdf" class="btn center-block hidden" /><div id="dropFile" class="alert alert-info"></div><p><strong>Ausgewählte Datei:</strong> <span id="filename">Keine</span></p><p class="text-center"><button id="filesave" class=btn btn-fill btn-success">Speichern</button><button type="button" class="btn btn-danger ml" data-dismiss="modal" aria-label="Close">Schließen</button></p></div></div>');
+  }
+  else {
+    modalBody.html('<div><p>Wählen Sie ein neues PDF-Dokument zum Ersetzen von "' + fileref + '" aus oder passen Sie die Beschreibung an.</p><div class="form-group"><label>Beschreibung</label><textarea class="form-control" id="filedesc" placeholder="Beschreibt den Inhalt des Dokuments"></textarea></div><div class="checkbox"><label><input type="checkbox" id="fileAttach" value="1" ' + (attach ? 'checked' : '') + ' /> <strong>An Abschluss-PDF anhängen</strong></label></div><div class="form-group"><label for="uploadFile">Neues PDF-Dokument zum Ersetzen auswählen</label><input type="file" id="uploadFile" accept=".pdf,application/pdf" class="btn center-block hidden" /><div id="dropFile" class="alert alert-info"></div><p><strong>Ausgewählte Datei:</strong> <span id="filename">Keine</span></p><p class="text-center"><button id="filesave" class=btn btn-fill btn-success">Speichern</button><button type="button" class="btn btn-danger ml" data-dismiss="modal" aria-label="Close">Schließen</button></p></div></div>');
+    $('#filedesc').val(description);
+  }
+
+  modalBody.find('#dropFile').append('<p class="text-center"><i class="fa fa-file fa-2x"></i></p><p class="text-center">Klicken für Auswahldialog oder Datei per Drag&Drop hineinziehen...</p>');
+
+  modalBody.find('#filesave').data('file', undefined);
+
+  modalBody.find('#dropFile').on('dragover', (evt) => {
+    evt.preventDefault();
+    evt.stopPropagation();
+    modalBody.find('#dropFile').removeClass('alert-info').addClass('alert-success');
+  });
+  modalBody.find('#dropFile').on('dragleave', (evt) => {
+    evt.preventDefault();
+    evt.stopPropagation();
+    modalBody.find('#dropFile').removeClass('alert-success').addClass('alert-info');
+  });
+  modalBody.find('#dropFile').on('drop', (evt) => {
+    evt.preventDefault();
+    evt.stopPropagation();
+
+    if(evt.originalEvent.dataTransfer.files.length > 0) {
+      modalBody.find('#filesave').data('file', evt.originalEvent.dataTransfer.files[0]);
+      modalBody.find('#filename').text(evt.originalEvent.dataTransfer.files[0].name);
+    }
+
+    modalBody.find('#dropFile').removeClass('alert-success').addClass('alert-info');
+
+  });
+  modalBody.find('#dropFile').click(() => { modalBody.find('#uploadFile').click(); });
+
+  modalBody.find('#uploadFile').change((evt) => {
+    modalBody.find('#filesave').data('file', evt.target.files[0]);
+    modalBody.find('#filename').text(evt.target.files[0].name);
+  });
+
+  modalBody.find('#filesave').click((evt) => {
+    let evtTarget   = $(evt.target);
+    let fileContent = evtTarget.data('file');
+    let fileDesc    = evtTarget.closest('.modal-content').find('#filedesc').val();
+    let fileAttach  = (evtTarget.closest('.modal-content').find('#fileAttach').prop('checked') ? true : false);
+    let savePromise = saveOnServer();
+
+    if(!savePromise) {
+      setOverlay(false);
+      return;
+    }
+    else {
+      modal.modal('hide');
+      savePromise.then(() => {
+        uploadFile(fileContent, docID, fileDesc, fileAttach);
+      });
+    }
+  });
+
+  modal.modal();
+
+  setOverlay(false);
+}
+
+/**
+ * Listet angehängte Dokumente auf.
+ *
+ * @return {undefined}
+ */
+function loadDocuments() {
+  if(loadId === 0) return;
+
+  $.get(backendPath, { 'action': 'listDocuments', 'id':  loadId, 'debug': debug }).done(function(data) {
+    if(!data['success']) {
+      showError('Laden der angehängten Dokumente', data['error']);
+      return;
+    }
+
+    if(data['sizewarn']) {
+      $('#attached_documents_warning').html('<p><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Die Größe der Dokumente, welche an die Abschluss-PDF angehängt werden sollen, übersteigt die Maximalgröße (' + formatBytes(data['maxsize']) + ')! Bitte nutzen Sie kleinere Dokumente oder beschränken Sie die Auswahl der Dokumente, die an die Abschluss-PDF angehängt werden sollen. Wird die Dokumentation dennoch abgeschlossen, werden nicht alle Dokumente an die Abschluss-PDF angehangen!</p>');
+      $('#attached_documents_warning').removeClass('hidden');
+    }
+    else {
+      $('#attached_documents_warning').addClass('hidden');
+    }
+
+    $('#attached_documents').find('tbody').empty();
+    data['data'].forEach((val, idx) => {
+      let lastUpdate = formatDate(new Date(val['Date'].replace(' ', 'T')));
+      let fileSize   = formatBytes(parseInt(val['FileSize']));
+      $('#attached_documents').find('tbody').append('<tr><td>' + htmlEncode(val['FileRef']) + '</td><td>' + fileSize + '</td><td>' + htmlEncode(val['Description']) + '</td><td><input class="form-check-input attached_documents_toggle" type="checkbox" data-docid="' + val['DocID'] + '" value="1" ' + (val['Attach'] > 0 ? 'checked' : '') + ' ' + (canEdit ? '' : 'disabled') + '></td><td>' + lastUpdate + '</td><td class="text-center"><div class="btn-group"><button type="button" class="attached_documents_show btn" data-docid="' + val['DocID'] + '">Anzeigen</button><button type="button" class="attached_documents_edit btn btn-warning" data-docid="' + val['DocID'] + '" data-docdesc="' + val['Description'] + '" data-fileref="' + val['FileRef'] + '" ' + (canEdit ? '' : 'disabled') + '><i class="fa fa-pencil-square-o"></i> Bearbeiten</button><button type="button" class="attached_documents_del btn btn-danger" data-docid="' + val['DocID'] + '" '+ (canEdit ? '' : 'disabled') + '><i class="fa fa-minus"></i> Löschen</button></div></td></tr>');
+    });
+
+    $('#attached_documents').find('.attached_documents_toggle').change((evt) => {
+      setOverlay();
+
+      let attach = evt.target.checked;
+
+      $.post(backendPath, JSON.stringify({'action': 'updateDocument', 'debug': debug, 'data': {'docid': parseInt($(evt.target).data('docid')), 'attach': attach}})).done((data) => {
+        if(!data['success']) {
+          showError('Bearbeiten des angehängten Dokuments', data['error']);
+          $(evt.target).prop('checked', (attach ? false : true));
+          return;
+        }
+      }).fail((jqXHR, error, errorThrown) => {
+        showError('Bearbeiten des angehängten Dokuments', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+        $(evt.target).prop('checked', (attach ? false : true));
+      }).always(() => {
+        setOverlay(false);
+      });
+    });
+
+    $('#attached_documents').find('.attached_documents_show').click((evt) => {
+      setOverlay();
+
+      $.post(backendPath, JSON.stringify({'action': 'getDocument', 'debug': debug, 'data': {'docid': parseInt($(evt.target).data('docid'))}})).done((data) => {
+        if(!data['success']) {
+          showError('Laden der PDF', data['error']);
+          return;
+        }
+
+        // Base64 Kodierung umkehren und Blob zum Download erstellen
+        let pdfData = atob(data['data']['fileContent'].replace(/\s/g, ''));
+        let pdfBuffer = new Uint8Array(new ArrayBuffer(pdfData.length));
+        for(let i=0; i < pdfData.length; i++) {
+          pdfBuffer[i] = pdfData.charCodeAt(i);
+        }
+        let blob = new Blob([pdfBuffer], {type: "application/pdf"});
+        let fileTitle = data['data']['fileName'];
+
+        // PDF-Anzeige starten (Unterscheidung, ob Edge genutzt wird)
+        if(window.navigator && window.navigator.msSaveOrOpenBlob) {
+          window.navigator.msSaveOrOpenBlob(blob, fileTitle);
+        }
+        else {
+          let url = window.URL.createObjectURL(blob);
+          let download = $('<a></a>');
+          download.attr('href', url).attr('download', fileTitle).addClass('hidden');;
+          $('body').append(download);
+          download[0].click();
+          window.URL.revokeObjectURL(url);
+          download.remove();
+        }
+      }).fail((jqXHR, error, errorThrown) => {
+        showError('Laden der PDF-Datei', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+      }).always(() => {
+        setOverlay(false);
+      });
+    });
+
+    $('#attached_documents').find('.attached_documents_edit').click((evt) => {
+      showDocumentAddDialog(parseInt($(evt.target).data('docid')), $(evt.target).data('fileref'), $(evt.target).data('docdesc'), $(evt.target).closest('tr').find('input.attached_documents_toggle').first()[0].checked);
+    });
+
+    $('#attached_documents').find('.attached_documents_del').click((evt) => {
+      setOverlay();
+
+      let confirmDelete = confirm('Wollen Sie das angehängte Dokument wirklich Löschen? Dies kann nur rückgängig gemacht werden, wenn Sie das Originaldokument erneut anhängen.');
+      if(!confirmDelete) {
+        setOverlay(false);
+        return;
+      }
+
+      $.post(backendPath, JSON.stringify({'action': 'deleteDocument', 'debug': debug, 'data': {'docid': parseInt($(evt.target).data('docid'))}})).done(function(data) {
+        if(!data['success']) {
+          showError('Löschen eines angehängten Dokuments', data['error']);
+        }
+        else {
+          loadDocuments();
+        }
+      }).fail((jqXHR, error, errorThrown) => {
+        showError('Löschen eines angehängten Dokuments', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+      }).always(() => {
+        setOverlay(false);
+      });
+    });
+  }).fail((jqXHR, error, errorThrown) => {
+    showError('Laden der angehängten Dokumente', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+  });
 }
 
 debugLog('Beginne Setup...');
@@ -2145,7 +2507,7 @@ Promise.all(promises).then(function() {
     let targetType    = $(this).data('type');
     let targetTitle   = $(this).closest('tr').find('input[type="text"]').first().val();
 
-    modal.find('.modal-title').text('Abhängigkeit anlegen');
+    modal.find('.modal-title').html('<i class="fa fa-exchange"></i> Abhängigkeit anlegen');
     modal.find('.modal-body').html('<div></div>');
     modal.find('.modal-body > div').append('<p>Hier können Sie die Abhängigkeit von ' + modeMapping[targetType][4] + ' noch nicht existierenden ' + modeMapping[targetType][0] + ' vorläufig anlegen, damit die Verknüpfung direkt angelegt werden kann. ' + modeMapping[targetType][2] + ' ' + modeMapping[targetType][0] + ' kann später wie jede andere Dokumentation bearbeitet und ergänzt werden.</p>');
     modal.find('.modal-body > div').append('<p class="alert alert-danger hidden">Bitte füllen Sie alle Felder aus, um die Abhängigkeit anlegen zu können!</p>');
@@ -2155,7 +2517,7 @@ Promise.all(promises).then(function() {
 
     modal.find('input[name="quick_title"]').val(targetTitle);
 
-    modal.find('.modal-body').append('<p class="text-center"><button type="button" class="btn btn-success" id="quickSave">Anlegen & Speichern</button><button type="button" class="ml btn btn-danger" data-dismiss="modal" aria-label="Close">Abbrechen</button></p>');
+    modal.find('.modal-body').append('<p class="text-center"><button type="button" class="btn btn-success" id="quickSave">Speichern</button><button type="button" class="ml btn btn-danger" data-dismiss="modal" aria-label="Close">Abbrechen</button></p>');
 
     // Tooltips, Typeahead und Buttons
     modal.find('.modal-body i').tooltip();
@@ -2236,6 +2598,16 @@ Promise.all(promises).then(function() {
     filterTOMList(parseInt($(this).val()));
   });
 
+  // Bearbeitete Maßnahmen in TOM Liste anzeigen/verbergen
+  $('#showFinishedTOMs').change(function() {
+    if(this.checked) {
+      filterTOMList(parseInt($('[name=massnahmen_risiko]:checked').val()), true);  // default
+    }
+    else {
+      filterTOMList(parseInt($('[name=massnahmen_risiko]:checked').val()), false);
+    }
+  });
+
   console.timeEnd('Dynamische Inhalte initialisieren');
 
   /*
@@ -2247,7 +2619,7 @@ Promise.all(promises).then(function() {
   setSaveLabel('failed');
 
   // Standardmäßig alle Checkboxen nicht auswählen
-  $('input[type=checkbox]').prop('checked', false);
+  $('input[type=checkbox]:not(#showFinishedTOMs)').prop('checked', false);
 
   // Tooltips initialisieren
   $('[data-toggle="tooltip"]').tooltip({
@@ -2283,25 +2655,37 @@ Promise.all(promises).then(function() {
     $(this).prop('disabled', true);
     setOverlay();
 
-    if(canEdit) saveOnServer();
+    let savePromise = Promise.resolve();
+    if(canEdit && changedValues) {
+      savePromise = saveOnServer();
+    }
 
-    let htmlForPDF = genHTMLforPDF(true);
-
-    $.post(backendPath, JSON.stringify({'action':'gendraftpdf', 'id': loadId, 'data': {'title': $('[name="allgemein_bezeichnung"]').val(), 'pdfCode': htmlForPDF}, 'debug': debug})).done((data) => {
-      if(!data['success']) {
-        showError('Erzeugen der Vorschau-PDF', data['error']);
-        $(this).prop('disabled', false);
-        setOverlay(false);
-        return;
-      }
-
-      getPDFFromServer(loadId, true);
-      $(this).prop('disabled', false);
-    }).fail((jqXHR, error, errorThrown) => {
-      showError('Erzeugen der Vorschau-PDF', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
-      $(this).prop('disabled', false);
+    if(!savePromise) {
+      $('#dlDraftPDF').prop('disabled', false);
       setOverlay(false);
-    })
+      return;
+    }
+    else {
+      savePromise.then(function() {
+        let htmlForPDF = genHTMLforPDF(true);
+
+        $.post(backendPath, JSON.stringify({'action':'gendraftpdf', 'id': loadId, 'data': {'title': $('[name="allgemein_bezeichnung"]').val(), 'pdfCode': htmlForPDF}, 'debug': debug})).done((data) => {
+          if(!data['success']) {
+            showError('Erzeugen der Vorschau-PDF', data['error']);
+            $('#dlDraftPDF').prop('disabled', false);
+            setOverlay(false);
+            return;
+          }
+
+          getPDFFromServer(loadId, true);
+          $('#dlDraftPDF').prop('disabled', false);
+        }).fail((jqXHR, error, errorThrown) => {
+          showError('Erzeugen der Vorschau-PDF', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+          $('#dlDraftPDF').prop('disabled', false);
+          setOverlay(false);
+        });
+      });
+    }
   });
 
   // Titel anhand Bezeichnung aktualisieren
@@ -2350,6 +2734,11 @@ Promise.all(promises).then(function() {
       }, autoSaveWait);
       $('#autosaveLabel').html('<i class="fa fa-hourglass"></i> <span>Automatisches Speichern alle ' + (autoSaveWait / 60000) + ' Mins.</span>');
     }
+  });
+
+  // Button für neue angehängte Dokumente
+  $('#attached_documents_add').click(() => {
+    showDocumentAddDialog();
   });
 
   console.timeEnd('Spezielle Handler initialisieren');

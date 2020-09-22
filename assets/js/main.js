@@ -186,6 +186,50 @@ function htmlDecode(input) {
 }
 
 /**
+ * Wandelt Dateigrößen in Bytes in eine lesbare Größenanzeige um
+ * @see {@link https://stackoverflow.com/a/18650828}
+ * @param  {Number} bytes    Dateigröße in Bytes
+ * @param  {Number} decimals (optional) Nachkommanstellen
+ * @return {String} Dateigröße (human-readable)
+ */
+function formatBytes(bytes, decimals = 2) {
+    if (bytes === 0) return '0 Bytes';
+
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+}
+
+/**
+ * Datum in ein gut lesbares Format bringen.
+ * @param  {Date} dateToFormat Datumsobjekt
+ * @return {String} Gut lesbares Datum als String
+ */
+function formatDate(dateToFormat) {
+  let currDate      = new Date();
+  let formattedDate = '';
+
+  if(dateToFormat.getFullYear() === currDate.getFullYear() && dateToFormat.getMonth() === currDate.getMonth() && dateToFormat.getDate() === currDate.getDate()) {
+    formattedDate = 'Heute ';
+    formattedDate += ('0' + dateToFormat.getHours()).slice(-2) + ':' + ('0' + dateToFormat.getMinutes()).slice(-2) + ':' + ('0' + dateToFormat.getSeconds()).slice(-2);
+  }
+  else if(dateToFormat.getFullYear() === currDate.getFullYear() && dateToFormat.getMonth() === currDate.getMonth() && dateToFormat.getDate() === (currDate.getDate() - 1)) {
+    formattedDate = 'Gestern ';
+    formattedDate += ('0' + dateToFormat.getHours()).slice(-2) + ':' + ('0' + dateToFormat.getMinutes()).slice(-2) + ':' + ('0' + dateToFormat.getSeconds()).slice(-2);
+  }
+  else {
+    let dateOptions = { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' };
+    formattedDate = dateToFormat.toLocaleDateString('de-DE', dateOptions);
+  }
+
+  return formattedDate;
+}
+
+/**
  * Generiert eine Debug-Ausgabe, falls der globale debug-Parameter 'true' ist
  * @param {Object} msg Ausgabenachricht (kann null sein) (wird mittels console.log(msg) ausgegeben)
  * @param {Object} obj (optional) Objekt, was formatiert ausgegeben werden soll (wird mittels console.table(obj) ausgegeben)
@@ -204,8 +248,7 @@ function debugLog(msg, obj = null) {
  * @returns {undefined}
  */
 function setSaveLabel(action, currDate = new Date()) {
-  var options = { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' };
-  var saveTime = currDate.toLocaleDateString('de-DE', options);
+  var saveTime = formatDate(currDate);
   $('#successLabel, #savingLabel, #failedLabel, #refreshedLabel').addClass('hidden');
   switch(action) {
     case 'saving':
@@ -247,7 +290,7 @@ function setOverlay(active = true) {
  */
 function showError(action, message = false, httperror = false) {
   console.error('Fehler beim ' + action + ' - Fehlermeldung: ' + message + (httperror ? (' - HTTP Error: ' + httperror) : ''));
-  modal.find('.modal-title').text('Fehler');
+  modal.find('.modal-title').html('<i class="fa fa-exclamation-circle"></i> Fehler');
   if(message) {
     modal.find('.modal-body').html('<div class="alert alert-danger"><h3>Beim ' + action + ' ist ein Fehler aufgetreten!</h3><p><strong>Fehlermeldung:</strong> ' + message + '</p></div>');
   }
@@ -267,7 +310,7 @@ function showError(action, message = false, httperror = false) {
       modal.find('.modal-body').html('<div class="alert alert-danger"><h3>Beim ' + action + ' ist ein unbekannter Fehler aufgetreten! Bitte versuchen Sie es in Kürze erneut!</h3></div>');
     }
   }
-  modal.find('.modal-body').append('<p><button type="button" class="center-block btn btn-primary" data-dismiss="modal" aria-label="Close">Schließen</button></p>');
+  modal.find('.modal-body').append('<p><button type="button" class="center-block btn btn-danger" data-dismiss="modal" aria-label="Close">Schließen</button></p>');
   modal.modal();
   modal.find('button[aria-label=Close]').focus();
 }
@@ -288,9 +331,9 @@ function getPDFFromServer(id, draft = false) {
     }
 
     if(!draft && data['data']['status'] === 0) {
-      modal.find('.modal-title').text('Hinweis');
+      modal.find('.modal-title').html('<i class="fa fa-info-circle"></i> Hinweis');
       modal.find('.modal-body').html('<div class="alert alert-warning"><p>Da sich das Verfahren wieder im Zustand "In Bearbeitung" befindet, stimmen die Angaben in der PDF-Datei unter Umständen nicht mehr mit der aktualisierten Version überein! Die PDF-Datei wird nur bei einem erneuten Abschluss des Verfahrens aktualisiert.</p></div>');
-      modal.find('.modal-body').append('<p><button type="button" class="center-block btn btn-primary" data-dismiss="modal" aria-label="Close">Schließen</button></p>');
+      modal.find('.modal-body').append('<p><button type="button" class="center-block btn btn-danger" data-dismiss="modal" aria-label="Close">Schließen</button></p>');
       modal.modal();
     }
 
@@ -303,7 +346,7 @@ function getPDFFromServer(id, draft = false) {
     let blob = new Blob([pdfBuffer], {type: "application/pdf"});
     let lastUpdate = data['data']['lastupdate'] ? new Date(data['data']['lastupdate'].replace(' ', 'T')) : new Date();  // Safari benötigt das Format YYYY-MM-DDTHH:MM:SS (mit T)
     let typeName = {1: 'Verarbeitungstätigkeit', 2: 'IT-Verfahren', 3: 'Fachapplikation', 4: 'Übergreifende_Massnahme'};
-    let fileTitle = 'SecDoc_' + typeName[data['data']['type']] + '_' + id + '_' + data['data']['title'].substr(0, 30) + '_' + lastUpdate.getFullYear() + ('0' + (lastUpdate.getMonth() + 1)).slice(-2) + ('0' + lastUpdate.getDate()).slice(-2) + ('0' + lastUpdate.getHours()).slice(-2) + ('0' + lastUpdate.getMinutes()).slice(-2) + (draft ? '_DRAFT' : '' );
+    let fileTitle = 'SecDoc_' + typeName[data['data']['type']] + '_' + id + '_' + data['data']['title'].replace(/\W/g, '_').substr(0, 40) + '_' + lastUpdate.getFullYear() + ('0' + (lastUpdate.getMonth() + 1)).slice(-2) + ('0' + lastUpdate.getDate()).slice(-2) + ('0' + lastUpdate.getHours()).slice(-2) + ('0' + lastUpdate.getMinutes()).slice(-2) + (draft ? '_DRAFT' : '' );
     fileTitle = fileTitle.replace(/[/\\?%*:|"<>\.,;=\s]/g, '_');
     fileTitle += '.pdf';
 
@@ -454,6 +497,10 @@ $('#logoutLabel').click(() => {
  */
 $.getJSON(backendPath + '?action=loggedin' + (debug ? '&debug=true' : '')).done((data) => {
   if(data.length !== 0 && data['success']) {
+    if(data['maintenance']) {
+      $('#maintenanceAlert').removeClass('hidden');
+      if(data['maintenanceMessage'] !== '') $('#maintenanceMessage').text(data['maintenanceMessage']);
+    }
     loadSubpage();
   }
   else {

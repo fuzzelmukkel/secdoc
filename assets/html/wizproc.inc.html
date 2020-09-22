@@ -419,13 +419,13 @@
       <div class="col-sm-offset-1 col-sm-10 text-center">
         <div class="btn-group">
           <label class="btn btn-success">
-            <input type="radio" name="massnahmen_risiko" value="1" /> Normal
+            <input type="radio" name="massnahmen_risiko" value="1" /> Niedrig
           </label>
           <label class="btn btn-warning">
-            <input type="radio" name="massnahmen_risiko" value="2" checked /> Hoch
+            <input type="radio" name="massnahmen_risiko" value="2" checked /> Normal
           </label>
           <label class="btn btn-danger">
-            <input type="radio" name="massnahmen_risiko" value="3" /> Sehr hoch
+            <input type="radio" name="massnahmen_risiko" value="3" /> Hoch
           </label>
         </div>
         <p class="mt" id="riskText"></p>
@@ -433,9 +433,9 @@
       <div class="col-sm-offset-1 col-sm-10">
         <h5 class="info-text text-ul">Technische und organisatorische Maßnahmen <i data-toggle="tooltip" data-html="true" title="Vergleiche
 Art. 25 DSGVO Datenschutz durch Technikgestaltung und durch datenschutzfreundliche Voreinstellungen, Art. 32 DSGVO Sicherheit der Verarbeitung" class="fa fa-question-circle-o fa-lg"></i></h5>
-        <p class="printHide">Gibt es ein Datenschutz- und Datensicherheitskonzept oder ein anderes Dokument, das die technischen und organisatorischen Maßnahmen enthält, müssen die Angaben nicht hier erfolgen, sondern es kann stattdessen (oder zusätzlich) auf der letzten Seite auf dieses Dokument verwiesen werden. In diesem Fall bitte das entsprechende Dokument mit genauer Bezeichnung und unter Angabe von Version und/oder Stand benennen.</p>
+        <p class="printHide">Gibt es ein Datenschutz- und Datensicherheitskonzept oder ein anderes Dokument, das die technischen und organisatorischen Maßnahmen enthält, müssen die Angaben nicht zwingend hier erfolgen, sondern es kann stattdessen (oder zusätzlich) auf der letzten Seite auf dieses Dokument verwiesen werden.</p>
         <h6 class="info-text text-ul-dot printHide">1. Bausteine auswählen</h6>
-        <p class="printHide">Das <a href="https://www.bsi.bund.de/DE/Themen/ITGrundschutz/ITGrundschutzKompendium/itgrundschutzKompendium_node.html" target="_blank"><em>IT-Grundschutz-Kompendium</em></a> des <abbr title="Bundesamt für Sicherheit in der Informationstechnik">BSI</abbr> enthält für unterschiedliche Vorgehensweisen, Komponenten und IT-Systeme Erläuterungen zur Gefährdungslage, Sicherheitsanforderungen und weiterführende Informationen, die jeweils in einem Baustein zusammengefasst sind. Es ist aufgrund der Baustein-Struktur modular aufgebaut und legt einen Fokus auf die Darstellung der wesentlichen Sicherheitsanforderungen in den Bausteinen. Seine grundlegende Struktur unterteilt die Bausteine in prozess- und systemorientierte Bausteine, zudem sind sie nach Themen in ein Schichtenmodell einsortiert. Wählen Sie in der folgenden Liste die für Ihre Verarbeitungstätigkeit relevanten Bausteine aus.</p>
+        <p class="printHide">Wählen Sie in der folgenden Liste die für Ihre Verarbeitungstätigkeit relevanten Bausteine aus.</p>
       </div>
       <div class="col-sm-offset-1 col-sm-10 printHide" id="toggletoms">
         <ul class="nav nav-tabs printHide" role="tablist">
@@ -446,8 +446,12 @@ Art. 25 DSGVO Datenschutz durch Technikgestaltung und durch datenschutzfreundlic
       <div class="col-sm-offset-1 col-sm-10">
         <h6 class="info-text text-ul-dot printHide">2. Sicherheitsmaßnahmen angeben</h6>
         <p class="printHide">Klicken Sie auf die Bausteine, um die jeweiligen Anforderungen anzuzeigen und den Umsetzungsstand sowie die Sicherheitsmaßnahmen anzugeben.</p>
+        <div class="checkbox text-center printHide">
+          <label><input type="checkbox" id="showFinishedTOMs" value="1" checked /> <strong>Bereits bearbeitete Anforderungen anzeigen</strong> <i data-toggle="tooltip" title="Wechselt zwischen der Anzeige aller Anforderungen oder nur unbearbeiteter Anforderungen." class="fa fa-question-circle-o fa-lg"></i></label>
+        </div>
         <div class="panel-group" id="tom_accordion" role="tablist" aria-multiselectable="true">
         </div>
+        <p style="padding:10px" class="bg-warning printHide"><i class="fa fa-info-circle"></i> <strong>Hinweis:</strong> Über die Vorschau-PDF erhalten Sie eine druckbare Checkliste aller Anforderungen.</p>
       </div>
     </div>
   </div>
@@ -584,66 +588,54 @@ Art. 35 DSGVO" class="fa fa-question-circle-o fa-lg"></i></h6>
         </ul>
       </div>
 
-      <div class="col-sm-offset-1 col-sm-10">
-        <h6 class="info-text text-ul-dot">Referenzdokumente</h6>
-        <p class="printHide">Hier haben Sie die Möglichkeit auf bereits vorhandene Dokumente zu verweisen, die beim fachlichen oder technischen Verantwortlichen eingesehen werden können.</p>
-        <ul class="list-unstyled">
-          <li>
-            <div class="form-check">
-              <label class="form-check-label"><input class="form-check-input additionalDocs" name="abschluss_dokumente_risikoanalyse" type="checkbox" value="1"> Datenschutz-Folgeabschätzung / Risikoanalyse</label>
-              <input type="text" class="form-control docInputs hidden" name="abschluss_dokumente_risikoanalyse_url" placeholder="URL zu Datei-Speicherort bzw. Hinweis auf Dokument-Ablageort">
-            </div>
-          </li>
-          <li>
-            <div class="form-check">
-              <label class="form-check-label"><input class="form-check-input additionalDocs" name="abschluss_dokumente_datensicherheitbeschreibung" type="checkbox" value="1"> Allgemeine Datensicherheitsbeschreibung</label>
-              <input type="text" class="form-control docInputs hidden" name="abschluss_dokumente_datensicherheitbeschreibung_url" placeholder="URL zu Datei-Speicherort bzw. Hinweis auf Dokument-Ablageort">
-            </div>
-          </li>
-          <li>
-            <div class="form-check">
-              <label class="form-check-label"><input class="form-check-input additionalDocs" name="abschluss_dokumente_datensicherheitskonzept" type="checkbox" value="1"> Umfassendes Datensicherheitskonzept</label>
-              <input type="text" class="form-control docInputs hidden" name="abschluss_dokumente_datensicherheitskonzept_url" placeholder="URL zu Datei-Speicherort bzw. Hinweis auf Dokument-Ablageort">
-            </div>
-          </li>
-          <li>
-            <div class="form-check">
-              <label class="form-check-label"><input class="form-check-input additionalDocs" name="abschluss_dokumente_wiederanlaufkonzept" type="checkbox" value="1"> Notfallkonzept / Wiederanlaufkonzept</label>
-              <input type="text" class="form-control docInputs hidden" name="abschluss_dokumente_wiederanlaufkonzept_url" placeholder="URL zu Datei-Speicherort bzw. Hinweis auf Dokument-Ablageort">
-            </div>
-          </li>
-          <li>
-            <div class="form-check">
-              <label class="form-check-label"><input class="form-check-input additionalDocs" name="abschluss_dokumente_netzstruktur" type="checkbox" value="1"> Netzstrukturbeschreibung</label>
-              <input type="text" class="form-control docInputs hidden" name="abschluss_dokumente_netzstruktur_url" placeholder="URL zu Datei-Speicherort bzw. Hinweis auf Dokument-Ablageort">
-            </div>
-          </li>
-          <li>
-            <div class="form-check">
-              <label class="form-check-label"><input class="form-check-input additionalDocs" name="abschluss_dokumente_verhaltensregeln" type="checkbox" value="1"> Interne Verhaltensregeln</label>
-              <input type="text" class="form-control docInputs hidden" name="abschluss_dokumente_verhaltensregeln_url" placeholder="URL zu Datei-Speicherort bzw. Hinweis auf Dokument-Ablageort">
-            </div>
-          </li>
-          <li>
-            <div class="form-check">
-              <label class="form-check-label"><input class="form-check-input additionalDocs" name="abschluss_dokumente_sonstige_label" type="checkbox" value="1"> Sonstige Dokumente</label>
-              <input type="text" class="form-control docInputs hidden" name="abschluss_dokumente_sonstige" placeholder="URL zu Datei-Speicherort bzw. Hinweis auf Dokument-Ablageort">
-            </div>
-          </li>
-        </ul>
+      <div class="col-sm-offset-1 col-sm-10 printHide">
+        <h6 class="info-text text-ul-dot">Angehängte Dokumente</h6>
+        <p>Hier können Sie bereits vorhandene Dokumente wie z.B. Betriebskonzept, Risikoanalyse, Netzplan etc. im PDF-Format zur Dokumentation in SecDoc hinterlegen.</p>
+        <div class="alert alert-warning hidden" id="attached_documents_warning"></div>
+        <table id="attached_documents" class="table table-hover btn-table">
+          <thead>
+            <tr>
+              <th>Dateiname</th>
+              <th>Dateigröße</th>
+              <th>Beschreibung</th>
+              <th>Anhängen <i data-toggle="tooltip" title="Dokument bei Abschluss in Gesamtdokumentation aufnehmen?" class="fa fa-question-circle-o fa-lg"></i></th>
+              <th>Letzte Aktualisierung</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+          </tbody>
+        </table>
+        <button type="button" id="attached_documents_add" class="btn btn-wd btn-success"><i class="fa fa-plus"></i> Hinzufügen</button>
+      </div>
+
+      <div class="col-sm-offset-1 col-sm-10 printHide dsbOnly">
+        <h6 class="info-text text-ul-dot">Revisionen</h6>
+        <table id="abschluss_revisionen" class="table table-hover btn-table">
+          <thead>
+            <tr>
+              <th>Revision</th>
+              <th>Datum</th>
+              <th>Bearbeiter</th>
+              <th>Kommentar</th>
+            </tr>
+          </thead>
+          <tbody>
+          </tbody>
+        </table>
       </div>
 
       <div class="col-sm-offset-1 col-sm-10 printHide">
         <h6 class="info-text text-ul-dot">Zugriffsberechtigungen innerhalb von SecDoc</h6>
-        <p>Hier können Berechtigungen zum Lesen und/oder Bearbeiten festgelegt werden, um beispielsweise Kollegen die Mitarbeit in SecDoc zu ermöglichen. Eingetragene Nutzer oder Gruppen bekommen Lesezugriff. Optional kann auch Schreibzugriff gewährt werden. <em>Der/die Datenschutzbeauftragte kann unabhängig von den hier getätigten Einstellungen alle Informationen einsehen.</em></p>
-        <p style="padding:10px" class="bg-warning"><strong>Hinweis:</strong> Sollten Sie nicht als Ersteller oder fachlicher bzw. technischer Ansprechpartner eingetragen sein, können Änderungen an den Berechtigungen Ihren Zugriff einschränken.</p>
+        <p>Hier können Sie Berechtigungen zum Lesen und/oder Bearbeiten einer Dokumentation festlegen. Eingetragene Nutzer oder Gruppen erhalten Lesezugriff, um Dokumentationen einsehen oder als Vorlagen verwenden zu können. Optional kann Schreibzugriff gewährt werden, um Kollegen die Mitarbeit in SecDoc zu ermöglichen.</p>
+        <p style="padding:10px" class="bg-warning"><i class="fa fa-info-circle"></i> <strong>Hinweis:</strong> Sollten Sie nicht als Ersteller oder fachlicher bzw. technischer Ansprechpartner eingetragen sein, können Änderungen an den Berechtigungen Ihren Zugriff einschränken. Der/die Datenschutzbeauftragte sowie der/die Informationssicherheitsbeauftragte können unabhängig von den hier getätigten Einstellungen alle Dokumentationen einsehen.</p>
         <ul class="nav nav-tabs" role="tablist">
           <li role="presentation" class="active"><a href="#groupaccess" aria-controls="groupaccess" role="tab" data-toggle="tab"><i class="fa fa-users"></i> Gruppen</a></li>
           <li role="presentation"><a href="#useraccess" aria-controls="useraccess" role="tab" data-toggle="tab"><i class="fa fa-user"></i> Nutzer</a></li>
         </ul>
         <div class="tab-content" style="min-height: auto;">
           <div role="tabpanel" class="tab-pane active" id="groupaccess">
-            <p style="padding-top:10px; padding-left:10px">Zugriff für Personen in vorhandenen Nutzergruppen (aus IDM) erlauben. Zusätzliche Nutzergruppen können über das ZIV (siehe <a href="https://www.uni-muenster.de/ZIV/services/benutzerverwaltung/nutzergruppen.html" target="_blank">Nutzergruppen</a>) beantragt und verwaltet werden.</p>
+            <p style="padding-top:10px; padding-left:10px">Zugriff für Personen in vorhandenen Nutzergruppen (aus IDM) erlauben. Zusätzliche Nutzergruppen können über die WWU IT (siehe <a href="https://www.uni-muenster.de/IT/services/benutzerverwaltung/nutzergruppen.html" target="_blank"><i class="fa fa-external-link"></i> Nutzergruppen</a>) beantragt und verwaltet werden.</p>
             <table data-tool="endlessTable" id="meta_gruppen" class="table table-hover btn-table printHide">
               <thead>
                 <tr>
