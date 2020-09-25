@@ -516,8 +516,8 @@ function showVerfahrensliste(startup = false) {
             let revDate = formatDate(new Date(data['data'][c]['Date'].replace(' ', 'T')));
             revList.append('<li>#' + data['data'][c]['Revision'] + ' - ' + revDate + ' - ' + data['data'][c]['Editor'] + (data['data'][c]['Comment'] !== '' ? ' - ' + data['data'][c]['Comment'] : ''));
           }
-          if(data['count'] === 0) revList.replaceWith('<Keine Revisionen vorhanden>');
           evtTarget.prop('title', revisions[0].outerHTML);
+          if(data['count'] === 0) evtTarget.prop('title', '<p>Es sind keine vorherigen Revisionen vorhanden.</p>');
         }
       }).fail((jqXHR, error, errorThrown) => {
         evtTarget.prop('title', '<Fehler beim Holen der Revisionen>');
