@@ -1623,7 +1623,7 @@
           FROM ebene_rollen
           INNER JOIN tom_rollen ON ebene_rollen.RoleID = tom_rollen.RoleID
           INNER JOIN toms ON tom_rollen.TOMID = toms.Identifier
-          LEFT OUTER JOIN toms_desc ON toms.Identifier LIKE toms_desc.Identifier || '%'
+          LEFT OUTER JOIN toms_desc ON toms.Identifier LIKE toms_desc.Identifier || '.%'
           WHERE EbeneID = ? ORDER BY toms.Identifier ASC;");
         $sth->execute([$tier]);
         $tomRows = $sth->fetchAll();
@@ -1631,7 +1631,7 @@
         if(count($tomRows) === 0) {
           $sth = $this->pdo->prepare("SELECT DISTINCT toms.Identifier AS Identifier, Category, Subcategory, Title, toms.Description AS Description, Risklevel, toms_desc.Description AS CatDesc, Objective AS CatObjective, Delimit AS CatDelimit, toms_desc.URL AS CatURL
             FROM toms
-            LEFT OUTER JOIN toms_desc ON toms.Identifier LIKE toms_desc.Identifier || '%'
+            LEFT OUTER JOIN toms_desc ON toms.Identifier LIKE toms_desc.Identifier || '.%'
             ORDER BY toms.Identifier ASC;");
           $sth->execute();
           $tomRows = $sth->fetchAll();
@@ -1640,7 +1640,7 @@
       else {
         $sth = $this->pdo->prepare("SELECT DISTINCT toms.Identifier AS Identifier, Category, Subcategory, Title, toms.Description AS Description, Risklevel, toms_desc.Description AS CatDesc, Objective AS CatObjective, Delimit AS CatDelimit, toms_desc.URL AS CatURL
           FROM toms
-          LEFT OUTER JOIN toms_desc ON toms.Identifier LIKE toms_desc.Identifier || '%'
+          LEFT OUTER JOIN toms_desc ON toms.Identifier LIKE toms_desc.Identifier || '.%'
           ORDER BY toms.Identifier ASC;");
         $sth->execute();
         $tomRows = $sth->fetchAll();

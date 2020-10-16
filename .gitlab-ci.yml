@@ -1,0 +1,45 @@
+image: alpine:latest
+
+js_doc:
+  image: node:latest
+  stage: build
+  before_script:
+    - npm install -g jsdoc
+  script:
+    - mkdir -p docs/JSDoc
+    - jsdoc -c jsdoc.json
+  artifacts:
+    paths:
+    - docs/JSDoc
+  only:
+  - master
+
+php_doc:
+  image: php:7.4-cli
+  stage: build
+  before_script:
+    - apt update && apt install wget -y
+    - wget https://www.phpdoc.org/phpDocumentor.phar
+  script:
+    - mkdir -p docs/phpDoc
+    - php phpDocumentor.phar -c phpdoc.dist.xml
+  after_script:
+    - rm phpDocumentor.phar
+  artifacts:
+    paths:
+    - docs/phpDoc
+  only:
+  - master
+
+pages:
+  stage: deploy
+  script:
+    - mkdir .public
+    - echo "<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="generator" content="GitLab Pages"><title>SecDoc Code Dokumentation</title><link type="text/css" rel="stylesheet" href="JSDoc/styles/prettify-tomorrow.css"><link type="text/css" rel="stylesheet" href="JSDoc/styles/jsdoc-default.css"></head><body><p><h1>SecDoc Code Dokumentation</h1></p><p><ul><li><a href="JSDoc">Javascript Code Dokumentation</a></li><li><a href="phpDoc">PHP Code Dokumentation</a></li></ul></p></body></html>" > .public/index.html
+    - cp -r docs/* .public
+    - mv .public public
+  artifacts:
+    paths:
+    - public
+  only:
+  - master
