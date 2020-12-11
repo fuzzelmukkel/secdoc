@@ -684,13 +684,15 @@ function saveAsObject() {
  * @param {String} values JSON-String mit Namen der Eingabefelder als Schlüssel
  * @returns {Boolean}
  */
-function loadFromJSON(values, keepAccess = false) {
+function loadFromJSON(values, keepAccess = false, onlyTOMs = false) {
   let missingFields = [];
 
-  endlessTables.forEach(function(table) {
-    if(keepAccess && ['meta_gruppen', 'meta_nutzer'].includes(table)) return;
-    removeTableRows(table);
-  });
+  if(!onlyTOMs) {
+    endlessTables.forEach(function(table) {
+      if(keepAccess && ['meta_gruppen', 'meta_nutzer'].includes(table)) return;
+      removeTableRows(table);
+    });
+  }
 
   try {
     values = JSON.parse(values);
@@ -699,11 +701,16 @@ function loadFromJSON(values, keepAccess = false) {
     return false;
   }
 
+  let inputKeys = Object.keys(values);
+
+  // Falls TOM Template gewählt, ausgefüllte TOM Felder entfernen
+  if(inputKeys.includes('massnahmen_abhaengigkeit_id') && values['massnahmen_abhaengigkeit_id'].length > 0)  inputKeys = inputKeys.filter(item => (item.indexOf('tom_category_') !== 0 && (item.indexOf('massnahmen_') !== 0 || item === 'massnahmen_abhaengigkeit_id'  || item === 'massnahmen_risiko')));
+
   // Fallback für fehlende TOM Kategorie Auswahlfelder
-  let tomFields = Object.keys(values).filter((elem) => (elem.search('massnahmen_') >= 0));
+  let tomFields = inputKeys.filter((elem) => (elem.search('massnahmen_') >= 0));
   tomFields.forEach((id) => {
     id = id.split('_')[1];
-    if(['risiko', 'vertraulichkeit', 'integritaet', 'verfuegbarkeit'].includes(id)) return;
+    if(['risiko', 'vertraulichkeit', 'integritaet', 'verfuegbarkeit', 'abhaengigkeit'].includes(id)) return;
     let tomEntry = tomsMapping.filter((elem) => (elem.Identifier === id));
     if(tomEntry.length === 0) return;
     let targetSubcategory = ('tom_toggle_' + tomEntry[0]['Category'].trim() + '_' + (tomEntry[0]['Subcategory'].trim() ? tomEntry[0]['Subcategory'].trim() : 'all')).replace(/\W/g, '_');
@@ -711,7 +718,10 @@ function loadFromJSON(values, keepAccess = false) {
   });
 
   var extendedTables = [];
-  Object.keys(values).forEach(function(val, idx) {
+  inputKeys.forEach(function(val, idx) {
+    // Wenn nur TOMs geladen werden sollen, alle anderen Felder überspringen
+    if(onlyTOMs && (['massnahmen_abhaengigkeit_betreiber', 'massnahmen_abhaengigkeit_id', 'massnahmen_abhaengigkeit_name', 'massnahmen_risiko'].includes(val) || val.indexOf('massnahmen_') !== 0)) return true;
+
     if(Array.isArray(values[val])) {
       var table = val.substring(0,val.lastIndexOf('_'));
       if(!extendedTables.includes(table)) {
@@ -769,6 +779,7 @@ function loadFromJSON(values, keepAccess = false) {
   });
   $('select.selectpicker, select[data-tool=selectpicker]').selectpicker('refresh');
   $('select.selectpicker, select[data-tool=selectpicker]').selectpicker('render');
+  $('.typeahead__container').addClass('cancel');
 
   // Meldung über gespeicherte Eingabefelder, die nicht mehr vorhanden sind anzeigen (nur DSB)
   if(userIsDSB && missingFields.length > 0) {
@@ -1160,6 +1171,11 @@ function genHTMLforPDF(draft = false) {
   /* Hinweis-Text bei keinen ausgewählten TOMs */
   if(toSend.find('#toggletoms').find('input[type=checkbox]:checked').length === 0 || toSend.find('#tom_accordion').find('tr').length === 0) {
     toSend.find('#tom_accordion').append('<p class="text-center"><strong>Es wurden keine Technischen und Organisatorischen Maßnahmen ausgewählt.</strong></p>');
+  }
+
+  /* Hinweis anzeigen, falls Template genutzt */
+  if($('input[name="massnahmen_abhaengigkeit_id[]"]').val() !== '') {
+    toSend.find('#massnahmen_abhaengigkeit').closest('div').removeClass('printHide');
   }
 
   /* Link hinzufügen */
@@ -2049,7 +2065,7 @@ function toggleTOMList(evt) {
 
     if(!hasContent) {
       $('#' + evtTarget.data('target')).find('select').each(function(idx, elem) {
-        if($(elem).val() !== '0') {
+        if($(elem).val() !== '-1') {
           hasContent = true;
           return false;
         }
@@ -2435,11 +2451,29 @@ Promise.all(promises).then(function() {
     var idField = $(this);
     var descText = idField.closest('td').next('td').find('textarea');
     if(idField.val() !== '') {
+      // Falls ein Template ausgewählt wurde, alle TOM Kategorien abwählen und readonly setzen
+      if(idField[0].name === 'massnahmen_abhaengigkeit_id[]') {
+        // Warnung anzeigen, falls bereits Bausteine ausgewählt wurden
+        if($('#toggletoms').find('input[type=checkbox]:checked').length > 0) {
+          let confirmTemplate = confirm('Es scheinen bereits Bausteine ausgewählt worden zu sein, welche entfernt und deren Inhalt gelöscht wird, wenn ein Template ausgwählt wird. Wollen Sie wirklich fortfahren?');
+          if(!confirmTemplate) {
+            $('input[name="massnahmen_abhaengigkeit_name[]"]').val('').trigger('change');
+            return;
+          }
+        }
+        let lastGlobalClear = globalClear;
+        globalClear = true;
+        $('#toggletoms').find('input[type=checkbox]').prop('checked', false).trigger('change');
+        $('#toggletoms').find('input, textarea, select').prop('disabled', true);
+        globalClear = lastGlobalClear;
+      }
+
+      // Abhängigkeit laden und Felder ausfüllen
       $.get(backendPath, { 'action': 'get', 'id':  idField.val(), 'debug': debug}).done(function(data) {
         if(!data['success']) {
           showError('Auslesen der Abhängigkeiten', 'Scheinbar existiert eine Abhängigkeit nicht mehr!');
           console.error('Fehler beim Abruf von Abhängigkeiten! Fehler: ' + data['error']);
-          descText.val('<Das Verfahren existiert nicht!>');
+          descText.val('<Die Dokumentation existiert nicht!>');
           idField.closest('td').find('input[name="abschluss_abhaengigkeit_betreiber[]"], input[name="itverfahren_abhaengigkeit_betreiber[]"], input[name="verarbeitung_abhaengigkeit_betreiber[]"], input[name="massnahmen_abhaengigkeit_betreiber[]"]').val('');
 
           // Disable Link
@@ -2449,6 +2483,13 @@ Promise.all(promises).then(function() {
           // Refresh status
           idField.closest('td').find('.status span').replaceWith('<span>Unbekannt <i data-toggle="tooltip" class="fa fa-question" title="Unbekannt"></i></span>');
           idField.closest('td').find('.status i').tooltip();
+
+          // Show error when Template not loadable
+          if(idField[0].name === 'massnahmen_abhaengigkeit_id[]') {
+            $('input[name="massnahmen_abhaengigkeit_name[]"]').val('').trigger('change');
+            showError('Laden der Vorlage', 'Die Vorlage existiert nicht oder Sie haben keinen Zugriff darauf!');
+          }
+
           return;
         }
         idField.closest('td').find('input[name="abschluss_abhaengigkeit_name[]"], input[name="itverfahren_abhaengigkeit_name[]"], input[name="verarbeitung_abhaengigkeit_name[]"], input[name="massnahmen_abhaengigkeit_name[]"]').val(htmlDecode(data['data'][0]['Bezeichnung']));
@@ -2468,6 +2509,12 @@ Promise.all(promises).then(function() {
 
         // Hide quick add button
         idField.closest('tr').find('.quick_add_dependency').addClass('hidden');
+
+        // Falls ein Template ausgewählt wurde, Massnahmen aus JSON laden und alle TOM Optionen blockieren
+        if(idField[0].name === 'massnahmen_abhaengigkeit_id[]') {
+          loadFromJSON(data['data'][0]['JSON'], true, true);
+          $('#tom_accordion').find('input, textarea, select').prop('disabled', true);
+        }
       }).fail((jqXHR, error, errorThrown) => {
         console.error('Fehler beim Abruf von Abhängigkeiten! HTTP Code: ' + jqXHR.status + ' Fehler: ' + error + ' - ' + errorThrown);
         descText.val('<Fehler beim Abrufen>');
@@ -2483,6 +2530,12 @@ Promise.all(promises).then(function() {
 
         // Show quick add button
         idField.closest('tr').find('.quick_add_dependency').removeClass('hidden');
+
+        // Show error when Template not loadable
+        if(idField[0].name === 'massnahmen_abhaengigkeit_id[]') {
+          $('input[name="massnahmen_abhaengigkeit_name[]"]').val('').trigger('change');
+          showError('Laden der Vorlage', 'Ein Fehler bei der Übertragung ist aufgetreten.');
+        }
       });
     }
     else {
@@ -2499,6 +2552,9 @@ Promise.all(promises).then(function() {
 
       // Show quick add button
       idField.closest('tr').find('.quick_add_dependency').removeClass('hidden');
+
+      // Falls kein Template ausgewählt wurde, alle TOM Optionen ermöglichen
+      if(idField[0].name === 'massnahmen_abhaengigkeit_id[]') $('#toggletoms, #tom_accordion').find('input, textarea, select').prop('disabled', false);
     }
   });
 
