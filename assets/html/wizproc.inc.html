@@ -434,8 +434,49 @@
         <h5 class="info-text text-ul">Technische und organisatorische Maßnahmen <i data-toggle="tooltip" data-html="true" title="Vergleiche
 Art. 25 DSGVO Datenschutz durch Technikgestaltung und durch datenschutzfreundliche Voreinstellungen, Art. 32 DSGVO Sicherheit der Verarbeitung" class="fa fa-question-circle-o fa-lg"></i></h5>
         <p class="printHide">Gibt es ein Datenschutz- und Datensicherheitskonzept oder ein anderes Dokument, das die technischen und organisatorischen Maßnahmen enthält, müssen die Angaben nicht zwingend hier erfolgen, sondern es kann stattdessen (oder zusätzlich) auf der letzten Seite auf dieses Dokument verwiesen werden.</p>
-        <h6 class="info-text text-ul-dot printHide">1. Bausteine auswählen</h6>
-        <p class="printHide">Wählen Sie in der folgenden Liste die für Ihre Verarbeitungstätigkeit relevanten Bausteine aus.</p>
+        <p class="printHide">Sie können entweder eine vorgefertigte Vorlage für die umgesetzten Maßnahmen verwenden oder manuell eine Liste der notwendigen Bausteine wählen und die Maßnahmen selbstständig bearbeiten.</p>
+        <div class="col-sm-12 printHide">
+          <h6 class="info-text text-ul-dot">Option 1: Maßnahmen-Vorlage auswählen</h6>
+        </div>
+        <div class="col-sm-offset-1 col-sm-10 printHide">
+          <table data-tool="endlessTable2" id="massnahmen_abhaengigkeit" class="table table-hover btn-table table-striped">
+            <thead>
+              <tr>
+                <th>Vorlage</th>
+                <th>Beschreibung</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <input type="text" data-tool="typeahead" data-action="searchMassnahmen" data-minlength="0" data-dynamic="true" data-hiddenfield="massnahmen_abhaengigkeit_id[]" class="form-control" name="massnahmen_abhaengigkeit_name[]" placeholder="Bsp.: ISMS Massnahmen">
+                  <input type="hidden" name="massnahmen_abhaengigkeit_id[]">
+                  <div class="status printHide">
+                    <label>Status:</label>
+                    <span>Unbekannt <i data-toggle="tooltip" class="fa fa-question" title="Unbekannt"></i></span>
+                  </div>
+                  <div class="form-group">
+                    <label>Verantwortlich:</label><br />
+                    <input type="text" class="form-control" name="massnahmen_abhaengigkeit_betreiber[]" readonly />
+                  </div>
+                </td>
+                <td>
+                  <textarea class="form-control" rows="5" disabled></textarea>
+                </td>
+                <td class="text-center">
+                  <button type="button" class="massnahmen_abhaengigkeit_del btn btn-danger hidden" title="Abhängigkeit aus Liste entfernen"><i class="fa fa-minus"></i> Entfernen</button><br />
+                  <a class="btn" style="margin-top: 2px;" target="_blank" title="Dokumentation in neuem Fenster öffnen" disabled>Anzeigen</a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <button type="button" id="massnahmen_abhaengigkeit_add" class="btn btn-wd btn-success hidden"><i class="fa fa-plus"></i> Hinzufügen</button>
+        </div>
+      </div>
+      <div class="col-sm-offset-1 col-sm-10">
+        <h6 class="info-text text-ul-dot printHide">Option 2: 1. Bausteine auswählen</h6>
+        <p class="printHide">Wählen Sie in der folgenden Liste die für Ihr IT-Verfahren relevanten Bausteine aus.</p>
       </div>
       <div class="col-sm-offset-1 col-sm-10 printHide" id="toggletoms">
         <ul class="nav nav-tabs printHide" role="tablist">
@@ -444,7 +485,7 @@ Art. 25 DSGVO Datenschutz durch Technikgestaltung und durch datenschutzfreundlic
         </div>
       </div>
       <div class="col-sm-offset-1 col-sm-10">
-        <h6 class="info-text text-ul-dot printHide">2. Sicherheitsmaßnahmen angeben</h6>
+        <h6 class="info-text text-ul-dot printHide">Option 2: 2. Sicherheitsmaßnahmen angeben</h6>
         <p class="printHide">Klicken Sie auf die Bausteine, um die jeweiligen Anforderungen anzuzeigen und den Umsetzungsstand sowie die Sicherheitsmaßnahmen anzugeben.</p>
         <div class="checkbox text-center printHide">
           <label><input type="checkbox" id="showFinishedTOMs" value="1" checked /> <strong>Bereits bearbeitete Anforderungen anzeigen</strong> <i data-toggle="tooltip" title="Wechselt zwischen der Anzeige aller Anforderungen oder nur unbearbeiteter Anforderungen." class="fa fa-question-circle-o fa-lg"></i></label>

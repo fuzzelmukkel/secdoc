@@ -833,7 +833,7 @@ function saveOnServer() {
         loadId = parseInt(data['data']['ID']);
         idField.val(loadId);
         history.replaceState({}, document.title, window.location.href.split('?')[0] + '?id=' + loadId);
-        setSaveLabel('saved', new Date(data['data']['Date'].replace(' ', 'T')));  // Safari benötigt das Format YYYY-MM-DDTHH:MM:SS (mit T)
+        setSaveLabel('saved', new Date(data['data']['Date'].replace(' ', 'T')), userName);  // Safari benötigt das Format YYYY-MM-DDTHH:MM:SS (mit T)
         $('input[name="meta_lastupdate"]').val(data['data']['Date']);
         changedValues = false;
         changedFields = [];
@@ -919,7 +919,7 @@ function saveOnServer() {
         setSaveLabel('failed');
       }
       else {
-        setSaveLabel('saved', new Date(data['data']['Date'].replace(' ', 'T')));  // Safari benötigt das Format YYYY-MM-DDTHH:MM:SS (mit T)
+        setSaveLabel('saved', new Date(data['data']['Date'].replace(' ', 'T')), userName);  // Safari benötigt das Format YYYY-MM-DDTHH:MM:SS (mit T)
         $('input[name="meta_lastupdate"]').val(data['data']['Date']);
         history.replaceState({}, document.title, window.location.href.split('?')[0] + '?id=' + loadId);
         changedValues = false;
@@ -985,7 +985,7 @@ function loadFromServer(id) {
       }
 
       $('input[name="meta_lastupdate"]').val(lastSaveDate);
-      setSaveLabel('saved', new Date(lastSaveDate.replace(' ', 'T')));  // Safari benötigt das Format YYYY-MM-DDTHH:MM:SS (mit T)
+      setSaveLabel('saved', new Date(lastSaveDate.replace(' ', 'T')), data['data'][0]['BearbeitetVonName']);  // Safari benötigt das Format YYYY-MM-DDTHH:MM:SS (mit T)
 
       document.title = htmlDecode(data['data'][0]['Bezeichnung']) + ' - ' + document.title.split(' - ').slice(-1)[0];
       let statusSymbol = status in statusSymbolMapping ? ' <i data-toggle="tooltip" class="fa ' + statusSymbolMapping[status] + '" title="' + statusMapping[status]  + '"></i>' : '';
@@ -1176,6 +1176,8 @@ function genHTMLforPDF(draft = false) {
   /* Hinweis anzeigen, falls Template genutzt */
   if($('input[name="massnahmen_abhaengigkeit_id[]"]').val() !== '') {
     toSend.find('#massnahmen_abhaengigkeit').closest('div').removeClass('printHide');
+    toSend.find('#massnahmen_abhaengigkeit').closest('div').prepend('<p class="text-center">Es wurde das folgende Template für die Maßnahmen ausgewählt:</p>');
+    toSend.find('#tom_accordion').remove();
   }
 
   /* Link hinzufügen */
@@ -1199,12 +1201,11 @@ function genHTMLforPDF(draft = false) {
 
   toSend.find('table#abschluss_abhaengigkeit tr, table#itverfahren_abhaengigkeit tr, table#verarbeitung_abhaengigkeit tr, table#massnahmen_abhaengigkeit tr').each(function(idx) {
     $(this).find('td:last button').remove();
-    $(this).append($(this).find('td:last, th:last').clone());
   });
 
   /* Layout-Anpassungen (Buttons durch Text ersetzen, Typeahead und andere aktive Elemente entschärfen) */
   toSend.find('select[data-tool="selectpicker"], select.selectpicker, [id$="_add"], .typeahead__cancel-button, .typeahead__hint, .typeahead__result').remove();
-  toSend.find('table[data-tool="endlessTable"] tr').each(function(idx) {
+  toSend.find('table[data-tool="endlessTable"]:not(#abschluss_abhaengigkeit, #itverfahren_abhaengigkeit, #verarbeitung_abhaengigkeit, #massnahmen_abhaengigkeit) tr').each(function(idx) {
       $(this).find('th:last, td:last').remove();
   });
   toSend.find('table[data-tool="endlessTable"]').each(function(idx){
@@ -1378,22 +1379,24 @@ function importJSON(file) {
     if(loadId !== 0) {
       modal.find('.modal-title').html('<i class="fa fa-upload"></i> Import einer Dokumentation');
       modal.find('.modal-body').html('<div class="alert alert-warning">Sie haben bereits eine Dokumentation geladen. Soll eine neue Dokumentation angelegt oder die aktuell geladene Dokumentation überschrieben werden?<br/><i class="fa fa-info-circle"></i> <strong>Hinweis:</strong> Evtl. gesetzte Zugriffsberechtigungen auf der letzten Seite werden nicht überschrieben.</div>');
-      modal.find('.modal-body').append('<div class="text-center"><button id="importEmptyBtn" class="btn btn-success">Neue Dokumentation</button><button id="importCurrBtn" class="btn btn-danger ml">Vorhandene überschreiben</button></div>');
+      modal.find('.modal-body').append('<div class="text-center"><button id="importEmptyBtn" class="btn btn-success">Neue Dokumentation</button><button id="importCurrBtn" class="btn btn-danger ml">Vorhandene überschreiben</button><button id="importTOMOnlyBtn" class="btn btn-danger ml">Nur TOMs überschreiben</button></div>');
       modal.modal();
 
       modal.find('#importEmptyBtn').click(() => { triggerLoadJSON(true); });
       if(canEdit) {
         modal.find('#importCurrBtn').click(() => { triggerLoadJSON(false); });
+        modal.find('#importTOMOnlyBtn').click(() => { triggerLoadJSON(false, true); });
       }
       else {
         modal.find('#importCurrBtn').prop('disabled', true);
+        modal.find('#importTOMOnlyBtn').prop('disabled', true);
       }
     }
     else {
       triggerLoadJSON(true);
     }
 
-    function triggerLoadJSON(createNew) {
+    function triggerLoadJSON(createNew, tomOnly = false) {
       modal.modal('hide');
       setOverlay(true);
 
@@ -1404,7 +1407,7 @@ function importJSON(file) {
         $('#toggletoms').find('input[name^="tom_toggle"]').prop('checked', false).trigger('change');
       }
 
-      if(loadFromJSON(evt.target.result, true)) {
+      if(loadFromJSON(evt.target.result, true, tomOnly)) {
         modal.find('.modal-title').html('<i class="fa fa-check-circle"></i> Import erfolgreich');
         modal.find('.modal-body').html('<div class="alert alert-success">Der Import wurde erfolgreich durchgeführt. Die Änderungen müssen zum Übernehmen abgespeichert werden.</div>');
         modal.find('.modal-body').append('<p class="text-center"><button type="button" class="btn btn-danger ml" data-dismiss="modal" aria-label="Close">Schließen</button></p>');
@@ -2762,8 +2765,10 @@ Promise.all(promises).then(function() {
   });
 
   // Ex-/Import Handler
-  $('#exportBtn').removeClass('hidden').click((evt) => {exportJSON()});
-  $('#importBtn').removeClass('hidden').click((evt) => {showImportDialog()});
+  if(userIsDSB || userIsManager) {
+    $('#exportBtn').removeClass('hidden').click((evt) => {exportJSON()});
+    $('#importBtn').removeClass('hidden').click((evt) => {showImportDialog()});
+  }
 
   // Autosave Timer
   autoSaveTimer = window.setInterval(() => {

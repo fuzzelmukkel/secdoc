@@ -1150,6 +1150,11 @@ EOH;
         returnError('Kein Verfahren mit der angebenen ID konnte gefunden werden oder Sie haben keinen Zugriff darauf!');
       }
 
+      if(!empty($proc[0]['BearbeitetVon'])) {
+        $editorDetails = Utils::searchUsers($proc[0]['BearbeitetVon'], TRUE);
+        $proc[0]['BearbeitetVonName'] = !empty($editorDetails[0]['name']) ? $editorDetails[0]['name'] : 'Kennung: ' . $proc[0]['BearbeitetVon'];
+      }
+
       if($maintenanceMode) {
         $proc[0]['Editierbar'] = FALSE;
       }

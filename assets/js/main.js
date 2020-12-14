@@ -52,6 +52,18 @@ var loadIdMain = GetURLParameter('id') === false ? 0 : parseInt(GetURLParameter(
 var copyIdMain = GetURLParameter('copy') === false ? 0 : parseInt(GetURLParameter('copy'));
 
 /**
+ * Nutzerkennung des eingeloggten Benutzers
+ * @type {String}
+ */
+var userId = '';
+
+/**
+ * Name des eingeloggten Benutzers
+ * @type {String}
+ */
+var userName = '';
+
+/**
  * Gibt an, ob der Nutzer ein Datenschutzbeauftragter ist
  * @global
  * @type {Boolean}
@@ -243,12 +255,14 @@ function debugLog(msg, obj = null) {
 
 /**
  * Setzt das Label zum aktuellen Speicher-Status
- * @param {String} action Aktueller Speicherstatus
- * @param {Date} currDate (optional) Aktuelles Datum
+ * @param {String} action   Aktueller Speicherstatus
+ * @param {Date}   currDate (optional) Aktuelles Datum
+ * @param {String} detail   (optional) Detailangabe, z.B. Nutzername
  * @returns {undefined}
  */
-function setSaveLabel(action, currDate = new Date()) {
+function setSaveLabel(action, currDate = new Date(), detail = '') {
   var saveTime = formatDate(currDate);
+  if(detail !== '') saveTime += ' (' + detail + ')'
   $('#successLabel, #savingLabel, #failedLabel, #refreshedLabel').addClass('hidden');
   switch(action) {
     case 'saving':
@@ -409,6 +423,8 @@ function loadSubpage() {
   getUserPromise = $.getJSON(backendPath + '?action=searchperson' + (debug ? '&debug=true' : '')).done((data) => {
     if(data.length !== 0 && data['data'].length !== 0) {
       version = data['version'];
+      userId = data['data'][0]['value'];
+      userName = data['data'][0]['name'];
       userIsDSB = data['data'][0]['userIsDSB'];
       userCanDSB = data['data'][0]['userCanDSB'];
       userIsManager = data['data'][0]['userIsManager'];
