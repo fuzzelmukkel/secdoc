@@ -1406,10 +1406,12 @@ EOH;
         returnError('Kein Verfahren wurde aktualisiert, da entweder das Verfahren nicht gefunden wurde oder Sie keine Berechtigung haben!');
       }
 
-      # Revision anlegen
-      $editor = Utils::searchUsers($userId, TRUE);
-      $editor = (empty($editor) || empty($editor[0]['name'])) ? $userId : $editor[0]['name'];
-      $dbcon->addRevision($verfahrensId, htmlspecialchars($data['comment'], ENT_QUOTES, 'UTF-8', FALSE), $editor);
+      # Revision anlegen (falls Kommentar angegeben)
+      if(!empty($data['comment'])) {
+        $editor = Utils::searchUsers($userId, TRUE);
+        $editor = (empty($editor) || empty($editor[0]['name'])) ? $userId : $editor[0]['name'];
+        $dbcon->addRevision($verfahrensId, htmlspecialchars($data['comment'], ENT_QUOTES, 'UTF-8', FALSE), $editor);
+      }
 
       if($success) {
         $output['gentxt'] = generateTXT($dbcon, $userId, $userGroups, $userIsDSB, $verfahrensId);

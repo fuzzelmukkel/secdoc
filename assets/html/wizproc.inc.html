@@ -137,40 +137,38 @@
     <div class="col-sm-12">
       <h5 class="info-text text-ul">Angaben zum ggf. mit dem Verantwortlichen gemeinsam Verantwortlichen <i data-toggle="tooltip" title="Z.B. bei Projekten mit Partnern außerhalb der WWU, vgl. Art. 26 DSGVO Gemeinsam Verantwortliche" class="fa fa-question-circle-o fa-lg"></i></h5>
     </div>
-    <div class="col-sm-12 form-check text-center">
-      <label class="form-check-label"><input class="form-check-input" name="allgemein_verantwortlich_extern" type="checkbox" value="1"> Es gibt Mitverantwortliche außerhalb der WWU</label>
-    </div>
-    <div class="col-sm-5 col-sm-offset-1 hidden">
-      <div class="form-group">
-        <label>Ansprechpartner</label><br />
-        <input type="text" class="form-control" name="allgemein_verantwortlich_name" placeholder="">
-      </div>
-      <div class="form-group">
-        <label>Telefon</label><br />
-        <input type="text" class="form-control" name="allgemein_verantwortlich_telefon" placeholder="">
-      </div>
-      <div class="form-group">
-        <label>E-Mail</label><br />
-        <input type="email" class="form-control" name="allgemein_verantwortlich_email" placeholder="">
-      </div>
-    </div>
-    <div class="col-sm-5 hidden">
-      <div class="form-group">
-        <label>Institution</label><br />
-        <input type="text" class="form-control" name="allgemein_verantwortlich_institution" placeholder="">
-      </div>
-      <div class="form-group">
-        <label>Straße</label><br />
-        <input type="text" class="form-control" name="allgemein_verantwortlich_strasse" placeholder="">
-      </div>
-      <div class="form-group">
-        <label>PLZ, Ort</label><br />
-        <input type="text" class="form-control" name="allgemein_verantwortlich_ort" placeholder="">
-      </div>
-      <div class="form-group">
-        <label>Land</label><br />
-        <input type="text" class="form-control" name="allgemein_verantwortlich_land" placeholder="">
-      </div>
+    <div class="col-sm-offset-1 col-sm-10">
+      <table data-tool="endlessTable" id="allgemein_verantwortlich" class="table table-striped table-hover btn-table">
+        <thead>
+          <tr>
+            <th class="col-sm-1">Nr.</th>
+            <th class="col-sm-5">Institution</th>
+            <th class="col-sm-5">Ansprechpartner</th>
+            <th class="col-sm-1"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><input type="text" class="form-control" name="allgemein_verantwortlich_nummer[]" value="1" readonly></td>
+            <td>
+              <input type="text" class="form-control" name="allgemein_verantwortlich_institution[]" placeholder="Bsp.: Unternehmen XYZ">
+              <div class="form-group">
+                <label>Anschrift:</label><br>
+                <textarea class="form-control" name="allgemein_verantwortlich_anschrift[]"></textarea>
+              </div>
+            </td>
+            <td>
+              <input type="text" class="form-control" name="allgemein_verantwortlich_ansprechpartner[]" placeholder="Bsp.: Max Mustermann">
+              <div class="form-group">
+                <label>Kontakt:</label><br>
+                <textarea class="form-control" name="allgemein_verantwortlich_kontakt[]"></textarea>
+              </div>
+            </td>
+            <td class="text-center"><button type="button" class="allgemein_verantwortlich_del btn btn-danger"><i class="fa fa-minus"></i> Löschen</button></td>
+          </tr>
+        </tbody>
+      </table>
+      <button type="button" id="allgemein_verantwortlich_add" class="btn btn-wd btn-success"><i class="fa fa-plus"></i> Hinzufügen</button>
     </div>
   </div>
 </div>
@@ -538,7 +536,7 @@ Art. 25 DSGVO Datenschutz durch Technikgestaltung und durch datenschutzfreundlic
               <td class="text-center">
                 <button type="button" class="abschluss_abhaengigkeit_del btn btn-danger" title="Abhängigkeit aus Liste entfernen"><i class="fa fa-minus"></i> Entfernen</button><br />
                 <a class="btn" style="margin-top: 2px;" target="_blank" title="Dokumentation in neuem Fenster öffnen" disabled>Anzeigen</a><br />
-                <button type="button" style="margin-top: 2px;" class="quick_add_dependency dsbOnly printHide btn btn-success" title="Abhängigkeit anlegen" data-type="3"><i class="fa fa-plus"></i> Anlegen</button>
+                <button type="button" style="margin-top: 2px;" class="quick_add_dependency managerOnly dsbOnly printHide btn btn-success" title="Abhängigkeit anlegen" data-type="3"><i class="fa fa-plus"></i> Anlegen</button>
               </td>
             </tr>
           </tbody>
@@ -580,7 +578,7 @@ Art. 25 DSGVO Datenschutz durch Technikgestaltung und durch datenschutzfreundlic
               <td class="text-center">
                 <button type="button" class="verarbeitung_abhaengigkeit_del btn btn-danger" title="Abhängigkeit aus Liste entfernen"><i class="fa fa-minus"></i> Entfernen</button><br />
                 <a class="btn" style="margin-top: 2px;" target="_blank" title="Dokumentation in neuem Fenster öffnen" disabled>Anzeigen</a><br />
-                <button type="button" style="margin-top: 2px;" class="quick_add_dependency dsbOnly printHide btn btn-success" title="Abhängigkeit anlegen" data-type="1"><i class="fa fa-plus"></i> Anlegen</button>
+                <button type="button" style="margin-top: 2px;" class="quick_add_dependency managerOnly dsbOnly printHide btn btn-success" title="Abhängigkeit anlegen" data-type="1"><i class="fa fa-plus"></i> Anlegen</button>
               </td>
             </tr>
           </tbody>

@@ -351,8 +351,8 @@ function myFinish() {
       // Revisions-Kommentar abfragen
       modal.find('.modal-title').html('<i class="fa fa-archive"></i> Abschluss der Dokumentation');
       let modalBody = modal.find('.modal-body');
-      modalBody.html('<p>Mit dem Abschluss wird eine neue Revision der Dokumentation angelegt. Es wird eine abschließende PDF-Version generiert und per E-Mail an alle eingetragenen Ansprechpartner und Ersteller verschickt. Sie können optional einen Kommentar zur aktuellen Bearbeitung angeben.</p>');
-      modalBody.append('<div class="form-group"><label>Kommentar</label><textarea class="form-control" id="finishComment" placeholder="Beschreibt die aktuellen Änderungen"></textarea></div>')
+      modalBody.html('<p>Mit dem Abschluss kann optional eine neue Revision der Dokumentation angelegt werden, wenn größere Änderungen an der Dokumentation vorgenommen und ein Kommentar zu diesen angegeben wurde. Es wird eine abschließende PDF-Version generiert und per E-Mail an alle eingetragenen Ansprechpartner und Ersteller verschickt.</p>');
+      modalBody.append('<div class="form-group"><label>Kommentar (optional)</label><textarea class="form-control" id="finishComment" placeholder="Beschreibung der aktuellen Änderungen"></textarea></div>')
       modalBody.append('<p><button type="button" class="center-block btn btn-fill btn-danger btn-wd" id="confirmFinish"><i class="fa fa-check-circle"></i> Abschließen</button></p>');
 
       modalBody.find('#confirmFinish').click((evt) => {
@@ -716,6 +716,19 @@ function loadFromJSON(values, keepAccess = false, onlyTOMs = false) {
     let targetSubcategory = ('tom_toggle_' + tomEntry[0]['Category'].trim() + '_' + (tomEntry[0]['Subcategory'].trim() ? tomEntry[0]['Subcategory'].trim() : 'all')).replace(/\W/g, '_');
     $('input[name="' + targetSubcategory + '"]:not(:checked)').prop('checked', true).trigger('change');
   });
+
+  // Externe Verantwortliche in neues Format übertragen
+  if(inputKeys.includes('allgemein_verantwortlich_extern') && values['allgemein_verantwortlich_extern'] === '1') {
+    inputKeys = inputKeys.concat(['allgemein_verantwortlich_institution', 'allgemein_verantwortlich_anschrift', 'allgemein_verantwortlich_ansprechpartner', 'allgemein_verantwortlich_kontakt']);
+    values['allgemein_verantwortlich_institution'] = [values['allgemein_verantwortlich_institution']];
+    values['allgemein_verantwortlich_anschrift'] = [values['allgemein_verantwortlich_strasse'] + '\n' + values['allgemein_verantwortlich_ort'] + '\n' + values['allgemein_verantwortlich_land']];
+    values['allgemein_verantwortlich_ansprechpartner'] = [values['allgemein_verantwortlich_name']];
+    values['allgemein_verantwortlich_kontakt'] = ['E-Mail: ' + values['allgemein_verantwortlich_email'] + '\nTel.: ' + values['allgemein_verantwortlich_telefon']];
+    //$('input[name="allgemein_verantwortlich_institution[]"]').val(values['allgemein_verantwortlich_institution']);
+    //$('input[name="allgemein_verantwortlich_anschrift[]"]').val(values['allgemein_verantwortlich_strasse'] + '\n' + values['allgemein_verantwortlich_ort'] + '\n' + values['allgemein_verantwortlich_land']);
+    //$('input[name="allgemein_verantwortlich_ansprechpartner[]"]').val(values['allgemein_verantwortlich_name']);
+    //$('input[name="allgemein_verantwortlich_kontakt[]"]').val('E-Mail: ' + values['allgemein_verantwortlich_email'] + '\n Tel.: ' + values['allgemein_verantwortlich_telefon']);
+  }
 
   var extendedTables = [];
   inputKeys.forEach(function(val, idx) {
@@ -1113,7 +1126,7 @@ function genHTMLforPDF(draft = false) {
 
   /* TOM Liste formatieren */
   toSend.find('#tom_accordion').find('.panel-collapse').each(function() {
-    if($(this).closest('.panel').hasClass('hidden')) {
+    if(!$(this).closest('.panel .infoEmptyCat').hasClass('hidden')) {
       $(this).closest('.panel').prev('h6').remove();
       $(this).remove();
       return;
@@ -1760,6 +1773,11 @@ function addTableRow(table) {
     clone.find('.dsbOnly').removeClass('dsbOnly');
   }
 
+  // Manager Elemente anzeigen
+  if(userIsManager) {
+    $('.managerOnly').removeClass('dsbOnly');
+  }
+
   // Fall 1: Die aktuelle Tabelle wird nicht automatisch durchnummeriert
   if(clone.find('input[name="' + table + '_nummer[]"]').length !== 1) {
     // Delete Funktion an den neuen Button binden
@@ -1954,9 +1972,13 @@ function filterTOMList(risklevel, showFinished = true) {
   });
 
   $('#tom_accordion').find('div.panel').each((idx, elem) => {
-    $(elem).removeClass('hidden');
+    $(elem).find('.infoEmptyCat').addClass('hidden');
+    $(elem).find('table').removeClass('hidden');
 
-    if($(elem).find('tbody tr:not(.hidden)').length === 0) $(elem).addClass('hidden');
+    if($(elem).find('tbody tr:not(.hidden)').length === 0) {
+      $(elem).find('.infoEmptyCat').removeClass('hidden');
+      $(elem).find('table').addClass('hidden');
+    }
   });
 }
 
@@ -2013,6 +2035,9 @@ function toggleTOMList(evt) {
           if(evt.target.nodeName === "A") return;
           $(evt.target).find('a').click();
         });
+
+        // Hinweis für leere Kategorie einfügen
+        $('#' + targetCategory).find('.panel-body table').before('<p class="hidden infoEmptyCat"><strong>Hinweis:</strong> Diese Kategorie enthält keine Maßnahmen, die für den aktuellen Schutzbedarf umgesetzt werden müssen.</p>');
       }
 
       // Alle TOMs in die passende Tabelle einfügen
@@ -2824,6 +2849,11 @@ Promise.all(promises).then(function() {
   // DSB Elemente anzeigen
   if(userIsDSB) {
     $('.dsbOnly').removeClass('dsbOnly');
+  }
+
+  // Manager Elemente anzeigen
+  if(userIsManager) {
+    $('.managerOnly').removeClass('dsbOnly');
   }
 
   debugLog('Setup beendet!');
