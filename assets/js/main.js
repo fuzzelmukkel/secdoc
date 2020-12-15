@@ -37,7 +37,7 @@ var version = '';
  * @global
  * @type {String}
  */
-var page = ['dsbview', 'home', 'login', 'wizit', 'wizproc', 'wizapp', 'wizmeasures'].includes(GetURLParameter('page')) ? GetURLParameter('page') : 'home';
+var page = ['dsbview', 'dsbcheck', 'home', 'login', 'wizit', 'wizproc', 'wizapp', 'wizmeasures'].includes(GetURLParameter('page')) ? GetURLParameter('page') : 'home';
 
 /**
  * ID der Dokumentation, die geladen werden soll

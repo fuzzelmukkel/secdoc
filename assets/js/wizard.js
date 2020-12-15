@@ -724,10 +724,6 @@ function loadFromJSON(values, keepAccess = false, onlyTOMs = false) {
     values['allgemein_verantwortlich_anschrift'] = [values['allgemein_verantwortlich_strasse'] + '\n' + values['allgemein_verantwortlich_ort'] + '\n' + values['allgemein_verantwortlich_land']];
     values['allgemein_verantwortlich_ansprechpartner'] = [values['allgemein_verantwortlich_name']];
     values['allgemein_verantwortlich_kontakt'] = ['E-Mail: ' + values['allgemein_verantwortlich_email'] + '\nTel.: ' + values['allgemein_verantwortlich_telefon']];
-    //$('input[name="allgemein_verantwortlich_institution[]"]').val(values['allgemein_verantwortlich_institution']);
-    //$('input[name="allgemein_verantwortlich_anschrift[]"]').val(values['allgemein_verantwortlich_strasse'] + '\n' + values['allgemein_verantwortlich_ort'] + '\n' + values['allgemein_verantwortlich_land']);
-    //$('input[name="allgemein_verantwortlich_ansprechpartner[]"]').val(values['allgemein_verantwortlich_name']);
-    //$('input[name="allgemein_verantwortlich_kontakt[]"]').val('E-Mail: ' + values['allgemein_verantwortlich_email'] + '\n Tel.: ' + values['allgemein_verantwortlich_telefon']);
   }
 
   var extendedTables = [];

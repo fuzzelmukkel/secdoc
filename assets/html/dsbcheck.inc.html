@@ -1,0 +1,118 @@
+<div class="tab-content" style="padding-top: 0px !important;">
+  <div class="row">
+    <div class="col-sm-12">
+      <h4 class="info-text">
+        <i class="fa fa-check-circle-o"></i> Grundschutz-Check
+      </h4>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-sm-12">
+      <h5 class="info-text">
+        Dokumentation XYZ (#1234)
+      </h5>
+    </div>
+    <div class="col-sm-offset-1 col-sm-10 table-responsive">
+      <table class="table table-striped table-hover btn-table" id="overalltoms">
+        <thead>
+          <tr>
+            <th>Kategorie</th>
+            <th>Maßnahme</th>
+            <th>Umsetzung</th>
+            <th>Umgesetzt in</th>
+          </tr>
+        </thead>
+        <tbody>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  function getCombinedTOMs(docId) {
+   setOverlay();
+
+   $.post(backendPath, JSON.stringify({'action':'tomcheck', 'id': docId, 'debug': debug})).done((data) => {
+     if(!data['success']) {
+       showError('Einsammeln der TOMs', data['error']);
+       return;
+     }
+
+     for(let tomKey in data['data']['toms']) {
+       if(tomKey.indexOf('_kommentar') > -1) continue;
+
+       let tomID = tomKey.split('_')[1];
+
+       console.log(tomKey);
+
+       for(let docID in data['data']['toms'][tomKey]) {
+         console.log(docID);
+         $('#overalltoms tbody').append(`
+         <tr>
+           <td><Kategoriename></td>
+           <td>${htmlEncode(tomID)}</td>
+           <td>
+             <div style="margin-bottom: 15px !important;">
+               <span class="text-success">Ja <i class="fa fa-plus"></i></span>
+               <button class="btn btn-sm pull-right" type="button" data-toggle="collapse" data-target="#${htmlEncode(tomID) + htmlEncode(docID)}_kommentar" aria-expanded="true" aria-controls="${htmlEncode(tomID) + htmlEncode(docID)}_kommentar">Kommentar anzeigen</button>
+             </div>
+             <div class="collapse" id="${htmlEncode(tomID) + htmlEncode(docID)}_kommentar" aria-expanded="false">
+               <div class="well" style="margin-bottom: 0px !important;padding: 10px !important;">${htmlEncode(data['data']['toms'][tomKey + '_kommentar'][docID])}</div>
+             </div>
+           </td>
+           <td><a href="?id=${htmlEncode(docID)}" target="_blank">${htmlEncode(data['data']['docs'][docID]['allgemein_bezeichnung'])}</a></td>
+         </tr>`);
+       }
+     }
+   }).fail((jqXHR, error, errorThrown) => {
+     showError('Einsammeln der TOMs', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+   }).always(() => {
+     setOverlay(false);
+   });
+  }
+
+  setOverlay(true);
+  getCombinedTOMs(loadIdMain);
+
+  $('#overalltoms tbody').append(`
+  <tr>
+    <td rowspan="3">APP.1.1 Office-Produkte</td>
+    <td>APP.1.1.A15</td>
+    <td>
+      <div style="margin-bottom: 15px !important;">
+        <span class="text-success">Ja <i class="fa fa-plus"></i></span>
+        <button class="btn btn-sm pull-right" type="button" data-toggle="collapse" data-target="#APP_1_1_A15_1_kommentar" aria-expanded="true" aria-controls="APP_1_1_A15_1_kommentar">Kommentar anzeigen</button>
+      </div>
+      <div class="collapse" id="APP_1_1_A15_1_kommentar" aria-expanded="false">
+        <div class="well" style="margin-bottom: 0px !important;padding: 10px !important;">Umsetzungskommentar</div>
+      </div>
+    </td>
+    <td><a href="?id=1234" target="_blank">Dokumentation XYZ 2</a></td>
+  </tr>`);
+  $('#overalltoms tbody').append(`
+  <tr>
+    <td rowspan="2">APP.1.1.A16</td>
+    <td><span class="text-warning">Teilweise <i class="fa fa-plus"></i>/<i class="fa fa-minus"></i></span></td>
+    <td><a href="?id=1234" target="_blank">Dokumentation XYZ 2</a></td>
+  </tr>`);
+  $('#overalltoms tbody').append(`
+  <tr>
+    <td><span class="text-danger">Nein <i class="fa fa-minus"></i></span></td>
+    <td><a href="?id=1234" target="_blank">Dokumentation XYZ 2</a></td>
+  </tr>`);
+  $('#overalltoms tbody').append(`
+  <tr>
+    <td rowspan="2">CON.1 Kryptokonzept </td>
+    <td>CON.1.A7</td>
+    <td><span class="text-info">Unbearbeitet <i class="fa fa-question"></i></span></td>
+    <td><a href="?id=1234" target="_blank">Dokumentation XYZ 2</a></td>
+  </tr>`);
+  $('#overalltoms tbody').append(`
+  <tr>
+    <td>CON.1.A8</td>
+    <td><span class="text-info">Entbehrlich <i class="fa fa-times"></i></span></td>
+    <td><a href="?id=1234" target="_blank">Dokumentation XYZ 2</a></td>
+  </tr>`);
+  setOverlay(false);
+</script>

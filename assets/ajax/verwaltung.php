@@ -1490,6 +1490,79 @@ EOH;
       break;
     }
 
+    # Gibt die Informationen für den Grundschutz-Check zurück
+    case 'tomcheck': {
+      if(!$userIsDSB) {
+        returnError('Sie haben keine Berechtigung diese Funktion aufzurufen!');
+      }
+
+      if(empty($verfahrensId)) {
+        returnError('Keine ID für ein Verfahren wurde übergeben!');
+      }
+
+      $mainDoc = $dbcon->getVerfahren($verfahrensId, $userId, $userGroups, $userIsDSB);
+
+      if(empty($mainDoc)) returnError('Dokumentation existiert nicht');
+
+      # Abhängigkeiten rekursiv durchsuchen
+      $checkIDs     = [$verfahrensId];
+      $doneIDS      = [];
+      $dependencies = [];
+
+      while(!empty($checkIDs)) {
+        $currID = array_pop($checkIDs);
+        array_push($doneIDS, $currID);
+        $currDeps = $dbcon->getDependenciesOf($currID, $userId, $userGroups, $userIsDSB);
+
+        if(!empty($currDeps)) {
+          $dependencies = array_merge($dependencies, $currDeps);
+          foreach($currDeps as $dep) {
+            if(!in_array($dep['id'], $doneIDS)) array_push($checkIDs, $dep['id']); # Alle neuen IDs für die Abhängigkeiten-Suche einreihen, falls nicht schon zuvor verarbeitet
+          }
+        }
+      }
+
+      usort($dependencies, function ($a, $b) { return $a['name'] <=> $b['name']; });
+
+      # Für alle Dokumentationen den Inhalt holen
+      $contentStore = [
+        $verfahrensId => json_decode($mainDoc[0]['JSON'], TRUE)
+      ];
+      foreach($dependencies as $doc) {
+        $tempDoc = $dbcon->getVerfahren($doc['id'], $userId, $userGroups, $userIsDSB);
+        $contentStore[$doc['id']] = json_decode($tempDoc[0]['JSON'], TRUE);
+      }
+
+      # TOMS zusammenführen
+      $tomStore = [];
+      foreach($contentStore as $doc) {
+        $docKeys = array_keys($doc);
+        # TOMs ignorieren, falls Template genutzt
+        if(in_array('massnahmen_abhaengigkeit_id', $docKeys) || !empty($doc['massnahmen_abhaengigkeit_id'])) continue;
+
+        foreach($docKeys as $key) {
+          # Nur TOM Felder betrachten
+          if(in_array($key, ['massnahmen_risiko', 'massnahmen_vertraulichkeit', 'massnahmen_integritaet', 'massnahmen_verfuegbarkeit']) || strpos($key, 'massnahmen_') !== 0) continue;
+
+          if(!in_array($key, array_keys($tomStore))) $tomStore[$key] = [];
+
+          $tomStore[$key][$doc['meta_id']] = $doc[$key];
+        }
+      }
+
+      ksort($tomStore);
+
+      $result = [
+        'docs' => $contentStore,
+        'toms' => $tomStore
+      ];
+
+      $output['count'] = 2;
+      $output['data'] = $result;
+      $output['success'] = TRUE;
+      break;
+    }
+
     # Gibt die zuletzt erstellte PDF eines Verfahrens zurück
     case 'getpdf': {
       if(empty($verfahrensId)) {
