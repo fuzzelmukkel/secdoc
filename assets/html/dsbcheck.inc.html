@@ -8,8 +8,7 @@
   </div>
   <div class="row">
     <div class="col-sm-12">
-      <h5 class="info-text">
-        Dokumentation XYZ (#1234)
+      <h5 class="info-text" id="mainTitle">
       </h5>
     </div>
     <div class="col-sm-offset-1 col-sm-10 table-responsive">
@@ -30,6 +29,44 @@
 </div>
 
 <script>
+  /**
+   * Liste aller TOMs
+   * @global
+   * @type {Array}
+   */
+  let tomsMapping = [];
+
+  /**
+   * Bildet den Umsetzungsstand auf HTML ab
+   * @global
+   * @type {Object}
+   */
+  let implementationMapping = {
+    '-1': '<span class="text-info">Unbearbeitet <i class="fa fa-question"></i></span>',
+     '0': '<span class="text-danger">Nein <i class="fa fa-minus"></i></span>',
+     '1': '<span class="text-success">Ja <i class="fa fa-plus"></i></span>',
+     '2': '<span class="text-warning">Teilweise <i class="fa fa-plus"></i>/<i class="fa fa-minus"></i></span>',
+     '4': '<span class="text-info">Entbehrlich <i class="fa fa-times"></i></span>'
+  };
+
+  /**
+   * Punkte für verschiedene Umsetzungsstände
+   * @global
+   * @type {Object}
+   */
+  let implementationPoints = {
+    '-1': 0,
+     '0': 0,
+     '1': 1,
+     '2': 0.5,
+     '4': 1
+  };
+
+  /**
+   * Fragt die TOMs einer Dokumentation und ihrer Abhängigkeiten ab
+   * @param  {Number} docId ID der Dokumentation, die überprüft werden soll
+   * @return {undefined}
+   */
   function getCombinedTOMs(docId) {
    setOverlay();
 
@@ -39,31 +76,111 @@
        return;
      }
 
-     for(let tomKey in data['data']['toms']) {
-       if(tomKey.indexOf('_kommentar') > -1) continue;
+     // Seitentitel setzen
+     $('#mainTitle').text(`${data.data.docs[docId].allgemein_bezeichnung} (#${docId})`);
+     window.document.title += ` - Grundschutz-Check für ${data.data.docs[docId].allgemein_bezeichnung} (#${docId})`;
 
-       let tomID = tomKey.split('_')[1];
+     // Verwendungen der einzelnen Maßnahmen und Umsetzungspunkte zählen
+     for(let tomKey in tomsMapping) {
+       tomsMapping[tomKey].docCount  = 0;
+       tomsMapping[tomKey].docPoints = 0;
+       if(('massnahmen_' + tomsMapping[tomKey].Identifier) in data['data']['toms']) {
+         tomsMapping[tomKey].docCount = data.data.toms['massnahmen_' + tomsMapping[tomKey].Identifier].length;
 
-       console.log(tomKey);
+         if(tomsMapping[tomKey].docCount > 0) {
+           for(let tomDoc of data.data.toms['massnahmen_' + tomsMapping[tomKey].Identifier]) {
+             tomsMapping[tomKey].docPoints += implementationPoints[tomDoc.data];
+           }
+         }
+       }
+     }
 
-       for(let docID in data['data']['toms'][tomKey]) {
-         console.log(docID);
+     // Alle TOMs durchgehen und verwendete in Tabelle eintragen
+     let lastCat = '';
+     for(let tom of tomsMapping) {
+       if(tom.docCount === 0) continue;
+
+       // Einträge pro Kategorie und Punkte zählen
+       let docCountCat = 0;
+       let catPoints   = 0;
+       let tomCount    = 0;
+       for(let tomTemp of tomsMapping) {
+         if(tomTemp.Category === tom.Category && tomTemp.Subcategory === tom.Subcategory) {
+           docCountCat += tomTemp.docCount;
+           catPoints   += tomTemp.docPoints / tomTemp.docCount;
+           tomCount++;
+         }
+       }
+
+       if(docCountCat === 0) continue;
+
+       // Eintrag für jede Verwendung einr Maßnahme
+       let firstDoc = true;
+       for(let tomDoc of data.data.toms['massnahmen_' + tom.Identifier]) {
+         // Kategorie nur einmal anzeigen und rowspan nutzen
+         let tableCatHTML = '';
+         if(lastCat.trim() === '' || lastCat.trim() !== tom.Subcategory.trim()) {
+           tableCatHTML = `
+            <td rowspan="${docCountCat}">
+              ${htmlEncode(tom.Subcategory)}
+              <div class="progress pull-right" style="width: 30%;">
+                <div class="progress-bar" role="progressbar" aria-valuenow="${Math.round((catPoints / tomCount) * 100)}" aria-valuemin="0" aria-valuemax="100" style="width: ${Math.round((catPoints / tomCount) * 100)}%;">
+                  <span class="sr-only">${Math.round((catPoints / tomCount) * 100)}% Complete</span>
+                </div>
+              </div>
+            </td>`;
+         }
+
+         // Maßnahme nur einmal anzeigen und rowspan nutzen
+         let tomMeasureHTML = '';
+         if(firstDoc) {
+           tomMeasureHTML = `
+            <td rowspan="${tom.docCount}">
+              ${htmlEncode(tom.Identifier)}
+              <div class="progress pull-right" style="width: 30%;">
+                <div class="progress-bar" role="progressbar" aria-valuenow="${Math.round((tom.docPoints / tom.docCount) * 100)}" aria-valuemin="0" aria-valuemax="100" style="width: ${Math.round((tom.docPoints / tom.docCount) * 100)}%;">
+                  <span class="sr-only">${Math.round((tom.docPoints / tom.docCount) * 100)}% Complete</span>
+                </div>
+              </div>
+            </td>`;
+         }
+
+         // Umsetzungsstand und Kommentar vorbereiten
+         let tomStatus    = implementationMapping[tomDoc.data];
+         let tomIDComment = htmlEncode(tom.Identifier.replace(/\./g, '_') + tomDoc.id + '_kommentar');
+         let tomComment   = '';
+
+         if(Object.keys(data.data.toms).includes('massnahmen_' + tom.Identifier + '_kommentar')) {
+           for(let tempComment of data.data.toms['massnahmen_' + tom.Identifier + '_kommentar']) {
+             if(tempComment.id === tomDoc.id) {
+               tomComment = tempComment.data.trim();
+               break;
+             }
+           }
+         }
+
+         // Zeilen in Tabelle schreiben
          $('#overalltoms tbody').append(`
          <tr>
-           <td><Kategoriename></td>
-           <td>${htmlEncode(tomID)}</td>
+           ${tableCatHTML}
+           ${tomMeasureHTML}
            <td>
              <div style="margin-bottom: 15px !important;">
-               <span class="text-success">Ja <i class="fa fa-plus"></i></span>
-               <button class="btn btn-sm pull-right" type="button" data-toggle="collapse" data-target="#${htmlEncode(tomID) + htmlEncode(docID)}_kommentar" aria-expanded="true" aria-controls="${htmlEncode(tomID) + htmlEncode(docID)}_kommentar">Kommentar anzeigen</button>
+               ${tomStatus}
+               <button class="btn btn-sm pull-right ${tomComment === '' ? 'hidden' : ''}" type="button" data-toggle="collapse" data-target="#${tomIDComment}" aria-expanded="true" aria-controls="${tomIDComment}">Kommentar anzeigen</button>
              </div>
-             <div class="collapse" id="${htmlEncode(tomID) + htmlEncode(docID)}_kommentar" aria-expanded="false">
-               <div class="well" style="margin-bottom: 0px !important;padding: 10px !important;">${htmlEncode(data['data']['toms'][tomKey + '_kommentar'][docID])}</div>
+             <div class="collapse ${tomComment === '' ? 'hidden' : ''}" id="${tomIDComment}" aria-expanded="false">
+               <div class="well" style="margin-bottom: 0px !important;padding: 10px !important;">${tomComment}</div>
              </div>
            </td>
-           <td><a href="?id=${htmlEncode(docID)}" target="_blank">${htmlEncode(data['data']['docs'][docID]['allgemein_bezeichnung'])}</a></td>
+           <td><a href="?id=${htmlEncode(tomDoc.id)}" target="_blank">${htmlEncode(data.data.docs[tomDoc.id]['allgemein_bezeichnung'])}</a></td>
          </tr>`);
+
+         firstDoc = false;
+         lastCat = tom.Subcategory;
        }
+
+       lastCat = tom.Subcategory;
      }
    }).fail((jqXHR, error, errorThrown) => {
      showError('Einsammeln der TOMs', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
@@ -72,47 +189,35 @@
    });
   }
 
-  setOverlay(true);
-  getCombinedTOMs(loadIdMain);
+  /**
+   * Fragt die aktuelle TOM-Liste ab und führt dann den Grundschutz-Check durch
+   * @return {undefined}
+   */
+  function fetchTOMListAndCheckTOMs() {
+    $.getJSON(backendPath + '?action=gettoms' + (debug ? '&debug=true' : '')).done((data) => {
+      if(!data['success']) {
+        showError('Holen der TOMs', data['error']);
+        setOverlay(false);
+        return;
+      }
 
-  $('#overalltoms tbody').append(`
-  <tr>
-    <td rowspan="3">APP.1.1 Office-Produkte</td>
-    <td>APP.1.1.A15</td>
-    <td>
-      <div style="margin-bottom: 15px !important;">
-        <span class="text-success">Ja <i class="fa fa-plus"></i></span>
-        <button class="btn btn-sm pull-right" type="button" data-toggle="collapse" data-target="#APP_1_1_A15_1_kommentar" aria-expanded="true" aria-controls="APP_1_1_A15_1_kommentar">Kommentar anzeigen</button>
-      </div>
-      <div class="collapse" id="APP_1_1_A15_1_kommentar" aria-expanded="false">
-        <div class="well" style="margin-bottom: 0px !important;padding: 10px !important;">Umsetzungskommentar</div>
-      </div>
-    </td>
-    <td><a href="?id=1234" target="_blank">Dokumentation XYZ 2</a></td>
-  </tr>`);
-  $('#overalltoms tbody').append(`
-  <tr>
-    <td rowspan="2">APP.1.1.A16</td>
-    <td><span class="text-warning">Teilweise <i class="fa fa-plus"></i>/<i class="fa fa-minus"></i></span></td>
-    <td><a href="?id=1234" target="_blank">Dokumentation XYZ 2</a></td>
-  </tr>`);
-  $('#overalltoms tbody').append(`
-  <tr>
-    <td><span class="text-danger">Nein <i class="fa fa-minus"></i></span></td>
-    <td><a href="?id=1234" target="_blank">Dokumentation XYZ 2</a></td>
-  </tr>`);
-  $('#overalltoms tbody').append(`
-  <tr>
-    <td rowspan="2">CON.1 Kryptokonzept </td>
-    <td>CON.1.A7</td>
-    <td><span class="text-info">Unbearbeitet <i class="fa fa-question"></i></span></td>
-    <td><a href="?id=1234" target="_blank">Dokumentation XYZ 2</a></td>
-  </tr>`);
-  $('#overalltoms tbody').append(`
-  <tr>
-    <td>CON.1.A8</td>
-    <td><span class="text-info">Entbehrlich <i class="fa fa-times"></i></span></td>
-    <td><a href="?id=1234" target="_blank">Dokumentation XYZ 2</a></td>
-  </tr>`);
-  setOverlay(false);
+      if(data['data'].length === 0) {
+        showError('Holen der TOMs', 'TOM Liste ist leer!');
+        setOverlay(false);
+        return;
+      }
+
+      tomsMapping = data['data'];
+      // Nach Identifier sortieren
+      tomsMapping = tomsMapping.sort((a,b) =>  a.Identifier.localeCompare(b.Identifier, 'en', { numeric: true }));
+
+      getCombinedTOMs(loadIdMain);
+    }).fail((jqXHR, error, errorThrown) => {
+      showError('Holen der TOMs', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+      setOverlay(false);
+    });
+  }
+
+  setOverlay(true);
+  fetchTOMListAndCheckTOMs();
 </script>

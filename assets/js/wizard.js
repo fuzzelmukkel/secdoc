@@ -704,7 +704,7 @@ function loadFromJSON(values, keepAccess = false, onlyTOMs = false) {
   let inputKeys = Object.keys(values);
 
   // Falls TOM Template gewählt, ausgefüllte TOM Felder entfernen
-  if(inputKeys.includes('massnahmen_abhaengigkeit_id') && values['massnahmen_abhaengigkeit_id'].length > 0)  inputKeys = inputKeys.filter(item => (item.indexOf('tom_category_') !== 0 && (item.indexOf('massnahmen_') !== 0 || item === 'massnahmen_abhaengigkeit_id'  || item === 'massnahmen_risiko')));
+  if(inputKeys.includes('massnahmen_abhaengigkeit_id') && values['massnahmen_abhaengigkeit_id'][0] !== '')  inputKeys = inputKeys.filter(item => (item.indexOf('tom_category_') !== 0 && (item.indexOf('massnahmen_') !== 0 || item === 'massnahmen_abhaengigkeit_id'  || item === 'massnahmen_risiko')));
 
   // Fallback für fehlende TOM Kategorie Auswahlfelder
   let tomFields = inputKeys.filter((elem) => (elem.search('massnahmen_') >= 0));

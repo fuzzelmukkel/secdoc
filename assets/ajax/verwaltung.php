@@ -1522,8 +1522,6 @@ EOH;
         }
       }
 
-      usort($dependencies, function ($a, $b) { return $a['name'] <=> $b['name']; });
-
       # Für alle Dokumentationen den Inhalt holen
       $contentStore = [
         $verfahrensId => json_decode($mainDoc[0]['JSON'], TRUE)
@@ -1533,12 +1531,14 @@ EOH;
         $contentStore[$doc['id']] = json_decode($tempDoc[0]['JSON'], TRUE);
       }
 
+      uasort($contentStore, function ($a, $b) { return strcmp(strval($a['allgemein_bezeichnung']), strval($b['allgemein_bezeichnung'])); });
+
       # TOMS zusammenführen
       $tomStore = [];
       foreach($contentStore as $doc) {
         $docKeys = array_keys($doc);
         # TOMs ignorieren, falls Template genutzt
-        if(in_array('massnahmen_abhaengigkeit_id', $docKeys) || !empty($doc['massnahmen_abhaengigkeit_id'])) continue;
+        if(in_array('massnahmen_abhaengigkeit_id', $docKeys) && !empty($doc['massnahmen_abhaengigkeit_id'][0])) continue;
 
         foreach($docKeys as $key) {
           # Nur TOM Felder betrachten
@@ -1546,11 +1546,12 @@ EOH;
 
           if(!in_array($key, array_keys($tomStore))) $tomStore[$key] = [];
 
-          $tomStore[$key][$doc['meta_id']] = $doc[$key];
+          //$tomStore[$key][$doc['meta_id']] = $doc[$key];
+          array_push($tomStore[$key], ['id' => $doc['meta_id'], 'data' => $doc[$key]]);
         }
       }
 
-      ksort($tomStore);
+      ksort($tomStore, SORT_NATURAL);
 
       $result = [
         'docs' => $contentStore,
