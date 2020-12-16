@@ -107,7 +107,7 @@
        for(let tomTemp of tomsMapping) {
          if(tomTemp.Category === tom.Category && tomTemp.Subcategory === tom.Subcategory) {
            docCountCat += tomTemp.docCount;
-           catPoints   += tomTemp.docPoints / tomTemp.docCount;
+           catPoints   += (tomTemp.docCount !== 0 ? tomTemp.docPoints / tomTemp.docCount : 0);
            tomCount++;
          }
        }
@@ -173,7 +173,7 @@
                <div class="well" style="margin-bottom: 0px !important;padding: 10px !important;">${tomComment}</div>
              </div>
            </td>
-           <td><a href="?id=${htmlEncode(tomDoc.id)}" target="_blank">${htmlEncode(data.data.docs[tomDoc.id]['allgemein_bezeichnung'])}</a></td>
+           <td><a href="?id=${tomDoc.id}" target="_blank">${htmlEncode(data.data.docs[tomDoc.id]['allgemein_bezeichnung'])}</a></td>
          </tr>`);
 
          firstDoc = false;

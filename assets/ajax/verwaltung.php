@@ -1535,7 +1535,7 @@ EOH;
 
       # TOMS zusammenführen
       $tomStore = [];
-      foreach($contentStore as $doc) {
+      foreach($contentStore as $docID => $doc) {
         $docKeys = array_keys($doc);
         # TOMs ignorieren, falls Template genutzt
         if(in_array('massnahmen_abhaengigkeit_id', $docKeys) && !empty($doc['massnahmen_abhaengigkeit_id'][0])) continue;
@@ -1546,8 +1546,7 @@ EOH;
 
           if(!in_array($key, array_keys($tomStore))) $tomStore[$key] = [];
 
-          //$tomStore[$key][$doc['meta_id']] = $doc[$key];
-          array_push($tomStore[$key], ['id' => $doc['meta_id'], 'data' => $doc[$key]]);
+          array_push($tomStore[$key], ['id' => $docID, 'data' => $doc[$key]]);
         }
       }
 
