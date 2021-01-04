@@ -581,6 +581,30 @@ function showVerfahrensliste(startup = false) {
  * Speicher- und Ladefunktionen
  */
 /**
+ * Springt zum im Hash der URL hinterlegtem Element
+ * @return {undefined}
+ */
+function jumpToElement() {
+  // Falls Hash in URL angegeben wird versucht das Element direkt anzuzeigen
+  if(window.location.hash !== '') {
+    let elementToShow = $('[name="' + window.location.hash.replace('#', '') + '"]');
+
+    if(elementToShow.length > 0) {
+      // Richtigen Tab auswählen
+      $('.wizard-card').bootstrapWizard('show', elementToShow.closest('.tab-pane')[0].id);
+
+      // Falls vorhanden passendes Akkordion aufklappen
+      if(elementToShow.closest('.collapse').length > 0) {
+        elementToShow.closest('.collapse').collapse('show');
+      }
+
+      // Zum Element scrollen
+      setTimeout(() => { elementToShow.get(0).scrollIntoView(); }, 500);
+    }
+  }
+}
+
+/**
  * Lädt ein leeres, neues Verfahren und setzt dazu alle Eingabefelder zurück
  * @returns {undefined}
  */
@@ -1001,6 +1025,9 @@ function loadFromServer(id) {
       $('#title').text(' Dokumentation von ' + htmlDecode(data['data'][0]['Bezeichnung'])).append(statusSymbol).find('i').tooltip();
       changedValues = false;
       changedFields = [];
+
+      // Falls Hash in URL angegeben zum Elment springen
+      jumpToElement();
 
       // Abhängigkeiten bei IT-Verfahren anzeigen
       if(userIsDSB) {
@@ -2822,6 +2849,9 @@ Promise.all(promises).then(function() {
   $('#attached_documents_add').click(() => {
     showDocumentAddDialog();
   });
+
+  // Listener für Veränderung im URL Hash
+  $(window).on('hashchange', e => { jumpToElement(); });
 
   console.timeEnd('Spezielle Handler initialisieren');
 

@@ -152,7 +152,7 @@ function loadTables(tier) {
       newEntry.append('<td>' + data['data'][c]['Erstelldatum'] + '</td>');
       newEntry.append('<td data-order="' + (data['data'][c]['Aktualisierung'] ? new Date(data['data'][c]['Aktualisierung'].replace(' ', 'T')).getTime() : new Date().getTime()) + '">' + lastUpdate + ' <i class="fa fa-history cursor-progress revisionload" data-id="' + data['data'][c]['ID'] + '"></i> <br /> <strong>Bearbeiter:</strong> <span title="' + data['data'][c]['BearbeiterDetails'] + '">' + data['data'][c]['LetzterBearbeiter'] + '</span> </td>');
       newEntry.append('<td><textarea class="form-control comment" data-id="' + data['data'][c]['ID'] + '" style="resize: both;">' + htmlDecode(data['data'][c]['DSBKommentar']) + '</textarea></td>');
-      newEntry.append('<td><div class="btn-group inline"><a class="btn" href="?id=' + data['data'][c]['ID'] + (debug ? '&debug=true' : '') + '" target="_blank"><i class="fa fa-edit"></i> Bearbeiten</a><a class="btn" href="?copy=' + data['data'][c]['ID'] + (debug ? '&debug=true' : '') + '" target="_blank"><i class="fa fa-copy"></i> Kopieren</a><button type="button" class="btn pdfdownload" data-id="' + data['data'][c]['ID'] + '" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '><i class="fa fa-file-pdf-o"></i> ' + (parseInt(data['data'][c]['Status']) === 0 ? 'Letzte abgeschlossene PDF anzeigen' : 'PDF anzeigen') + '</button></div> <button type="button" data-id="' + data['data'][c]['ID'] +'" data-name="' + data['data'][c]['Bezeichnung'] +'" class="btn del btn-danger"><i class="fa fa-minus"></i> Löschen</button></td>');
+      newEntry.append('<td><div class="btn-group inline"><a class="btn" href="?id=' + data['data'][c]['ID'] + (debug ? '&debug=true' : '') + '" target="_blank"><i class="fa fa-edit"></i> Bearbeiten</a><a class="btn" href="?copy=' + data['data'][c]['ID'] + (debug ? '&debug=true' : '') + '" target="_blank"><i class="fa fa-copy"></i> Kopieren</a><button type="button" class="btn pdfdownload" data-id="' + data['data'][c]['ID'] + '" ' + (data['data'][c]['PDF'] ? '' : 'disabled') + '><i class="fa fa-file-pdf-o"></i> ' + (parseInt(data['data'][c]['Status']) === 0 ? 'Letzte abgeschlossene PDF anzeigen' : 'PDF anzeigen') + '</button><a class="btn" href="?page=dsbcheck&id=' + data['data'][c]['ID'] + '" target="_blank"><i class="fa fa-check-circle-o"></i> Grundschutz-Check</a></div> <button type="button" data-id="' + data['data'][c]['ID'] +'" data-name="' + data['data'][c]['Bezeichnung'] +'" class="btn del btn-danger"><i class="fa fa-minus"></i> Löschen</button></td>');
 
       if(parseInt(data['data'][c]['Status']) === 0) {
         inbTable.append(newEntry);
@@ -239,7 +239,7 @@ function loadTables(tier) {
      * @return {String} Formatiertes HTML für den Druck
      */
     function pdfFormat(inner, rowdex, coldex) {
-      if(coldex === 0) return $.parseHTML(inner)[0].textContent;
+      if(coldex === 0 || coldex === 5) return $.parseHTML(inner)[0].textContent;
       if(coldex === 6) return $($.parseHTML(inner)).val();
       return inner;
     }
@@ -274,7 +274,7 @@ function loadTables(tier) {
       buttons: [{
           extend: 'print',
           title: 'Abgeschlossene Verfahren',
-          text: '<i class="fa fa-print"> Tabelle drucken',
+          text: '<i class="fa fa-print"></i> Tabelle drucken',
           exportOptions: {
             stripHtml: false,
             columns: ':not(.no-print)',
@@ -286,7 +286,7 @@ function loadTables(tier) {
         {
           extend: 'pdfHtml5',
           title: 'Abgeschlossene Verfahren',
-          text: '<i class="fa fa-file-pdf-o"> Tabelle als PDF speichern',
+          text: '<i class="fa fa-file-pdf-o"></i> Tabelle als PDF speichern',
           orientation: 'landscape',
           exportOptions: {
             stripHtml: false,
