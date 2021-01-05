@@ -40,6 +40,13 @@ var version = '';
 var page = ['dsbview', 'dsbcheck', 'home', 'login', 'wizit', 'wizproc', 'wizapp', 'wizmeasures'].includes(GetURLParameter('page')) ? GetURLParameter('page') : 'home';
 
 /**
+ * Speichert den Identifikator der Ebene falls der Template-Modus gewählt wird
+ * @global
+ * @type {Number}
+ */
+var templateMode = GetURLParameter('template') === false ? 0 : parseInt(GetURLParameter('template'));;
+
+/**
  * ID der Dokumentation, die geladen werden soll
  * @type {Number}
  */
@@ -458,10 +465,13 @@ function loadSubpage() {
     $.getJSON(backendPath + '?action=get&id=' + (copyIdMain ? copyIdMain : loadIdMain)+ (debug ? '&debug=true' : '')).done((data) => {
       if(data['success']) {
         page = 'home';
-        if(parseInt(data['data'][0]['Typ']) === 1) page = 'wizproc';
-        if(parseInt(data['data'][0]['Typ']) === 2) page = 'wizit';
-        if(parseInt(data['data'][0]['Typ']) === 3) page = 'wizapp';
-        if(parseInt(data['data'][0]['Typ']) === 4) page = 'wizmeasures';
+        let docType = parseInt(data['data'][0]['Typ']);
+        if(docType === 1)               page = 'wizproc';
+        if(docType === 2)               page = 'wizit';
+        if(docType === 3)               page = 'wizapp';
+        if([4,5,6,7].includes(docType)) page = 'wizmeasures';
+
+        if([5,6,7].includes(docType)) templateMode = docType;
 
         $.get('assets/html/' + page + '.inc.html?' + Date.now()).done((data) => { $('#content').html(data); }).fail((jqXHR, error, errorThrown) => {
           showError('Laden der Unterseite "' + page + '"', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});

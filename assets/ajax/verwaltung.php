@@ -1087,7 +1087,7 @@ EOH;
 
       $result = array();
       foreach($list as $entry) {
-        if(intval($entry['Typ']) === 4) array_push($result, array('value' => $entry['ID'], 'label' => $entry['Bezeichnung'] . " [" . $entry['Fachabteilung'] . "]"));
+        if(in_array(intval($entry['Typ']), [4, 5, 6, 7])) array_push($result, array('value' => $entry['ID'], 'label' => $entry['Bezeichnung'] . " [" . $entry['Fachabteilung'] . "]", 'type' => intval($entry['Typ'])));
       }
 
       $output['data'] = $result;

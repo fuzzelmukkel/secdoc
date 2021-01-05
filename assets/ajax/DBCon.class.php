@@ -2214,8 +2214,8 @@
      * @throws PDOException
      */
     private function removeHistorie($verfahrensId) {
-      $sth = $this->pdo->prepare('DELETE FROM verfahren_historie WHERE (Verfahrens_Id, Kennung, Datum) IN (SELECT * FROM verfahren_historie WHERE Verfahrens_Id = ? ORDER BY Datum DESC LIMIT -1 OFFSET ?);');
-      $sth->execute([$verfahrensId, self::MAXHISTORY]);
+      $sth = $this->pdo->prepare('DELETE FROM verfahren_historie WHERE Verfahrens_Id = ? AND Datum IN (SELECT Datum FROM verfahren_historie WHERE Verfahrens_Id = ? ORDER BY Datum DESC LIMIT -1 OFFSET ?);');
+      $sth->execute([$verfahrensId, $verfahrensId, self::MAXHISTORY]);
 
       ob_start();
       $sth->debugDumpParams();

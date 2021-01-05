@@ -60,7 +60,10 @@ let modeMapping = {
   1: ['Verarbeitungstätigkeit', 'Verarbeitungstätigkeiten', 'Die', 'eine', 'einer'],
   2: ['IT-Verfahren', 'IT-Verfahren', 'Das', 'ein', 'einem'],
   3: ['Fachapplikation', 'Fachapplikationen', 'Die', 'eine', 'einer'],
-  4: ['übergreifende Massnahme', 'übergreifende Massnahmen', 'Die', 'eine', 'einer']
+  4: ['übergreifende Massnahme', 'übergreifende Massnahmen', 'Die', 'eine', 'einer'],
+  5: ['Vorlage für Verarbeitungstätigkeiten', 'Vorlagen für Verarbeitungstätigkeiten', 'Die', 'eine', 'einer'],
+  6: ['Vorlage für Fachapplikationen', 'Vorlagen für Fachapplikationen', 'Die', 'eine', 'einer'],
+  7: ['Vorlage für IT-Verfahren', 'Vorlagen für IT-Verfahren', 'Die', 'eine', 'einer']
 };
 
 /**
@@ -69,10 +72,11 @@ let modeMapping = {
  * @type {Number}
  */
 let modeNum = 0;
-if(mode === 'wizproc')       modeNum = 1;
-if(mode === 'wizapp')        modeNum = 3;
-if(mode === 'wizit')         modeNum = 2;
-if(mode === 'wizmeasures')   modeNum = 4;
+if(mode === 'wizproc')                           modeNum = 1;
+if(mode === 'wizapp')                            modeNum = 3;
+if(mode === 'wizit')                             modeNum = 2;
+if(mode === 'wizmeasures')                       modeNum = 4;
+if(mode === 'wizmeasures' && templateMode !== 0) modeNum = templateMode;
 
 /**
  * Lesbarer Name des Modus; genutzt für die Ersetzung in Texten
@@ -198,7 +202,13 @@ if(localStorage.getItem('tom_cache_' + (document.location.host + document.locati
 }
 
 // TOM Liste holen
-promises[0] = $.getJSON(backendPath + '?action=gettoms&data={"tier":' + modeNum + '}' + (debug ? '&debug=true' : '')).done((data) => {
+let tomTier = modeNum;
+switch(tomTier) {
+  case 5: tomTier = 1; break;
+  case 6: tomTier = 2; break;
+  case 7: tomTier = 3; break;
+}
+promises[0] = $.getJSON(backendPath + '?action=gettoms&data={"tier":' + tomTier + '}' + (debug ? '&debug=true' : '')).done((data) => {
   if(!data['success']) {
     showError('Holen der TOMs', data['error']);
     return;
@@ -441,6 +451,10 @@ function showVerfahrensliste(startup = false) {
       if(currType === 2 && mode !== 'wizit')       continue;
       if(currType === 3 && mode !== 'wizapp')      continue;
       if(currType === 4 && mode !== 'wizmeasures') continue;
+
+      if(currType > 4 || mode === 'wizmeasures') {
+        if(currType !== modeNum) continue;
+      }
 
       modeCount++;
 
@@ -727,8 +741,8 @@ function loadFromJSON(values, keepAccess = false, onlyTOMs = false) {
 
   let inputKeys = Object.keys(values);
 
-  // Falls TOM Template gewählt, ausgefüllte TOM Felder entfernen
-  if(inputKeys.includes('massnahmen_abhaengigkeit_id') && values['massnahmen_abhaengigkeit_id'][0] !== '')  inputKeys = inputKeys.filter(item => (item.indexOf('tom_category_') !== 0 && (item.indexOf('massnahmen_') !== 0 || item === 'massnahmen_abhaengigkeit_id'  || item === 'massnahmen_risiko')));
+  // Falls TOM Template gewählt, ausgefüllte TOM Felder entfernen (nur wenn nicht auf Ebene 4)
+  if(mode !== 'wizmeasures' && inputKeys.includes('massnahmen_abhaengigkeit_id') && values['massnahmen_abhaengigkeit_id'][0] !== '')  inputKeys = inputKeys.filter(item => (item.indexOf('tom_category_') !== 0 && (item.indexOf('massnahmen_') !== 0 || item === 'massnahmen_abhaengigkeit_id'  || item === 'massnahmen_risiko')));
 
   // Fallback für fehlende TOM Kategorie Auswahlfelder
   let tomFields = inputKeys.filter((elem) => (elem.search('massnahmen_') >= 0));
@@ -1210,7 +1224,7 @@ function genHTMLforPDF(draft = false) {
   }
 
   /* Hinweis anzeigen, falls Template genutzt */
-  if($('input[name="massnahmen_abhaengigkeit_id[]"]').val() !== '') {
+  if(mode !== 'wizmeasures' && $('input[name="massnahmen_abhaengigkeit_id[]"]').val() !== '') {
     toSend.find('#massnahmen_abhaengigkeit').closest('div').removeClass('printHide');
     toSend.find('#massnahmen_abhaengigkeit').closest('div').prepend('<p class="text-center">Es wurde das folgende Template für die Maßnahmen ausgewählt:</p>');
     toSend.find('#tom_accordion').remove();
@@ -1578,6 +1592,11 @@ function initTypeahead(node) {
 
     // Aktuelle Dokumentation aus Auswahllisten filtern
     if(Number.parseInt(item.value) === loadId) return undefined;
+
+    // Bei Templates nur passende anzeigen
+    if(itemKeys.includes('type') && modeNum === 1 && Number.parseInt(item.type) !== 5) return undefined;
+    if(itemKeys.includes('type') && modeNum === 2 && Number.parseInt(item.type) !== 7) return undefined;
+    if(itemKeys.includes('type') && modeNum === 3 && Number.parseInt(item.type) !== 6) return undefined;
 
     for(let c=0; c < itemKeys.length; c++) {
       if(item[itemKeys[c]] !== null && item[itemKeys[c]].toLowerCase().search(lowcaseQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) > -1) {
@@ -2503,7 +2522,7 @@ Promise.all(promises).then(function() {
     var descText = idField.closest('td').next('td').find('textarea');
     if(idField.val() !== '') {
       // Falls ein Template ausgewählt wurde, alle TOM Kategorien abwählen und readonly setzen
-      if(idField[0].name === 'massnahmen_abhaengigkeit_id[]') {
+      if(mode !== 'wizmeasures' && idField[0].name === 'massnahmen_abhaengigkeit_id[]') {
         // Warnung anzeigen, falls bereits Bausteine ausgewählt wurden
         if($('#toggletoms').find('input[type=checkbox]:checked').length > 0) {
           let confirmTemplate = confirm('Es scheinen bereits Bausteine ausgewählt worden zu sein, welche entfernt und deren Inhalt gelöscht wird, wenn ein Template ausgwählt wird. Wollen Sie wirklich fortfahren?');
@@ -2536,7 +2555,7 @@ Promise.all(promises).then(function() {
           idField.closest('td').find('.status i').tooltip();
 
           // Show error when Template not loadable
-          if(idField[0].name === 'massnahmen_abhaengigkeit_id[]') {
+          if(mode !== 'wizmeasures' && idField[0].name === 'massnahmen_abhaengigkeit_id[]') {
             $('input[name="massnahmen_abhaengigkeit_name[]"]').val('').trigger('change');
             showError('Laden der Vorlage', 'Die Vorlage existiert nicht oder Sie haben keinen Zugriff darauf!');
           }
@@ -2562,7 +2581,7 @@ Promise.all(promises).then(function() {
         idField.closest('tr').find('.quick_add_dependency').addClass('hidden');
 
         // Falls ein Template ausgewählt wurde, Massnahmen aus JSON laden und alle TOM Optionen blockieren
-        if(idField[0].name === 'massnahmen_abhaengigkeit_id[]') {
+        if(mode !== 'wizmeasures' && idField[0].name === 'massnahmen_abhaengigkeit_id[]') {
           loadFromJSON(data['data'][0]['JSON'], true, true);
           $('#tom_accordion').find('input, textarea, select').prop('disabled', true);
         }
@@ -2583,7 +2602,7 @@ Promise.all(promises).then(function() {
         idField.closest('tr').find('.quick_add_dependency').removeClass('hidden');
 
         // Show error when Template not loadable
-        if(idField[0].name === 'massnahmen_abhaengigkeit_id[]') {
+        if(mode !== 'wizmeasures' && idField[0].name === 'massnahmen_abhaengigkeit_id[]') {
           $('input[name="massnahmen_abhaengigkeit_name[]"]').val('').trigger('change');
           showError('Laden der Vorlage', 'Ein Fehler bei der Übertragung ist aufgetreten.');
         }
@@ -2605,7 +2624,7 @@ Promise.all(promises).then(function() {
       idField.closest('tr').find('.quick_add_dependency').removeClass('hidden');
 
       // Falls kein Template ausgewählt wurde, alle TOM Optionen ermöglichen
-      if(idField[0].name === 'massnahmen_abhaengigkeit_id[]') $('#toggletoms, #tom_accordion').find('input, textarea, select').prop('disabled', false);
+      if(mode !== 'wizmeasures' && idField[0].name === 'massnahmen_abhaengigkeit_id[]') $('#toggletoms, #tom_accordion').find('input, textarea, select').prop('disabled', false);
     }
   });
 
@@ -2737,6 +2756,8 @@ Promise.all(promises).then(function() {
 
   // Notwendige Eingabefelder hervorheben
   $('input:required, textarea:required').closest('.form-group').find('label:first').append(' <sup><i style="color: #EB5E28;" class="fa fa-asterisk" aria-hidden="true"></i></sup>');
+
+  if([5, 6, 7].includes(modeNum)) $('input[name="allgemein_typ"]').val(modeNum);
 
   console.timeEnd('Statische Inhalte initialisieren');
 
