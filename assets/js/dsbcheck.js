@@ -94,11 +94,11 @@ function getCombinedTOMs(docId) {
       let tomCount = 0;
       for (let tomTemp of tomsMapping) {
         // Maßnahmen für höhere Risiken überspringen
-        if (parseInt(tomTemp.Risklevel) > docRiskLevel) continue;
+        if (parseInt(tomTemp.Risklevel) > docRiskLevel || tomTemp.docCount === 0) continue;
 
         if (tomTemp.Category === tom.Category && tomTemp.Subcategory === tom.Subcategory) {
           docCountCat += tomTemp.docCount;
-          catPoints += (tomTemp.docCount !== 0 ? tomTemp.docPoints / tomTemp.docCount : 0);
+          catPoints += (tomTemp.docCount > 0 ? tomTemp.docPoints / tomTemp.docCount : 0);
           tomCount++;
         }
       }
@@ -110,11 +110,6 @@ function getCombinedTOMs(docId) {
         let tableCatHTML = `
          <td data-percentage="${Math.round((catPoints / tomCount) * 100)}">
            ${htmlEncode(tom.Subcategory)}
-         </td>`;
-
-        let tomMeasureHTML = `
-         <td>
-           ${htmlEncode(tom.Description)}
          </td>`;
 
         // Umsetzungsstand und Kommentar vorbereiten
@@ -134,7 +129,8 @@ function getCombinedTOMs(docId) {
         $('#overalltoms tbody').append(`
         <tr>
           ${tableCatHTML}
-          ${tomMeasureHTML}
+          <td>${htmlEncode(tom.Title)}</td>
+          <td>${htmlEncode(tom.Description)}</td>
           <td>
             ${tomStatus}
           </td>
@@ -167,7 +163,7 @@ function getCombinedTOMs(docId) {
            </div>
          </div>
          `;
-          return $(`<tr><td colspan="5">${groupHeading} ${groupPercentageHTML}</td></tr>`);
+          return $(`<tr><td colspan="6">${groupHeading} ${groupPercentageHTML}</td></tr>`);
         }
       },
       dom: "<'row'<'col-sm-4'l><'col-sm-4 text-center'B><'col-sm-4'f>><'row'<'col-sm-12'tr>><'row'<'col-sm-5'i><'col-sm-7'p>>",
@@ -178,30 +174,34 @@ function getCombinedTOMs(docId) {
           text: '<i class="fa fa-file-pdf-o"></i> Tabelle als PDF speichern',
           orientation: 'landscape',
           customize: function(doc) {
-            console.log(doc);
             for (let c = 0; c < doc.content[1].table.body.length; c++) {
               // Link zur Dokumentation ergänzen
-              let tempHTML = $(doc.content[1].table.body[c][4].text);
+              let linkCol  = doc.content[1].table.body[c].length === 6 ? 5 : 3;
+              let tempHTML = $(doc.content[1].table.body[c][linkCol].text);
               if (tempHTML.text() === '') continue;
-              doc.content[1].table.body[c][4].text = tempHTML.text();
-              doc.content[1].table.body[c][4].link = tempHTML.get(0).href.replace(/x?sso/i, 'www');
-              doc.content[1].table.body[c][4].decoration = 'underline';
+              doc.content[1].table.body[c][linkCol].text = tempHTML.text();
+              doc.content[1].table.body[c][linkCol].link = tempHTML.get(0).href.replace(/x?sso/i, 'www');
+              doc.content[1].table.body[c][linkCol].decoration = 'underline';
 
-              // HTML aus Kommentar entfernen
-              tempHTML = $(doc.content[1].table.body[c][3].text.replace(/<br>/g, '\n'));
-              doc.content[1].table.body[c][3].text = tempHTML.text();
+              if(doc.content[1].table.body[c].length === 6) {
+                // HTML aus Kommentar entfernen
+                tempHTML = $(doc.content[1].table.body[c][4].text.replace(/<br>/g, '\n'));
+                doc.content[1].table.body[c][4].text = tempHTML.text();
+              }
 
               // HTML aus Umsetzungsstand umwandeln
-              tempHTML = $(doc.content[1].table.body[c][2].text);
-              doc.content[1].table.body[c][2].text = tempHTML.text();
-              if (tempHTML.hasClass('text-success')) doc.content[1].table.body[c][2].color = 'green';
-              if (tempHTML.hasClass('text-danger')) doc.content[1].table.body[c][2].color = 'red';
-              if (tempHTML.hasClass('text-warning')) doc.content[1].table.body[c][2].color = 'orange';
-              if (tempHTML.hasClass('text-muted')) doc.content[1].table.body[c][2].color = 'grey';
+              let statusCol  = doc.content[1].table.body[c].length === 6 ? 3 : 2;
+              tempHTML = $(doc.content[1].table.body[c][statusCol].text);
+              doc.content[1].table.body[c][statusCol].text = tempHTML.text();
+              if (tempHTML.hasClass('text-success')) doc.content[1].table.body[c][statusCol].color = 'green';
+              if (tempHTML.hasClass('text-danger')) doc.content[1].table.body[c][statusCol].color = 'red';
+              if (tempHTML.hasClass('text-warning')) doc.content[1].table.body[c][statusCol].color = 'orange';
+              if (tempHTML.hasClass('text-muted')) doc.content[1].table.body[c][statusCol].color = 'grey';
             }
           },
           exportOptions: {
-            stripHtml: false
+            stripHtml: false,
+            columns: ':not(.no-print)'
           }
         }
       ]
@@ -244,3 +244,9 @@ function fetchTOMListAndCheckTOMs() {
 
 setOverlay(true);
 fetchTOMListAndCheckTOMs();
+
+// Detail-Anssicht-Button
+$('#toggleDetails').click((e) => {
+  $('#overalltoms tr th:nth-child(3), #overalltoms tr th:nth-child(5)').toggleClass('hidden').toggleClass('no-print');
+  $('#overalltoms tr td:nth-child(3), #overalltoms tr td:nth-child(5)').toggleClass('hidden');
+});

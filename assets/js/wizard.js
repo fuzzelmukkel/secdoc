@@ -205,8 +205,8 @@ if(localStorage.getItem('tom_cache_' + (document.location.host + document.locati
 let tomTier = modeNum;
 switch(tomTier) {
   case 5: tomTier = 1; break;
-  case 6: tomTier = 2; break;
-  case 7: tomTier = 3; break;
+  case 6: tomTier = 3; break;
+  case 7: tomTier = 2; break;
 }
 promises[0] = $.getJSON(backendPath + '?action=gettoms&data={"tier":' + tomTier + '}' + (debug ? '&debug=true' : '')).done((data) => {
   if(!data['success']) {
@@ -1597,6 +1597,7 @@ function initTypeahead(node) {
     if(itemKeys.includes('type') && modeNum === 1 && Number.parseInt(item.type) !== 5) return undefined;
     if(itemKeys.includes('type') && modeNum === 2 && Number.parseInt(item.type) !== 7) return undefined;
     if(itemKeys.includes('type') && modeNum === 3 && Number.parseInt(item.type) !== 6) return undefined;
+    if(itemKeys.includes('type') && modeNum === 4 && Number.parseInt(item.type) !== 4) return undefined;
 
     for(let c=0; c < itemKeys.length; c++) {
       if(item[itemKeys[c]] !== null && item[itemKeys[c]].toLowerCase().search(lowcaseQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) > -1) {
