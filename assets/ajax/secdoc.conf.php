@@ -6,7 +6,7 @@
    * Pfade müssen weiterhin zwangsläufig in assets/ajax/config.inc.php angepasst werden!
    *
    * @author Dustin Gawron <d.gawron@uni-muenster.de>
-   * @copyright (c) 2019-2020 Westfälische Wilhelms-Universität Münster
+   * @copyright (c) 2019-2021 Westfälische Wilhelms-Universität Münster
    * @license AGPL-3.0-or-later <https://www.gnu.org/licenses/agpl.html>
    *
    */

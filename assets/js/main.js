@@ -7,7 +7,7 @@
  *
  * @author Thorsten Küfer <thorsten.kuefer@uni-muenster.de>
  * @author Dustin Gawron <dustin.gawron@uni-muenster.de>
- * @copyright (c) 2018-2020 Westfälische Wilhelms-Universität Münster
+ * @copyright (c) 2018-2021 Westfälische Wilhelms-Universität Münster
  * @license AGPL-3.0-or-later <https://www.gnu.org/licenses/agpl.html>
  */
 

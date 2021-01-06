@@ -3,7 +3,7 @@
   <head>
     <meta name="author" content="Dustin Gawron <dustin.gawron@uni-muenster.de>" />
     <meta name="publisher" content="Westfälische Wilhelms-Universität Münster" />
-    <meta name="copyright" content="(c) 2020 Universität Münster" />
+    <meta name="copyright" content="(c) 2020-2021 Universität Münster" />
     <meta name="viewport" content="width=device-width" />
 
     <link href="assets/css/bootstrap.min.css" rel="stylesheet" />

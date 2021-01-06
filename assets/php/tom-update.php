@@ -4,7 +4,7 @@
    * tom-update.php - Beispielskript zur Umwandlung einer TOM Liste in SQL.
    *
    * @author Dustin Gawron <dustin.gawron@uni-muenster.de>
-   * @copyright (c) 2019 Westfälische Wilhelms-Universität Münster
+   * @copyright (c) 2019-2021 Westfälische Wilhelms-Universität Münster
    * @license AGPL-3.0-or-later <https://www.gnu.org/licenses/agpl.html>
    *
    */

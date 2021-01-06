@@ -11,7 +11,7 @@
    *  * evtl. beim ersten Aufruf zur Performance-Verbesserung als JSON speichern (muss getestet werden)
    *
    * @author Thorsten Küfer <thorsten.kuefer@uni-muenster.de>
-   * @copyright (c) 2018 Westfälische Wilhelms-Universität Münster
+   * @copyright (c) 2018-2021 Westfälische Wilhelms-Universität Münster
    * @license AGPL-3.0-or-later <https://www.gnu.org/licenses/agpl.html>
    *
    *  2018-06-13 TK term darf mehrere durch Leerzeichen getrennte Suchbegriffe enthalten

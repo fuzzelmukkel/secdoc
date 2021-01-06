@@ -1,7 +1,7 @@
 # GNU Affero General Public License
 
 SecDoc - WWU Records of processing activities  
-Copyright (c) 2018 Westfälische Wilhelms-Universität Münster  
+Copyright (c) 2018-2021 Westfälische Wilhelms-Universität Münster  
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as published by
