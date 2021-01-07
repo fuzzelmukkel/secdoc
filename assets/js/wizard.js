@@ -2413,6 +2413,32 @@ function loadDocuments() {
   });
 }
 
+/**
+ * Zeigt den Dialog zur Weitergabe der Bearbeitung an
+ * @return {undefined}
+ */
+function showNextEditorDialog() {
+  if(loadId === 0) {
+    showError('Weitergeben der Dokumentation', 'Die Dokumentation muss mindestens einmal abgespeichert werden, bevor sie weitergegeben werden kann.');
+    return;
+  }
+
+  setOverlay(true);
+
+  modal.find('.modal-title').html('<i class="fa fa-arrow-up"></i> Weitergabe der Dokumentation');
+  let modalBody = modal.find('.modal-body');
+  modalBody.html('<div></div>');
+  modalBody.append('<div class="form-group"><label>Aktueller Kommentar</label><textarea class="form-control" id="currComment" placeholder="Optionaler Kommentar"></textarea></div>');
+  modalBody.append('<div class="form-group"><label>Nächster Bearbeiter</label><input id="pass_to_user" data-tool="typeahead" data-action="searchperson" data-minlength="4" data-dynamic="true" data-cache="false" data-hiddenfield="pass_to_userid" data-mustselectitem="true" type="text" class="form-control" placeholder="Geben Sie eine Kennung oder einen Namen (min. 4 Zeichen) ein..."><input type="hidden" name="pass_to_userid"></div>');
+  modalBody.append('<p class="text-center"><button id="passToUser" class="btn btn-fill btn-success">Weitergeben</button><button type="button" class="btn btn-danger ml" data-dismiss="modal" aria-label="Close">Schließen</button></p>');
+
+  initTypeahead(modalBody.find('#pass_to_user'));
+
+  modal.modal();
+
+  setOverlay(false);
+}
+
 debugLog('Beginne Setup...');
 
 // Abwarten, bis alle notwendigen Daten über AJAX-Requests geholt wurden
@@ -2870,6 +2896,11 @@ Promise.all(promises).then(function() {
   // Button für neue angehängte Dokumente
   $('#attached_documents_add').click(() => {
     showDocumentAddDialog();
+  });
+
+  // Button zur Weitergabe der Dokumentation
+  $('#showNextEditorDialog').click(() => {
+    showNextEditorDialog();
   });
 
   // Listener für Veränderung im URL Hash

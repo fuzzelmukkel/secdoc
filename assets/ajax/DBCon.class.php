@@ -178,24 +178,26 @@
             Risikolevel INT NOT NULL DEFAULT 2,                   -- Ergebnis der Risikoanalyse (1 = Niedrig, 2 = Mittel, 3 = Hoch)
             Fachabteilung VARCHAR(100) NOT NULL DEFAULT  '',      -- Name der betreuenden Fachabteilung
             IVV VARCHAR(100) NOT NULL DEFAULT  '',                -- Name der betreuenden IVV
-            FachKontakt VARCHAR(8) NOT NULL DEFAULT  '',          -- Nutzerkennung des fachlichen Ansprechpartners
-            TechKontakt VARCHAR(8) NOT NULL DEFAULT  '',          -- Nutzerkennung des technischen Ansprechpartners
-            Ersteller VARCHAR(8) NOT NULL,                        -- Nutzerkennung des Erstellers
-            Bearbeitergruppe VARCHAR(8) NOT NULL DEFAULT  '',     -- Nutzergruppe, die das Verfahren bearbeiten darf
+            FachKontakt VARCHAR(30) NOT NULL DEFAULT  '',         -- Nutzerkennung des fachlichen Ansprechpartners
+            TechKontakt VARCHAR(30) NOT NULL DEFAULT  '',         -- Nutzerkennung des technischen Ansprechpartners
+            Ersteller VARCHAR(30) NOT NULL,                       -- Nutzerkennung des Erstellers
+            Bearbeitergruppe VARCHAR(30) NOT NULL DEFAULT  '',    -- Nutzergruppe, die das Verfahren bearbeiten darf
             Status INT NOT NULL DEFAULT 0,                        -- Aktueller Status des Verfahren (0 = In Bearbeitung, 2 = In Betrieb, 3 = Gelöscht)
             Sichtbarkeit INT NOT NULL DEFAULT 0,                  -- Sichtbarkeit des Verfahrens für andere Personen
             JSON BLOB NOT NULL DEFAULT '{}',                      -- Verfahrensinhalt als JSON kodiert
-            DSBKommentar TEXT DEFAULT ''                          -- Kommentarfeld für DSBs
+            DSBKommentar TEXT DEFAULT '',                         -- Kommentarfeld für DSBs
+            BearbeiterKommentar TEXT DEFAULT '',                  -- Kommentarfeld für Bearbeiter
+            NaechsterBearbeiter TEXT DEFAULT ''                   -- Kennung des nächsten Bearbeiters
         );",
         "CREATE TABLE verfahren_historie (
             Verfahrens_Id INTEGER,                                         -- Die eindeutige ID eines Verfahrens
-            Kennung VARCHAR(8) NOT NULL,                                   -- Nutzerkennung des bearbeitenden Nutzers
+            Kennung VARCHAR(30) NOT NULL,                                   -- Nutzerkennung des bearbeitenden Nutzers
             Datum DATE DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')), -- Aktuelles Datum
             PRIMARY KEY (Verfahrens_Id, Kennung, Datum),
             FOREIGN KEY (Verfahrens_Id) REFERENCES verfahren(ID) ON UPDATE CASCADE ON DELETE CASCADE
           );",
         "CREATE TABLE personen (
-            Kennung VARCHAR(8) PRIMARY KEY ON CONFLICT IGNORE, -- Eindeutige Nutzerkennung
+            Kennung VARCHAR(30) PRIMARY KEY ON CONFLICT IGNORE, -- Eindeutige Nutzerkennung
             Name TEXT,                                         -- Name der Person
             Anzeigename TEXT,                                  -- Anzeigename mit Name, Anschrift, Telefon, E-Mail
             Datenquelle VARCHAR(50) DEFAULT ''                 -- Hinweis auf die genutzte Quelle für die Daten
@@ -704,6 +706,8 @@
           error_log("[SecDoc] DBCon.class.php -> Aktualisiere Datenbank von Version $db_version zu " . self::DBVERSION . "!");
 
           $this->pdo->beginTransaction();
+          $this->pdo->exec("ALTER TABLE verfahren ADD COLUMN BearbeiterKommentar TEXT DEFAULT '';");
+          $this->pdo->exec("ALTER TABLE verfahren ADD COLUMN NaechsterBearbeiter TEXT DEFAULT '';");
           $this->pdo->exec(self::TABLES[19]);
           $this->pdo->exec(self::TABLES[20]);
           $this->pdo->exec("PRAGMA user_version = 12;");
@@ -1028,12 +1032,12 @@
       if($this->isConnected()) {
         if($userIsDSB) {
           $permLevel = 2;
-          $sth = $this->pdo->prepare('SELECT ID, Typ, Erstelldatum, Bezeichnung, Beschreibung, Fachabteilung, IVV, FachKontakt, TechKontakt, Ersteller, Bearbeitergruppe, Status, Sichtbarkeit, Kennung AS BearbeitetVon, MAX(Datum) AS Aktualisierung, JSON FROM verfahren LEFT JOIN verfahren_historie ON verfahren.ID = verfahren_historie.Verfahrens_Id  WHERE ID = ? AND NOT Status = 3 GROUP BY ID;');
+          $sth = $this->pdo->prepare('SELECT ID, Typ, Erstelldatum, Bezeichnung, Beschreibung, Fachabteilung, IVV, FachKontakt, TechKontakt, Ersteller, Bearbeitergruppe, Status, Sichtbarkeit, BearbeiterKommentar, NaechsterBearbeiter, Kennung AS BearbeitetVon, MAX(Datum) AS Aktualisierung, JSON FROM verfahren LEFT JOIN verfahren_historie ON verfahren.ID = verfahren_historie.Verfahrens_Id  WHERE ID = ? AND NOT Status = 3 GROUP BY ID;');
           $sth->execute([$verfahrensId]);
         }
         else {
           $permLevel = $this->getPermissionLevel($verfahrensId, $userId, $userGroups);
-          $sql = 'SELECT ID, Typ, Erstelldatum, Bezeichnung, Beschreibung, Fachabteilung, IVV, FachKontakt, TechKontakt, Ersteller, Bearbeitergruppe, Status, Sichtbarkeit, Kennung AS BearbeitetVon, MAX(Datum) AS Aktualisierung, JSON '
+          $sql = 'SELECT ID, Typ, Erstelldatum, Bezeichnung, Beschreibung, Fachabteilung, IVV, FachKontakt, TechKontakt, Ersteller, Bearbeitergruppe, Status, Sichtbarkeit, BearbeiterKommentar, NaechsterBearbeiter, Kennung AS BearbeitetVon, MAX(Datum) AS Aktualisierung, JSON '
           . 'FROM verfahren LEFT JOIN verfahren_historie ON verfahren.ID = verfahren_historie.Verfahrens_Id  '
           . 'WHERE ID = ? AND NOT Status = 3 AND (Ersteller = ? OR TechKontakt = ? OR FachKontakt = ? '
           . 'OR ID in (SELECT Process_ID FROM permissions WHERE (IsGroup = 0 AND ID = ?) OR (IsGroup = 1 AND ID in (' . implode(', ', array_fill(0, count($userGroups), '?')) . ')))) GROUP BY ID;';
@@ -1295,6 +1299,78 @@
       else {
         throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
       }
+    }
+
+    /**
+     * Fragt den aktuellen Bearbeiterkommentar eines Verfahrens ab.
+     *
+     * @param int    $verfahrensId ID des Verfahrens
+     * @param string $userId       Nutzerkennung des ausführenden Nutzers
+     * @param array  $userGroups   Gruppen des ausführenden Nutzers
+     * @param bool   $userIsDSB    (optional) Gibt an, ob der ausführende Nutzer ein DSB ist (Zugriff auf alle Verfahren)
+     * @return array Gibt im Erfolgsfall den Bearbeitungskommentar und die Kennung des nächsten Bearbeiters zurück
+     * @throws PDOException
+     * @throws Exception
+     */
+    public function getBearbeiterKommentar($verfahrensId, $userId, $userGroups, $userIsDSB = FALSE) {
+      if(!$this->isConnected()) {
+        throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
+      }
+
+      if(!$userIsDSB && $this->getPermissionLevel($verfahrensId, $userId, $userGroups) < 1) {
+        return FALSE;
+      }
+
+      $sth = $this->pdo->prepare('SELECT BearbeiterKommentar, NaechsterBearbeiter FROM verfahren WHERE ID = ? LIMIT 1;');
+      $sth->execute([$verfahrensId]);
+
+      $result = $sth->fetch();
+
+      ob_start();
+      $sth->debugDumpParams();
+      $sqlDump = ob_get_clean();
+      print "DBCon.class.php -> getBearbeiterKommentar() Execute: $sqlDump";
+
+      return $result;
+    }
+
+    /**
+     * Speichert den Bearbeitungskommentar und den nächsten Bearbeiter.
+     *
+     * @param string $kommentar    Bearbeiter-Kommentar
+     * @param string $nextEditor   Nutzerkennung des nächsten Bearbeiters
+     * @param int    $verfahrensId ID des Verfahrens
+     * @param string $userId       Nutzerkennung des ausführenden Nutzers
+     * @param array  $userGroups   Gruppen des ausführenden Nutzers
+     * @param bool   $userIsDSB    (optional) Gibt an, ob der ausführende Nutzer ein DSB ist (Zugriff auf alle Verfahren)
+     * @return bool  TRUE im Erfolgsfall, sonst FALSE
+     * @throws PDOException
+     * @throws Exception
+     */
+    public function updateBearbeiterKommentar($verfahrensId, $kommentar, $nextEditor, $userId, $userGroups, $userIsDSB = FALSE): bool {
+      if(!$this->isConnected()) {
+        throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
+      }
+
+      if(!$userIsDSB && $this->getPermissionLevel($verfahrensId, $userId, $userGroups) < 2) {
+        return FALSE;
+      }
+
+      $sth = $this->pdo->prepare('UPDATE verfahren SET BearbeiterKommentar = ?, NaechsterBearbeiter = ? WHERE id = ?;');
+      $sth->execute([$kommentar, $nextEditor, $verfahrensId]);
+
+      $changedRows = $sth->rowCount();
+
+      ob_start();
+      $sth->debugDumpParams();
+      $sqlDump = ob_get_clean();
+      print "DBCon.class.php -> updateBearbeiterKommentar() Execute: $sqlDump";
+
+      if($changedRows === 1) return TRUE; // Falls genau ein Verfahren geändert wurde
+
+      if($changedRows === 0) return FALSE; // Falls nichts geändert werden konnte
+
+      throw new Exception("DBCon.class.php -> Fehler beim Aktualisieren des Bearbeiter-Kommentars! (Fehler: Unbekannter Fehler - Anzahl geänderter Reihen: $changedRows)");
     }
 
     /**

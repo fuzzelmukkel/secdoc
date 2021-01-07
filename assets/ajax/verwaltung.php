@@ -1720,6 +1720,50 @@ EOH;
       break;
     }
 
+    # Aktualisiert den Bearbeiterkommentar
+    case 'updateeditorcomment': {
+      if(empty($verfahrensId) || empty($data) || !isset($data['comment']) || !isset($data['userid'])) {
+        returnError('Keine ID für ein Verfahren oder kein Inhalt wurde übergeben!');
+      }
+
+      $success = $dbcon->updateBearbeiterKommentar($verfahrensId, $data['comment'], $data['userid'], $userId, $userGroups, $userIsDSB);
+
+      if($success === FALSE) {
+        returnError('Der Kommentar konnte nicht gespeichert werden, da das Verfahren nicht existiert oder Sie keinen Schreibzugriff haben!');
+      }
+
+      $output['success'] = TRUE;
+      break;
+    }
+
+    # Fragt den Bearbeiterkommentar ab
+    case 'geteditorcomment': {
+      if(empty($verfahrensId)) {
+        returnError('Keine ID für ein Verfahren übergeben!');
+      }
+
+      $data = $dbcon->getBearbeiterKommentar($verfahrensId, $userId, $userGroups, $userIsDSB);
+
+      $output['success'] = TRUE;
+      $output['data'] = $data;
+      break;
+    }
+
+    # Verschickt eine E-Mail Benachrichtigung an den nächsten Bearbeiter
+    case 'notifynexteditor': {
+      if(empty($verfahrensId)) {
+        returnError('Keine ID für ein Verfahren übergeben!');
+      }
+
+      $data = $dbcon->getBearbeiterKommentar($verfahrensId, $userId, $userGroups, $userIsDSB);
+
+      # TODO Check if selected user has access
+      # TODO send out e-mail with comment and link
+
+      $output['success'] = FALSE;
+      break;
+    }
+
     # Personensuche nach Name und Kennung
     case 'searchperson': {
       if(empty($search)) {
