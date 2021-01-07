@@ -288,7 +288,10 @@
 
     # Ersetzungen durchführen
     $lastUpdate = $dbcon->getHistorie($verfahrensId)[0];
-    $lastEditor = !empty($lastUpdate['Anzeigename']) ? $lastUpdate['Anzeigename'] : $lastUpdate['Kennung'];
+    $lastEditor = $lastUpdate[0]['Kennung'];
+    $lastEditorDetails = Utils::searchUsers($lastUpdate[0]['Kennung'], TRUE);
+    if(count($lastEditorDetails) > 0) $lastEditor = $lastEditorDetails[0]['label'];
+
     $html = str_replace('$lasteditor$', $lastEditor, $html);
     $html = str_replace('$docurl$', $prog_url . "?id=$verfahrensId", $html);
     $html = str_replace('$baseurl$', $prog_url, $html);
@@ -1007,6 +1010,33 @@ EOH;
 
       $count = count($list);
 
+      # Holt die Namen der letzten Bearbeiter
+      $userCache = [];
+      for($c = 0; $c < $count; $c++) {
+        if(!array_key_exists('LetzterBearbeiter', $list[$c])) continue;
+
+        $tempBearbeiter = $list[$c]['LetzterBearbeiter'];
+        if(empty($tempBearbeiter)) continue;
+
+        if(array_key_exists($tempBearbeiter, $userCache)) {
+          $list[$c]['LetzterBearbeiter'] = $userCache[$tempBearbeiter]['name'];
+          $list[$c]['BearbeiterDetails'] = $userCache[$tempBearbeiter]['label'];
+        }
+        else {
+          $editorDetails = Utils::searchUsers($tempBearbeiter, TRUE);
+          if(count($editorDetails) > 0) {
+            $list[$c]['LetzterBearbeiter'] = $editorDetails[0]['name'];
+            $list[$c]['BearbeiterDetails'] = $editorDetails[0]['label'];
+            $userCache[$tempBearbeiter]['name']  = $editorDetails[0]['name'];
+            $userCache[$tempBearbeiter]['label'] = $editorDetails[0]['label'];
+          }
+          else {
+            $userCache[$tempBearbeiter]['name']  = $tempBearbeiter;
+            $userCache[$tempBearbeiter]['label'] = '';
+          }
+        }
+      }
+
       # Prüft, welche PDFs bereits existieren
       $currPDFs = scandir($pdf_dir);
       for($c = 0; $c < $count; $c++) {
@@ -1042,6 +1072,67 @@ EOH;
 
       $list = $dbcon->listVerfahrenDSB();
       $count = count($list);
+
+      # Holt die Namen der letzten Bearbeiter
+      $userCache = [];
+      for($c = 0; $c < $count; $c++) {
+        $tempBearbeiter = $list[$c]['LetzterBearbeiter'];
+        if(!empty($tempBearbeiter)) {
+          if(array_key_exists($tempBearbeiter, $userCache)) {
+            $list[$c]['LetzterBearbeiter'] = $userCache[$tempBearbeiter]['name'];
+            $list[$c]['BearbeiterDetails'] = $userCache[$tempBearbeiter]['label'];
+          }
+          else {
+            $editorDetails = Utils::searchUsers($tempBearbeiter, TRUE);
+            if(count($editorDetails) > 0) {
+              $list[$c]['LetzterBearbeiter'] = $editorDetails[0]['name'];
+              $list[$c]['BearbeiterDetails'] = $editorDetails[0]['label'];
+              $userCache[$tempBearbeiter]['name']  = $editorDetails[0]['name'];
+              $userCache[$tempBearbeiter]['label'] = $editorDetails[0]['label'];
+            }
+            else {
+              $userCache[$tempBearbeiter]['name']  = $tempBearbeiter;
+              $userCache[$tempBearbeiter]['label'] = '';
+            }
+          }
+        }
+
+        $tempBearbeiter = $list[$c]['FachKontakt'];
+        if(!empty($tempBearbeiter)) {
+          if(array_key_exists($list[$c]['FachKontakt'], $userCache)) {
+            $list[$c]['FachKontakt'] = $userCache[$tempBearbeiter]['label'];
+          }
+          else {
+            $editorDetails = Utils::searchUsers($tempBearbeiter, TRUE);
+            if(count($editorDetails) > 0) {
+              $list[$c]['FachKontakt'] = $editorDetails[0]['label'];
+              $userCache[$tempBearbeiter]['label'] = $editorDetails[0]['label'];
+            }
+            else {
+              $userCache[$tempBearbeiter]['name']  = $tempBearbeiter;
+              $userCache[$tempBearbeiter]['label'] = '';
+            }
+          }
+        }
+
+        $tempBearbeiter = $list[$c]['TechKontakt'];
+        if(!empty($tempBearbeiter)) {
+          if(array_key_exists($tempBearbeiter, $userCache)) {
+            $list[$c]['TechKontakt'] = $userCache[$tempBearbeiter]['label'];
+          }
+          else {
+            $editorDetails = Utils::searchUsers($tempBearbeiter, TRUE);
+            if(count($editorDetails) > 0) {
+              $list[$c]['TechKontakt'] = $editorDetails[0]['label'];
+              $userCache[$tempBearbeiter]['label'] = $editorDetails[0]['label'];
+            }
+            else {
+              $userCache[$tempBearbeiter]['name']  = $tempBearbeiter;
+              $userCache[$tempBearbeiter]['label'] = '';
+            }
+          }
+        }
+      }
 
       # Prüft, welche PDFs bereits existieren
       $currPDFs = scandir($pdf_dir);
@@ -1288,7 +1379,10 @@ EOH;
       // Überprüfen, ob das Verfahren nicht durch eine andere Person seit dem letzten Laden bearbeitet wurde
       $lastUpdate = $dbcon->getHistorie($verfahrensId);
       if($lastUpdate && isset($lastUpdate[0]['Datum']) && (strtotime($lastUpdate[0]['Datum']) - 1) > strtotime($data['meta_lastupdate'])) {
-        returnError('Das Verfahren wurde seit der letzten Synchronisation bearbeitet (Nutzer: ' . ($lastUpdate[0]['Anzeigename'] ?: ($lastUpdate[0]['Name'] ?: 'Unbekannt' ) . ' (' . $lastUpdate[0]['Kennung'] . ')') . ' - Datum: ' . $lastUpdate[0]['Datum'] . ')! Bitte laden Sie die Seite neu für eine aktuelle Version des Verfahrens!');
+        $lastEditor = $lastUpdate[0]['Kennung'];
+        $lastEditorDetails = Utils::searchUsers($lastUpdate[0]['Kennung'], TRUE);
+        if(count($lastEditorDetails) > 0) $lastEditor = $lastEditorDetails[0]['label'];
+        returnError('Das Verfahren wurde seit der letzten Synchronisation bearbeitet (Nutzer: ' . $lastEditorDetails . ' - Datum: ' . $lastUpdate[0]['Datum'] . ')! Bitte laden Sie die Seite neu für eine aktuelle Version des Verfahrens!');
       }
       unset($data['meta_lastupdate']);
 
@@ -1396,7 +1490,10 @@ EOH;
       // Überprüfen, ob das Verfahren nicht durch eine andere Person seit dem letzten Laden bearbeitet wurde
       $lastUpdate = $dbcon->getHistorie($verfahrensId);
       if($lastUpdate && isset($lastUpdate[0]['Datum']) && (strtotime($lastUpdate[0]['Datum']) - 1) > strtotime($data['lastupdate'])) {
-        returnError('Das Verfahren wurde seit der letzten Synchronisation bearbeitet (Nutzer: ' . ($lastUpdate[0]['Anzeigename'] ?: ($lastUpdate[0]['Name'] ?: 'Unbekannt' ) . ' (' . $lastUpdate[0]['Kennung'] . ')') . ' - Datum: ' . $lastUpdate[0]['Datum'] . ')! Bitte laden Sie die Seite neu für eine aktuelle Version des Verfahrens!');
+        $lastEditor = $lastUpdate[0]['Kennung'];
+        $lastEditorDetails = Utils::searchUsers($lastUpdate[0]['Kennung'], TRUE);
+        if(count($lastEditorDetails) > 0) $lastEditor = $lastEditorDetails[0]['label'];
+        returnError('Das Verfahren wurde seit der letzten Synchronisation bearbeitet (Nutzer: ' . $lastEditorDetails . ' - Datum: ' . $lastUpdate[0]['Datum'] . ')! Bitte laden Sie die Seite neu für eine aktuelle Version des Verfahrens!');
         break;
       }
 
@@ -1647,8 +1744,11 @@ EOH;
     case 'searchmitarbeiter': {
       if(empty($search)) {
         $search = $userId;
+        $result = Utils::searchUsers($search, TRUE, TRUE);
       }
-      $result = Utils::searchUsers($search, FALSE, TRUE);
+      else {
+        $result = Utils::searchUsers($search, FALSE, TRUE);
+      }
       $output['data'] = $result;
       $output['count'] = count($result);
       break;

@@ -884,8 +884,8 @@
      */
     public function listVerfahrenOwn($userId, $userGroups, $search = '') {
       if($this->isConnected()) {
-        $sth = $this->pdo->prepare('SELECT ID, Typ, Erstelldatum, Bezeichnung, Beschreibung, Fachabteilung, Status, Ersteller, FachKontakt, TechKontakt, Bearbeitergruppe, Sichtbarkeit, IFNULL(Name, verfahren_historie.Kennung) AS LetzterBearbeiter, IFNULL(Anzeigename, "") AS BearbeiterDetails, MAX(Datum) AS Aktualisierung '
-         . 'FROM verfahren LEFT JOIN verfahren_historie ON verfahren.ID = verfahren_historie.Verfahrens_Id LEFT JOIN personen ON verfahren_historie.Kennung = personen.Kennung '
+        $sth = $this->pdo->prepare('SELECT ID, Typ, Erstelldatum, Bezeichnung, Beschreibung, Fachabteilung, Status, Ersteller, FachKontakt, TechKontakt, Bearbeitergruppe, Sichtbarkeit, verfahren_historie.Kennung AS LetzterBearbeiter, "" AS BearbeiterDetails, MAX(Datum) AS Aktualisierung '
+         . 'FROM verfahren LEFT JOIN verfahren_historie ON verfahren.ID = verfahren_historie.Verfahrens_Id '
          . 'WHERE NOT Status = 3 AND (Ersteller = ? OR TechKontakt = ? OR FachKontakt = ? '
          . 'OR ID in (SELECT Process_ID FROM permissions WHERE CanEdit = 1 AND ((IsGroup = 0 AND ID = ?) OR (IsGroup = 1 AND ID in (' . implode(', ', array_fill(0, count($userGroups), '?')) . ')))))' . (!empty($search) ? ' AND Bezeichnung LIKE ?' : '') . ' GROUP BY ID ORDER BY Bezeichnung COLLATE NOCASE;');
 
@@ -960,8 +960,8 @@
     public function listVerfahrenDSB($search = '', $type = NULL) {
       if($this->isConnected()) {
         $result = array();
-        $sth = $this->pdo->prepare('SELECT ID, Typ, Bezeichnung, Beschreibung, Erstelldatum, Fachabteilung, IFNULL(person1.Anzeigename, verfahren.FachKontakt) AS FachKontakt, IFNULL(person2.Anzeigename, verfahren.TechKontakt) AS TechKontakt, Status, Sichtbarkeit, DSBKommentar, IFNULL(person3.Name, verfahren_historie.Kennung) AS LetzterBearbeiter, IFNULL(person3.Anzeigename, "") AS BearbeiterDetails, MAX(Datum) AS Aktualisierung '
-                . 'FROM verfahren LEFT JOIN verfahren_historie ON verfahren.ID = verfahren_historie.Verfahrens_Id LEFT JOIN personen AS person1 ON verfahren.FachKontakt = person1.Kennung LEFT JOIN personen AS person2 ON verfahren.TechKontakt = person2.Kennung  LEFT JOIN personen AS person3 ON verfahren_historie.Kennung = person3.Kennung '
+        $sth = $this->pdo->prepare('SELECT ID, Typ, Bezeichnung, Beschreibung, Erstelldatum, Fachabteilung, verfahren.FachKontakt AS FachKontakt, verfahren.TechKontakt AS TechKontakt, Status, Sichtbarkeit, DSBKommentar, verfahren_historie.Kennung AS LetzterBearbeiter, "" AS BearbeiterDetails, MAX(Datum) AS Aktualisierung '
+                . 'FROM verfahren LEFT JOIN verfahren_historie ON verfahren.ID = verfahren_historie.Verfahrens_Id '
                 . 'WHERE NOT Status = 3' . (!empty($search) ? ' AND Bezeichnung LIKE ?' : '') . (!empty($type) ? ' AND Typ = ?' : '') . ' GROUP BY ID ORDER BY Bezeichnung COLLATE NOCASE;');
         $params = array();
         if (!empty($search)) array_push($params, "%$search%");
@@ -1419,7 +1419,7 @@
      */
     public function getHistorie($verfahrensId) {
       if($this->isConnected()) {
-        $sth = $this->pdo->prepare('SELECT Verfahrens_Id, Datum, verfahren_historie.Kennung, personen.Name, personen.Anzeigename FROM verfahren_historie LEFT JOIN personen ON verfahren_historie.Kennung = personen.Kennung WHERE Verfahrens_Id = ? ORDER BY Datum DESC;');
+        $sth = $this->pdo->prepare('SELECT Verfahrens_Id, Datum, verfahren_historie.Kennung FROM verfahren_historie WHERE Verfahrens_Id = ? ORDER BY Datum DESC;');
         $sth->execute([$verfahrensId]);
 
         ob_start();
@@ -1451,9 +1451,11 @@
         throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
       }
 
+      if(empty(trim($term))) return [];
+
       $terms = explode(' ', trim($term));
       foreach($terms as $key => $value) {
-        $terms[$key] = '%' . $value . '%';
+        $terms[$key] = '%' . trim($value) . '%';
       }
 
       $sql = 'SELECT * FROM personen WHERE';
@@ -1461,13 +1463,13 @@
         $sql .= ' Anzeigename IS NOT NULL AND';
       }
 
-      if(count($terms) === 1) {
+      if(count($terms) === 1 || $isID) {
         if($isID) {
-          $sth = $this->pdo->prepare($sql . ' (Kennung = ?);');
+          $sth = $this->pdo->prepare($sql . ' (Kennung = ?) LIMIT 1');
           $sth->execute([$term]);
         }
         else {
-          $sth = $this->pdo->prepare($sql . ' (Kennung LIKE ? OR Name LIKE ?);');
+          $sth = $this->pdo->prepare($sql . ' (Kennung LIKE ? OR Name LIKE ?)');
           $sth->execute([$terms[0], $terms[0]]);
         }
 
@@ -1500,7 +1502,7 @@
      * @param  bool   $isID (optional) Wenn TRUE, dann wird $term als exakte Gruppenkennung gesucht
      * @return array  Liste der gefundenen Gruppen
      */
-    public function searchGroups($term = NULL, $isID = TRUE) {
+    public function searchGroups($term = NULL, $isID = FALSE) {
       if(!$this->isConnected()) {
         throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
       }
@@ -1525,7 +1527,7 @@
       else {
         foreach($terms as $key => $value) {
           if($key > 0) $sql .= ' AND';
-          $sql .= ' LIKE ?';
+          $sql .= ' Description LIKE ?';
         }
       }
 
@@ -1555,14 +1557,14 @@
         throw new Exception("DBCon.class.php -> Keine aktive Datenbank-Verbindung!");
       }
 
-      if($term === NULL || empty($term)) {
+      if($user === NULL || empty($user)) {
         return [];
       }
 
       $sql = 'SELECT groups.ID AS ID, groups.Description AS Description FROM usergroups LEFT JOIN groups ON usergroups.Group_ID = groups.ID WHERE User_ID = ?;';
 
       $sth = $this->pdo->prepare($sql);
-      $sth->execute($user);
+      $sth->execute([$user]);
       ob_start();
       $sth->debugDumpParams();
       $sqlDump = ob_get_clean();

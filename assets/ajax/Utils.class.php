@@ -200,86 +200,81 @@
      * @param  string $query    Suchbegriff
      * @param  bool   $id       Soll exakt nach einer Kennung gesucht werden?
      * @param  bool   $employee Soll nur nach Mitarbeitern gesucht werden?
-     * @return array Liste der Nutzer ([['value' => 'u0mitarb', 'label' => 'Anzeigename, Abteilung, Telefon, Mail'], ...])
+     * @return array Liste der Nutzer ([['value' => 'u0mitarb', 'name' => 'Anzeigename', 'label' => 'Anzeigename, Abteilung, Telefon, Mail'], ...])
      */
     public static function searchUsers($query, $id = FALSE, $employee = FALSE) {
-      global $ldap_handle, $ldap_configs, $ldap_use, $ldap_user_filter, $dbcon;
+      global $ldap_handle, $ldap_configs, $ldap_use, $ldap_user_filter, $dbcon, $dataSources;
 
+      $query = trim($query);
       if(empty($query)) return [];
 
-      if(!$ldap_use) {
+      $foundUsers = [];
+
+      if($ldap_use && ($dataSources['users'] === 'ldap' || $dataSources['users'] === 'ldap+db')) {
+        # LDAP Abfrage durchführen
         if($id) {
-          $result = $dbcon->searchPerson($query, FALSE, TRUE);
+          $ldap_filter = str_replace('$', ldap_escape($query), $ldap_configs['users_id']['ldap_filter']);
+          $result = self::getfromLDAP($ldap_configs['users_id']['ldap_base'], $ldap_filter, $ldap_configs['users_id']['ldap_attributes']);
         }
         else {
-          $result = $dbcon->searchPerson($search);
+          $terms = explode(' ', trim($query));
+
+          if(count($terms) === 1) {
+            $replacements = [ldap_escape($terms[0]), ldap_escape($terms[0]), ldap_escape($terms[0])];
+            $ldap_filter = str_replace(['$', '$', '$'], $replacements, $ldap_configs['users_one']['ldap_filter']);
+          }
+          elseif(count($terms) === 2) {
+            $parts = explode('$', $ldap_configs['users_two']['ldap_filter']);
+            $ldap_filter = $parts[0] . ldap_escape($terms[0]) . $parts[1] . ldap_escape($terms[1]) . $parts[2] . ldap_escape($terms[1]) . $parts[3] . ldap_escape($terms[0]) . $parts[4];
+          }
+          elseif(count($terms) >= 2) {
+            $terms[1] = implode(' ', array_slice($terms, 1));
+            $parts = explode('$', $ldap_configs['users_two']['ldap_filter']);
+            $ldap_filter = $parts[0] . ldap_escape($terms[0]) . $parts[1] . ldap_escape($terms[1]) . $parts[2] . ldap_escape($terms[1]) . $parts[3] . ldap_escape($terms[0]) . $parts[4];
+          }
+
+          if($employee) {
+            $ldap_filter = substr($ldap_filter, 0, -1) . $ldap_user_filter['employee'] . ')';
+          }
+          else {
+            $ldap_filter = substr($ldap_filter, 0, -1) . $ldap_user_filter['active'] . ')';
+          }
+
+          $result = self::getfromLDAP($ldap_configs['users_one']['ldap_base'], $ldap_filter, $ldap_configs['users_one']['ldap_attributes']);
         }
 
-        $resultMod = [];
-        foreach($result as $val) {
-          array_push($resultMod, ['value' => $val['Kennung'], 'label' => $val['Name'], 'name' => $val['Name']]);
-        }
+        if(is_array($result) && array_key_exists('count', $result) && $result['count'] > 0) {
+          foreach($result as $user) {
+            if(is_array($user) && array_key_exists($ldap_configs['users_one']['ldap_attributes'][0], $user)) {
+              $label = '';
+              if(array_key_exists($ldap_configs['users_one']['ldap_attributes'][1], $user))  $label .= $user[$ldap_configs['users_one']['ldap_attributes'][1]][0];
+              if(array_key_exists($ldap_configs['users_one']['ldap_attributes'][2], $user))  $label .= ' ' . $user[$ldap_configs['users_one']['ldap_attributes'][2]][0];
+              $name = $label;
+              if(array_key_exists($ldap_configs['users_one']['ldap_attributes'][3], $user))  $label .= ', ' . $user[$ldap_configs['users_one']['ldap_attributes'][3]][0];
+              if(array_key_exists($ldap_configs['users_one']['ldap_attributes'][4], $user))  $label .= ', Tel.: ' . $user[$ldap_configs['users_one']['ldap_attributes'][4]][0];
+              if(array_key_exists($ldap_configs['users_one']['ldap_attributes'][5], $user))  $label .= ', E-Mail: ' . str_replace('exchange.wwu.de', 'uni-muenster.de', $user[$ldap_configs['users_one']['ldap_attributes'][5]][0]);
 
-        return $resultMod;
-      }
-
-      if($id) {
-        $ldap_filter = str_replace('$', ldap_escape($query), $ldap_configs['users_id']['ldap_filter']);
-        $result = self::getfromLDAP($ldap_configs['users_id']['ldap_base'], $ldap_filter, $ldap_configs['users_id']['ldap_attributes']);
-      }
-      else {
-        $terms = explode(' ', trim($query));
-
-        if(count($terms) === 1) {
-          $replacements = [ldap_escape($terms[0]), ldap_escape($terms[0]), ldap_escape($terms[0])];
-          $ldap_filter = str_replace(['$', '$', '$'], $replacements, $ldap_configs['users_one']['ldap_filter']);
-        }
-        elseif(count($terms) === 2) {
-          $parts = explode('$', $ldap_configs['users_two']['ldap_filter']);
-          $ldap_filter = $parts[0] . ldap_escape($terms[0]) . $parts[1] . ldap_escape($terms[1]) . $parts[2] . ldap_escape($terms[1]) . $parts[3] . ldap_escape($terms[0]) . $parts[4];
-        }
-        elseif(count($terms) >= 2) {
-          $terms[1] = implode(' ', array_slice($terms, 1));
-          $parts = explode('$', $ldap_configs['users_two']['ldap_filter']);
-          $ldap_filter = $parts[0] . ldap_escape($terms[0]) . $parts[1] . ldap_escape($terms[1]) . $parts[2] . ldap_escape($terms[1]) . $parts[3] . ldap_escape($terms[0]) . $parts[4];
-        }
-        else {
-          return [];
-        }
-
-        if($employee) {
-          $ldap_filter = substr($ldap_filter, 0, -1) . $ldap_user_filter['employee'] . ')';
-        }
-        else {
-          $ldap_filter = substr($ldap_filter, 0, -1) . $ldap_user_filter['active'] . ')';
-        }
-
-        $result = self::getfromLDAP($ldap_configs['users_one']['ldap_base'], $ldap_filter, $ldap_configs['users_one']['ldap_attributes']);
-      }
-
-      if(is_array($result) && array_key_exists('count', $result) && $result['count'] > 0) {
-        $foundUsers = [];
-
-        foreach($result as $user) {
-          if(is_array($user) && array_key_exists($ldap_configs['users_one']['ldap_attributes'][0], $user)) {
-            $label = '';
-            if(array_key_exists($ldap_configs['users_one']['ldap_attributes'][1], $user))  $label .= $user[$ldap_configs['users_one']['ldap_attributes'][1]][0];
-            if(array_key_exists($ldap_configs['users_one']['ldap_attributes'][2], $user))  $label .= ' ' . $user[$ldap_configs['users_one']['ldap_attributes'][2]][0];
-            $name = $label;
-            if(array_key_exists($ldap_configs['users_one']['ldap_attributes'][3], $user))  $label .= ', ' . $user[$ldap_configs['users_one']['ldap_attributes'][3]][0];
-            if(array_key_exists($ldap_configs['users_one']['ldap_attributes'][4], $user))  $label .= ', Tel.: ' . $user[$ldap_configs['users_one']['ldap_attributes'][4]][0];
-            if(array_key_exists($ldap_configs['users_one']['ldap_attributes'][5], $user))  $label .= ', E-Mail: ' . str_replace('exchange.wwu.de', 'uni-muenster.de', $user[$ldap_configs['users_one']['ldap_attributes'][5]][0]);
-
-            array_push($foundUsers, ['value' => $user[$ldap_configs['users_one']['ldap_attributes'][0]][0], 'label' => $label, 'name' => $name]);
+              array_push($foundUsers, ['value' => $user[$ldap_configs['users_one']['ldap_attributes'][0]][0], 'label' => $label, 'name' => $name]);
+            }
           }
         }
+      }
 
-        return $foundUsers;
+      if($dataSources['users'] === 'db' || (empty($foundUsers) && $dataSources['users'] === 'ldap+db')) {
+        # DB Abfrage durchführen
+        if($id) {
+          $result = $dbcon->searchPerson($query, $employee, TRUE);
+        }
+        else {
+          $result = $dbcon->searchPerson($query, $employee);
+        }
+
+        foreach($result as $val) {
+          array_push($foundUsers, ['value' => $val['Kennung'], 'label' => empty($val['Anzeigename']) ? $val['Name'] : $val['Anzeigename'], 'name' => $val['Name']]);
+        }
       }
-      else
-      {
-        return [];
-      }
+
+      return $foundUsers;
     }
 
     /**
@@ -292,33 +287,34 @@
      * @return array Liste der Nutzergruppen
      */
     public static function getUserGroups($userId) {
-      global $ldap_handle, $ldap_configs, $ldap_use;
+      global $ldap_handle, $ldap_configs, $ldap_use, $dataSources, $dbcon;
 
+      $userId = trim($userId);
       if(empty($userId)) return [];
 
-      if(!$ldap_use) {
-        $userGroups = array('demouser' => array('demogroup', 'demogroup2', 'demogroup3'),
-                            'demouser2' => array('demogroup', 'demogroup2'),
-                            'demouser3' => array('demogroup')
-                            );
-        return $userGroups[$userId];
-      }
+      $foundGroups = [];
 
-      $result = self::getfromLDAP($ldap_configs['usergroups']['ldap_base'], str_replace('$', ldap_escape($userId), $ldap_configs['usergroups']['ldap_filter']), $ldap_configs['usergroups']['ldap_attributes']);
+      if($ldap_use && ($dataSources['usergroups'] === 'ldap' || $dataSources['usergroups'] === 'ldap+db')) {
+        # LDAP Abfrage durchführen
+        $result = self::getfromLDAP($ldap_configs['usergroups']['ldap_base'], str_replace('$', ldap_escape($userId), $ldap_configs['usergroups']['ldap_filter']), $ldap_configs['usergroups']['ldap_attributes']);
 
-      if(is_array($result) && array_key_exists('count', $result) && $result['count'] > 0) {
-        $foundGroups = [];
-
-        foreach($result[0]['memberof'] as $group) {
-          if(is_string($group)) array_push($foundGroups, explode('=', explode(',', $group)[0])[1]);
+        if(is_array($result) && array_key_exists('count', $result) && $result['count'] > 0) {
+          foreach($result[0]['memberof'] as $group) {
+            if(is_string($group)) array_push($foundGroups, explode('=', explode(',', $group)[0])[1]);
+          }
         }
+      }
 
-        return $foundGroups;
+      if($dataSources['usergroups'] === 'db' || (empty($foundGroups) && $dataSources['usergroups'] === 'ldap+db')) {
+        # DB Abfrage durchführen
+        $groups = $dbcon->searchUsergroups($userId);
+
+        foreach($groups as $group) {
+          array_push($foundGroups, $group['ID']);
+        }
       }
-      else
-      {
-        return [];
-      }
+
+      return $foundGroups;
     }
 
     /**
@@ -331,37 +327,36 @@
      * @return array Liste der Nutzergruppen ([['value' => 'u0mitarb', 'label' => 'Beschreibung'], ...])
      */
     public static function searchGroups($query) {
-      global $ldap_handle, $ldap_configs, $ldap_use;
+      global $ldap_handle, $ldap_configs, $ldap_use, $dataSources, $dbcon;
 
+      $query = trim($query);
       if(empty($query)) return [];
 
-      if(!$ldap_use) {
-        $groups = [
-          ['value' => 'demogroup', 'label' => 'Gruppe für SecDoc Demosystem'],
-          ['value' => 'demogroup2', 'label' => 'Zweite Gruppe für SecDoc Demosystem'],
-          ['value' => 'demogroup3', 'label' => 'Dritte Gruppe für SecDoc Demosystem'],
-          ['value' => 'demogroup4', 'label' => 'Vierte Gruppe für SecDoc Demosystem'],
-        ];
-        return $groups;
-      }
+      $foundGroups = [];
 
-      $result = self::getfromLDAP($ldap_configs['groups']['ldap_base'], str_replace('$', ldap_escape($query), $ldap_configs['groups']['ldap_filter']), $ldap_configs['groups']['ldap_attributes']);
+      if($ldap_use && ($dataSources['groups'] === 'ldap' || $dataSources['groups'] === 'ldap+db')) {
+        # LDAP Abfrage durchführen
+        $result = self::getfromLDAP($ldap_configs['groups']['ldap_base'], str_replace('$', ldap_escape($query), $ldap_configs['groups']['ldap_filter']), $ldap_configs['groups']['ldap_attributes']);
 
-      if(is_array($result) && array_key_exists('count', $result) && $result['count'] > 0) {
-        $foundGroups = [];
-
-        foreach($result as $group) {
-          if(is_array($group) && array_key_exists($ldap_configs['groups']['ldap_attributes'][0], $group) && array_key_exists($ldap_configs['groups']['ldap_attributes'][1], $group)) {
-            array_push($foundGroups, ['value' => $group[$ldap_configs['groups']['ldap_attributes'][0]][0], 'label' => $group[$ldap_configs['groups']['ldap_attributes'][0]][0] . ': ' . $group[$ldap_configs['groups']['ldap_attributes'][1]][0]]);
+        if(is_array($result) && array_key_exists('count', $result) && $result['count'] > 0) {
+          foreach($result as $group) {
+            if(is_array($group) && array_key_exists($ldap_configs['groups']['ldap_attributes'][0], $group) && array_key_exists($ldap_configs['groups']['ldap_attributes'][1], $group)) {
+              array_push($foundGroups, ['value' => $group[$ldap_configs['groups']['ldap_attributes'][0]][0], 'label' => $group[$ldap_configs['groups']['ldap_attributes'][0]][0] . ': ' . $group[$ldap_configs['groups']['ldap_attributes'][1]][0]]);
+            }
           }
         }
+      }
 
-        return $foundGroups;
+      if($dataSources['groups'] === 'db' || (empty($foundGroups) && $dataSources['groups'] === 'ldap+db')) {
+        # DB Abfrage durchführen
+        $groups = $dbcon->searchGroups($query);
+
+        foreach($groups as $group) {
+          array_push($foundGroups, ['value' => $group['ID'], 'label' => $group['Description']]);
+        }
       }
-      else
-      {
-        return [];
-      }
+
+      return $foundGroups;
     }
 
     /**
@@ -374,27 +369,32 @@
      * @return string Name der Nutzergruppe
      */
     public static function getGroupName($groupId) {
-      global $ldap_handle, $ldap_configs, $ldap_use;
+      global $ldap_handle, $ldap_configs, $ldap_use, $dataSources, $dbcon;
 
-      if(!$ldap_use) {
-        $groupNames = array('demogroup' => 'Gruppe für SecDoc Demosystem',
-                            'demogroup2' => 'Zweite Gruppe für SecDoc Demosystem',
-                            'demogroup3' => 'Dritte Gruppe für SecDoc Demosystem'
-                            );
-        return $groupNames[$groupId];
-      }
-
+      $groupId = trim($groupId);
       if(empty($groupId)) return '';
 
-      $result = self::getfromLDAP($ldap_configs['groupname']['ldap_base'], str_replace('$', ldap_escape($groupId), $ldap_configs['groupname']['ldap_filter']), $ldap_configs['groupname']['ldap_attributes']);
+      if($ldap_use && ($dataSources['groups'] === 'ldap' || $dataSources['groups'] === 'ldap+db')) {
+        # LDAP Abfrage durchführen#
+        $result = self::getfromLDAP($ldap_configs['groupname']['ldap_base'], str_replace('$', ldap_escape($groupId), $ldap_configs['groupname']['ldap_filter']), $ldap_configs['groupname']['ldap_attributes']);
 
-      if(is_array($result) && array_key_exists('count', $result) && $result['count'] > 0) {
-        return $result[0][$ldap_configs['groupname']['ldap_attributes'][0]][0];
+        if(is_array($result) && array_key_exists('count', $result) && $result['count'] > 0) {
+          return $result[0][$ldap_configs['groupname']['ldap_attributes'][0]][0];
+        }
+        else
+        {
+          if($dataSources['groups'] === 'ldap') return '';
+        }
       }
-      else
-      {
-        return '';
+
+      if($dataSources['groups'] === 'db' || $dataSources['groups'] === 'ldap+db') {
+        # DB Abfrage durchführen
+        $groups = $dbcon->searchGroups($groupId, TRUE);
+
+        if(count($groups) > 0) return $groups[0]['Description'];
       }
+
+      return '';
     }
 
     /**

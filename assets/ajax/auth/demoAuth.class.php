@@ -48,7 +48,7 @@ class demoAuth extends Auth {
    * @return array String-Array der Nutzergruppen
    */
   public function getUserGroups() {
-    return ['demogroup', 'demogroup2', 'demogroup3'];
+    return ['demogroup1', 'demogroup2', 'demogroup3'];
   }
 
   /**

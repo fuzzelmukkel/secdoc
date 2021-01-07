@@ -150,9 +150,9 @@
   # ldap    - Abfrage direkt aus dem LDAP; LDAP Konfiguration muss vorgenommen werden (siehe unten)
   # ldap+db - Erst Abfrage im LDAP, sonst DB-Abfrage bei keinem Fund
   $dataSources = [
-    'users'      => 'db',
-    'groups'     => 'db',
-    'usergroups' => 'db'
+    'users'      => 'ldap+db',
+    'groups'     => 'ldap+db',
+    'usergroups' => 'ldap+db'
   ];
 
   # ----------------------------------------
