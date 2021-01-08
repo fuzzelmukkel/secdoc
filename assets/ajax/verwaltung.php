@@ -869,6 +869,72 @@ EOH;
   }
 
   /**
+   * Verschickt eine Benachrichtigung über angeforderte Hilfe bei der Bearbeitung.
+   *
+   * @global string $prog_url       SecDoc-URL
+   * @global array  $eMail_config   Konfiguration für den E-Mail Versand
+   * @param  array  $verfahrensInfo Informationen über die Dokumentation
+   * @param  string $currEditorID   Nutzerkennung des aktuellen Bearbeiters
+   * @param  string $nextEditorID   Nutzerkennung des nächsten Bearbeiters
+   * @param  string $editorComment  Aktueller Bearbeitungskommentar
+   * @return bool                   TRUE bei Erfolg, sonst FALSE
+   */
+  function sendNotificationEmail(array $verfahrensInfo, string $currEditorID, string $nextEditorID, string $editorComment): bool {
+    global $eMail_config, $prog_url;
+
+    $nextEditorMail = Utils::getUserAlias($nextEditorID);
+    $nextEditorDetails = Utils::searchUsers($nextEditorID, TRUE);
+    $nextEditorName = (count($nextEditorDetails) > 0 && !empty($nextEditorDetails[0]['name'])) ? $nextEditorDetails[0]['name'] : $nextEditorID;
+
+    $currEditorDetails = Utils::searchUsers($currEditorID, TRUE);
+    $currEditorName = (count($currEditorDetails) > 0 && !empty($currEditorDetails[0]['name'])) ? $currEditorDetails[0]['name'] : $currEditorID;
+
+    $emailText = strip_tags(Utils::getUserAnrede($nextEditorID) . ",\n\n$currEditorName hat den nächsten Bearbeitungsschritt der Dokumentation \"{$verfahrensInfo['Bezeichnung']}\" mit der Nummer {$verfahrensInfo['ID']} an Sie übergeben.\n\nDer folgende Kommentar wurde dazu hinterlegt:\n$editorComment\n\nDie Dokumentation kann unter $prog_url?id={$verfahrensInfo['ID']} eingesehen und bearbeitet werden.\n\nMit freundlichen Grüßen\nIhr SecDoc-Team\n");
+
+    # Create a new PHPMailer instance
+    require_once '../vendor/autoload.php';
+    $mail = new PHPMailer;
+    $mail->isSendmail();
+    $mail->CharSet = "UTF-8";
+    $mail->setFrom($eMail_config['fromEmail'], $eMail_config['fromName']);
+    $mail->addReplyTo($eMail_config['replyEmail'], $eMail_config['replyName']);
+    $mail->Subject = "[SecDoc] Mithilfe bei Dokumentation Nr. {$verfahrensInfo['ID']}";
+
+    # Überprüft ob smtp genutzt werden soll und holt entsprechend die Einstellungen
+    if ($eMail_config['smtp'] === true) {
+        $mail->isSMTP();
+        $mail->Host = $eMail_config['host'];
+        $mail->SMTPAuth = $eMail_config['SMTPAuth'];
+        $mail->SMTPSecure =$eMail_config['SMTPSecure'];
+        $mail->Username = $eMail_config['Username'];
+        $mail->Password = $eMail_config['Password'];
+        $mail->Port = $eMail_config['Port'];
+     }
+
+     if ($eMail_config['signed'] === true) {
+      $mail->sign(
+        $eMail_config['CRT'], //The location of your certificate file
+        $eMail_config['KEY'], //The location of your private key file
+        //The password you protected your private key with (not the Import Password!)
+        //May be empty but the parameter must not be omitted!
+        $eMail_config['PKP'],
+        $eMail_config['PEM'] //The location of your chain file
+      );
+    }
+
+    $mail->addAddress($nextEditorMail, $nextEditorName);
+    $mail->Body = $emailText;
+    $mailSuccess = $mail->send();
+
+    if(!$mailSuccess) {
+      trigger_error("[SecDoc] Verwaltung.php -> Fehler beim Senden der E-Mail. $mail->ErrorInfo");
+      error_log("[SecDoc] Verwaltung.php -> Fehler beim Senden der E-Mail. $mail->ErrorInfo ");
+    }
+
+    return $mailSuccess;
+  }
+
+  /**
    * Gibt eine Fehlermeldung im einheitlichen Format zurück und beendet die Ausführung danach (genutzt für fehlerhafte Aufrufe).
    *
    * @global bool $debug
@@ -1744,6 +1810,8 @@ EOH;
 
       $data = $dbcon->getBearbeiterKommentar($verfahrensId, $userId, $userGroups, $userIsDSB);
 
+      if($data === FALSE) returnError('Die Dokumentation existiert nicht oder Sie haben keinen Zugriff darauf!');
+
       $output['success'] = TRUE;
       $output['data'] = $data;
       break;
@@ -1757,10 +1825,21 @@ EOH;
 
       $data = $dbcon->getBearbeiterKommentar($verfahrensId, $userId, $userGroups, $userIsDSB);
 
-      # TODO Check if selected user has access
-      # TODO send out e-mail with comment and link
+      if($data === FALSE) returnError('Die Dokumentation existiert nicht oder Sie haben keinen Zugriff darauf!');
 
-      $output['success'] = FALSE;
+      if(empty($data['NaechsterBearbeiter'])) returnError('Keine Kennung für den nächsten Bearbeiter angegeben!');
+
+      if($dbcon->getPermissionLevel($verfahrensId, $data['NaechsterBearbeiter'], Utils::getUserGroups($data['NaechsterBearbeiter'])) < 2) returnError('Der ausgewählte Benutzer besitzt keine Schreibrechte an dieser Dokumentation! Bitte passen Sie die Zugriffsberechtigungen an und speichern Sie die Dokumentation bevor Sie es erneut versuchen.');
+
+      $success = sendNotificationEmail($dbcon->getVerfahrenInfo($verfahrensId), $userId, $data['NaechsterBearbeiter'], $data['BearbeiterKommentar']);
+
+      if($success) {
+        $output['success'] = TRUE;
+      }
+      else {
+        returnError('Fehler beim E-Mail Versand! Bitte versuchen Sie es später erneut.');
+      }
+
       break;
     }
 

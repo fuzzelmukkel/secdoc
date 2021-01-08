@@ -2419,24 +2419,93 @@ function loadDocuments() {
  */
 function showNextEditorDialog() {
   if(loadId === 0) {
-    showError('Weitergeben der Dokumentation', 'Die Dokumentation muss mindestens einmal abgespeichert werden, bevor sie weitergegeben werden kann.');
+    showError('Kommentieren und Übertragen', 'Die Dokumentation muss mindestens einmal abgespeichert werden, bevor sie weitergegeben werden kann.');
     return;
   }
 
   setOverlay(true);
 
-  modal.find('.modal-title').html('<i class="fa fa-arrow-up"></i> Weitergabe der Dokumentation');
+  modal.find('.modal-title').html('<i class="fa fa-arrow-up"></i> Bearbeitungskommentar und Übergabe');
   let modalBody = modal.find('.modal-body');
   modalBody.html('<div></div>');
   modalBody.append('<div class="form-group"><label>Aktueller Kommentar</label><textarea class="form-control" id="currComment" placeholder="Optionaler Kommentar"></textarea></div>');
-  modalBody.append('<div class="form-group"><label>Nächster Bearbeiter</label><input id="pass_to_user" data-tool="typeahead" data-action="searchperson" data-minlength="4" data-dynamic="true" data-cache="false" data-hiddenfield="pass_to_userid" data-mustselectitem="true" type="text" class="form-control" placeholder="Geben Sie eine Kennung oder einen Namen (min. 4 Zeichen) ein..."><input type="hidden" name="pass_to_userid"></div>');
-  modalBody.append('<p class="text-center"><button id="passToUser" class="btn btn-fill btn-success">Weitergeben</button><button type="button" class="btn btn-danger ml" data-dismiss="modal" aria-label="Close">Schließen</button></p>');
+  modalBody.append('<div class="form-group"><label>Nächster Bearbeiter</label><input id="nextUser" data-tool="typeahead" data-action="searchperson" data-minlength="4" data-dynamic="true" data-cache="false" data-hiddenfield="nextUserID" data-mustselectitem="true" type="text" class="form-control" placeholder="Geben Sie eine Kennung oder einen Namen (min. 4 Zeichen) ein..."><input type="hidden" id="nextUserID" name="nextUserID"></div>');
+  modalBody.append('<p class="text-center"><button id="saveEditorComment" class="btn btn-success">Speichern</button><button id="notifyNextEditor" class="btn btn-warning ml" disabled>An neuen Bearbeiter übergeben</button><button type="button" class="btn btn-danger ml" data-dismiss="modal" aria-label="Close">Schließen</button></p>');
 
-  initTypeahead(modalBody.find('#pass_to_user'));
+  initTypeahead(modalBody.find('#nextUser'));
+
+  modalBody.find('#nextUserID').change((e) => {
+    if($('#nextUserID').val() !== '') {
+      $('#notifyNextEditor').prop('disabled', false);
+    }
+    else {
+      $('#notifyNextEditor').prop('disabled', true);
+    }
+  });
+
+  modalBody.find('#saveEditorComment').click(() => {
+    setOverlay(true);
+    $.post(backendPath, JSON.stringify({'action': 'updateeditorcomment', 'debug': debug, 'id': loadId, 'data': { 'comment': modalBody.find('#currComment').val(), 'userid': modalBody.find('#nextUserID').val()}})).done(function(data) {
+      if(!data['success']) {
+        showError('Speichern des Bearbeiterkommentars', data['error']);
+      }
+    }).fail((jqXHR, error, errorThrown) => {
+      showError('Speichern des Bearbeiterkommentars', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+    }).always(() => {
+      setOverlay(false);
+    });
+  });
+
+  modalBody.find('#notifyNextEditor').click(() => {
+    setOverlay(true);
+    $.post(backendPath, JSON.stringify({'action': 'updateeditorcomment', 'debug': debug, 'id': loadId, 'data': { 'comment': modalBody.find('#currComment').val(), 'userid': modalBody.find('#nextUserID').val()}})).done(function(data) {
+      if(!data['success']) {
+        showError('Speichern des Bearbeiterkommentars', data['error']);
+        setOverlay(false);
+      }
+      else {
+        let confirmNotification = confirm('Die ausgewählte Person wird per E-Mail über Ihre Anfrage zur Mithilfe bei der Bearbeitung informiert. Wollen Sie wirklich fortfahren?');
+        if(!confirmNotification) {
+          setOverlay(false);
+          return;
+        }
+
+        $.post(backendPath, JSON.stringify({'action': 'notifynexteditor', 'debug': debug, 'id': loadId})).done(function(data) {
+          if(!data['success']) {
+            showError('Benachrichtigen des Bearbeiters', data['error']);
+          }
+          else {
+            modalBody.html('<div><div class="alert alert-success"><p>Neuer Bearbeiter wurde erfolgreich per E-Mail benachrichtigt!</p><p>Sie selbst können die Dokumentation selbstverständlich weiterhin ebenfalls bearbeiten.</p></div><p class="text-center"><button type="button" class="btn btn-danger ml" data-dismiss="modal" aria-label="Close">Schließen</button></p></div>');
+          }
+        }).fail((jqXHR, error, errorThrown) => {
+          showError('Benachrichtigen des Bearbeiters', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+        }).always(() => {
+          setOverlay(false);
+        });
+      }
+    }).fail((jqXHR, error, errorThrown) => {
+      showError('Speichern des Bearbeiterkommentars', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+      setOverlay(false);
+    });
+  });
 
   modal.modal();
 
-  setOverlay(false);
+  $.post(backendPath, JSON.stringify({'action': 'geteditorcomment', 'debug': debug, 'id': loadId})).done(function(data) {
+    if(!data['success']) {
+      showError('Laden des Bearbeiterkommentars', data['error']);
+    }
+    else {
+      modalBody.find('#currComment').val(data.data.BearbeiterKommentar);
+      modalBody.find('#nextUser, #nextUserID').val(data.data.NaechsterBearbeiter);
+
+      if(data.data.NaechsterBearbeiter !== '') modalBody.find('#notifyNextEditor').prop('disabled', false);
+    }
+  }).fail((jqXHR, error, errorThrown) => {
+    showError('Laden des Bearbeiterkommentars', false, {'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown});
+  }).always(() => {
+    setOverlay(false);
+  });
 }
 
 debugLog('Beginne Setup...');

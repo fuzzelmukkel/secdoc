@@ -185,6 +185,7 @@
     /**
      * Holt die Kennung des aktuell eingeloggten Nutzers.
      *
+     * @deprecated
      * @return string Kennung des Nutzers oder einen leeren String, falls keine Kennung gefunden wurde
      */
     public static function getCurrentUserId(): string {
