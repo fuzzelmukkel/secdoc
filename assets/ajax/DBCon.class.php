@@ -52,12 +52,12 @@
    *
    * Tabelle: Personen
    * <pre>
-   * +-------------+------+-------------+-------------+
-   * | Kennung     | Name | Anzeigename | Datenquelle |
-   * +-------------+------+-------------+-------------+
-   * | VARCHAR(8)  | TEXT | TEXT        | VARCHAR(50) |
-   * | PRIMARY KEY |      |             |             |
-   * +-------------+------+-------------+-------------+
+   * +-------------+------+-------------+-------------+-------+
+   * | Kennung     | Name | Anzeigename | Datenquelle | EMail |
+   * +-------------+------+-------------+-------------+-------+
+   * | VARCHAR(8)  | TEXT | TEXT        | VARCHAR(50) | TEXT  |
+   * | PRIMARY KEY |      |             |             |       |
+   * +-------------+------+-------------+-------------+-------+
    * </pre>
    *
    * Tabelle: Groups
@@ -198,9 +198,10 @@
           );",
         "CREATE TABLE personen (
             Kennung VARCHAR(30) PRIMARY KEY ON CONFLICT IGNORE, -- Eindeutige Nutzerkennung
-            Name TEXT,                                         -- Name der Person
-            Anzeigename TEXT,                                  -- Anzeigename mit Name, Anschrift, Telefon, E-Mail
-            Datenquelle VARCHAR(50) DEFAULT ''                 -- Hinweis auf die genutzte Quelle für die Daten
+            Name TEXT,                                          -- Name der Person
+            Anzeigename TEXT,                                   -- Anzeigename mit Name, Anschrift, Telefon, E-Mail
+            Datenquelle VARCHAR(50) DEFAULT '',                 -- Hinweis auf die genutzte Quelle für die Daten
+            EMail TEXT DEFAULT ''                               -- E-Mail Adresse
         );",
         "CREATE TABLE organisationseinheiten (
             Org_Id TEXT PRIMARY KEY ON CONFLICT IGNORE, -- ID der Organisationseinheit
@@ -708,6 +709,7 @@
           $this->pdo->beginTransaction();
           $this->pdo->exec("ALTER TABLE verfahren ADD COLUMN BearbeiterKommentar TEXT DEFAULT '';");
           $this->pdo->exec("ALTER TABLE verfahren ADD COLUMN NaechsterBearbeiter TEXT DEFAULT '';");
+          $this->pdo->exec("ALTER TABLE personen ADD COLUMN EMail TEXT DEFAULT '';");
           $this->pdo->exec(self::TABLES[19]);
           $this->pdo->exec(self::TABLES[20]);
           $this->pdo->exec("PRAGMA user_version = 12;");

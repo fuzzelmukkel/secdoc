@@ -151,6 +151,7 @@
     /**
      * Versendet eine S/MIME signierte E-Mail.
      *
+     * @deprecated
      * @global bool $debug Debug-Einstellung
      * @param string $to          Empfänger
      * @param string $cc          CC Empfänger
@@ -198,6 +199,8 @@
      *
      * @global LDAPHandle $ldap_handle  LDAP Verbindung
      * @global array      $ldap_configs LDAP Konfigurationen
+     * @global DBCon      $dbcon        Datenbankverbindung
+     * @global array      $dataSources  Konfiguration für Datenabfrage
      * @param  string $query    Suchbegriff
      * @param  bool   $id       Soll exakt nach einer Kennung gesucht werden?
      * @param  bool   $employee Soll nur nach Mitarbeitern gesucht werden?
@@ -284,6 +287,8 @@
      * @global LDAPHandle $ldap_handle  LDAP Verbindung
      * @global array      $ldap_configs LDAP Konfigurationen
      * @global bool       $ldap_use     Gibt an, ob LDAP genutzt werden soll
+     * @global DBCon      $dbcon        Datenbankverbindung
+     * @global array      $dataSources  Konfiguration für Datenabfrage
      * @param string $userId Nutzerkennung
      * @return array Liste der Nutzergruppen
      */
@@ -324,6 +329,8 @@
      * @global LDAPHandle $ldap_handle  LDAP Verbindung
      * @global array      $ldap_configs LDAP Konfigurationen
      * @global bool       $ldap_use     Gibt an, ob LDAP genutzt werden soll
+     * @global DBCon      $dbcon        Datenbankverbindung
+     * @global array      $dataSources  Konfiguration für Datenabfrage
      * @param  string $query Suchbegriff
      * @return array Liste der Nutzergruppen ([['value' => 'u0mitarb', 'label' => 'Beschreibung'], ...])
      */
@@ -366,6 +373,8 @@
      * @global LDAPHandle $ldap_handle  LDAP Verbindung
      * @global array      $ldap_configs LDAP Konfigurationen
      * @global bool       $ldap_use     Gibt an, ob LDAP genutzt werden soll
+     * @global DBCon      $dbcon        Datenbankverbindung
+     * @global array      $dataSources  Konfiguration für Datenabfrage
      * @param string $groupId ID der Nutzergruppe
      * @return string Name der Nutzergruppe
      */
@@ -416,27 +425,38 @@
      * @global LDAPHandle $ldap_handle  LDAP Verbindung
      * @global array      $ldap_configs LDAP Konfigurationen
      * @global bool       $ldap_use     Gibt an, ob LDAP genutzt werden soll
+     * @global DBCon      $dbcon        Datenbankverbindung
+     * @global array      $dataSources  Konfiguration für Datenabfrage
      * @param string $userId Nutzerkennung
      * @return string E-Mail-Adresse oder false
      */
     public static function getUserAlias($userId) {
-      global $ldap_handle, $ldap_configs, $ldap_use;
+      global $ldap_handle, $ldap_configs, $ldap_use, $dbcon, $dataSources;
 
-      if(!$ldap_use) {
-        return 'demo.user@demo.domain';
-      }
-
+      $userId = trim($userId);
       if(empty($userId)) return FALSE;
 
-      $result = self::getfromLDAP($ldap_configs['usermail']['ldap_base'], str_replace('$', ldap_escape($userId), $ldap_configs['usermail']['ldap_filter']), $ldap_configs['usermail']['ldap_attributes']);
+      $userMail = '';
 
-      if(is_array($result) && array_key_exists('count', $result) && $result['count'] > 0) {
-        return $result[0][$ldap_configs['usermail']['ldap_attributes'][0]][0];
+      if($ldap_use && ($dataSources['users'] === 'ldap' || $dataSources['users'] === 'ldap+db')) {
+        # LDAP Abfrage durchführen
+        $result = self::getfromLDAP($ldap_configs['usermail']['ldap_base'], str_replace('$', ldap_escape($userId), $ldap_configs['usermail']['ldap_filter']), $ldap_configs['usermail']['ldap_attributes']);
+
+        if(is_array($result) && array_key_exists('count', $result) && $result['count'] > 0) {
+          $userMail = $result[0][$ldap_configs['usermail']['ldap_attributes'][0]][0];
+        }
       }
-      else
-      {
-        return FALSE;
+
+      if($dataSources['users'] === 'db' || (empty($userMail) && $dataSources['users'] === 'ldap+db')) {
+        # DB Abfrage durchführen
+        $result = $dbcon->searchPerson($userId, FALSE, TRUE);
+
+        if(count($result) === 1) {
+          $userMail = $result[0]['EMail'];
+        }
       }
+
+      return empty($userMail) ? FALSE : $userMail;
     }
 
     /**

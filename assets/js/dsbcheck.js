@@ -107,8 +107,10 @@ function getCombinedTOMs(docId) {
 
       // Eintrag für jede Verwendung einr Maßnahme
       for (let tomDoc of data.data.toms['massnahmen_' + tom.Identifier]) {
+        let catObjective = tom.CatObjective ? '<i data-toggle="tooltip" data-html="true" title="' + tom.CatObjective + '" class="fa fa-question-circle-o fa-lg"></i>' : '';
+        let catLink      = tom.CatURL ? '<a href="' + tom.CatURL + '" target="_blank" rel="noopener noreferrer"><i class="fa fa-external-link" style="cursor: pointer;" data-toggle="tooltip" title="Zum BSI Grundschutz-Katalog"></i></a>' : '';
         let tableCatHTML = `
-         <td data-percentage="${Math.round((catPoints / tomCount) * 100)}">
+         <td data-percentage="${Math.round((catPoints / tomCount) * 100)}" data-objective="${tom.CatObjective}" data-url="${tom.CatURL}">
            ${htmlEncode(tom.Subcategory)}
          </td>`;
 
@@ -142,6 +144,7 @@ function getCombinedTOMs(docId) {
       }
     }
 
+    // DataTables initialisieren
     $('#overalltoms').DataTable({
       'paging': false,
       'order': [1, 'asc'],
@@ -156,14 +159,18 @@ function getCombinedTOMs(docId) {
         startRender: function(rows, group) {
           let groupHeading = `${group}`;
           let groupPecentage = $(rows.nodes()[0]).children().first().data('percentage');
+          let groupObjective = $(rows.nodes()[0]).children().first().data('objective');
+          groupObjective = groupObjective ? '<i data-toggle="tooltip" data-html="true" title="' + groupObjective + '" class="fa fa-question-circle-o fa-lg"></i>' : '';
+          let groupURL = $(rows.nodes()[0]).children().first().data('url');
+          groupURL = groupURL ? '<a href="' + groupURL + '" target="_blank" rel="noopener noreferrer"><i class="fa fa-external-link" style="cursor: pointer;" data-toggle="tooltip" title="Zum BSI Grundschutz-Katalog"></i></a>' : '';
           let groupPercentageHTML = `
          <div class="progress pull-right" style="width: 30%; margin-bottom: 0px;">
-           <div class="progress-bar" role="progressbar" aria-valuenow="${groupPecentage}" aria-valuemin="0" aria-valuemax="100" style="width: ${groupPecentage}%;">
-             <span class="sr-only">${groupPecentage}% fertiggestellt</span>
+           <div class="progress-bar" role="progressbar" aria-valuenow="${groupPecentage}" aria-valuemin="0" aria-valuemax="100" style="min-width: 2em; width: ${groupPecentage}%;">
+             <span>${groupPecentage}%</span>
            </div>
          </div>
          `;
-          return $(`<tr><td colspan="6">${groupHeading} ${groupPercentageHTML}</td></tr>`);
+          return $(`<tr><td colspan="6">${groupHeading} ${groupObjective} ${groupURL} ${groupPercentageHTML}</td></tr>`);
         }
       },
       dom: "<'row'<'col-sm-4'l><'col-sm-4 text-center'B><'col-sm-4'f>><'row'<'col-sm-12'tr>><'row'<'col-sm-5'i><'col-sm-7'p>>",
@@ -205,6 +212,23 @@ function getCombinedTOMs(docId) {
           }
         }
       ]
+    });
+
+    $('#overalltoms').on('draw.dt', () => {
+      // Tooltips initialisieren
+      $('[data-toggle="tooltip"]').tooltip({
+        placement: 'auto',
+        html: true,
+        container: 'body'
+      });
+
+      setTimeout(() => {
+        $('[data-toggle="tooltip"]').tooltip({
+          placement: 'auto',
+          html: true,
+          container: 'body'
+        });
+      }, 1000);
     });
   }).fail((jqXHR, error, errorThrown) => {
     showError('Einsammeln der TOMs', false, { 'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown });
