@@ -107,8 +107,6 @@ function getCombinedTOMs(docId) {
 
       // Eintrag für jede Verwendung einr Maßnahme
       for (let tomDoc of data.data.toms['massnahmen_' + tom.Identifier]) {
-        let catObjective = tom.CatObjective ? '<i data-toggle="tooltip" data-html="true" title="' + tom.CatObjective + '" class="fa fa-question-circle-o fa-lg"></i>' : '';
-        let catLink      = tom.CatURL ? '<a href="' + tom.CatURL + '" target="_blank" rel="noopener noreferrer"><i class="fa fa-external-link" style="cursor: pointer;" data-toggle="tooltip" title="Zum BSI Grundschutz-Katalog"></i></a>' : '';
         let tableCatHTML = `
          <td data-percentage="${Math.round((catPoints / tomCount) * 100)}" data-objective="${tom.CatObjective}" data-url="${tom.CatURL}">
            ${htmlEncode(tom.Subcategory)}
@@ -121,7 +119,7 @@ function getCombinedTOMs(docId) {
         if (Object.keys(data.data.toms).includes('massnahmen_' + tom.Identifier + '_kommentar')) {
           for (let tempComment of data.data.toms['massnahmen_' + tom.Identifier + '_kommentar']) {
             if (tempComment.id === tomDoc.id) {
-              tomComment = htmlEncode(tempComment.data.trim()).replace(/\n/g, '<br>');
+              tomComment = tempComment.data.trim().replace(/\n/g, '<br>');
               break;
             }
           }
@@ -131,8 +129,8 @@ function getCombinedTOMs(docId) {
         $('#overalltoms tbody').append(`
         <tr>
           ${tableCatHTML}
-          <td>${htmlEncode(tom.Title)}</td>
-          <td>${htmlEncode(tom.Description)}</td>
+          <td>${htmlEncode(tom.Identifier + ' - ' + tom.Title)}</td>
+          <td>${tom.Description}</td>
           <td>
             ${tomStatus}
           </td>
@@ -155,8 +153,10 @@ function getCombinedTOMs(docId) {
         { type: 'natural-nohtml', 'targets': '_all' }
       ],
       rowGroup: {
-        dataSrc: 0,
+        dataSrc: [0, 1],
         startRender: function(rows, group) {
+          if(group.search(/\.A\d/) > 0) return $(`<tr><td colspan="6">${group}</td></tr>`);
+
           let groupHeading = `${group}`;
           let groupPecentage = $(rows.nodes()[0]).children().first().data('percentage');
           let groupObjective = $(rows.nodes()[0]).children().first().data('objective');
@@ -180,35 +180,16 @@ function getCombinedTOMs(docId) {
           title: `Grundschutz-Check - ${data.data.docs[docId].allgemein_bezeichnung} (#${docId})`,
           text: '<i class="fa fa-file-pdf-o"></i> Tabelle als PDF speichern',
           orientation: 'landscape',
-          customize: function(doc) {
-            for (let c = 0; c < doc.content[1].table.body.length; c++) {
-              // Link zur Dokumentation ergänzen
-              let linkCol  = doc.content[1].table.body[c].length === 6 ? 5 : 3;
-              let tempHTML = $(doc.content[1].table.body[c][linkCol].text);
-              if (tempHTML.text() === '') continue;
-              doc.content[1].table.body[c][linkCol].text = tempHTML.text();
-              doc.content[1].table.body[c][linkCol].link = tempHTML.get(0).href.replace(/x?sso/i, 'www');
-              doc.content[1].table.body[c][linkCol].decoration = 'underline';
-
-              if(doc.content[1].table.body[c].length === 6) {
-                // HTML aus Kommentar entfernen
-                tempHTML = $(doc.content[1].table.body[c][4].text.replace(/<br>/g, '\n'));
-                doc.content[1].table.body[c][4].text = tempHTML.text();
-              }
-
-              // HTML aus Umsetzungsstand umwandeln
-              let statusCol  = doc.content[1].table.body[c].length === 6 ? 3 : 2;
-              tempHTML = $(doc.content[1].table.body[c][statusCol].text);
-              doc.content[1].table.body[c][statusCol].text = tempHTML.text();
-              if (tempHTML.hasClass('text-success')) doc.content[1].table.body[c][statusCol].color = 'green';
-              if (tempHTML.hasClass('text-danger')) doc.content[1].table.body[c][statusCol].color = 'red';
-              if (tempHTML.hasClass('text-warning')) doc.content[1].table.body[c][statusCol].color = 'orange';
-              if (tempHTML.hasClass('text-muted')) doc.content[1].table.body[c][statusCol].color = 'grey';
-            }
-          },
           exportOptions: {
-            stripHtml: false,
-            columns: ':not(.no-print)'
+            stripHtml: true,
+            stripNewlines: false,
+            columns: ':not(.no-print)',
+            format: {
+              body: function(innerHTML) {
+                let html = $('<div>' + innerHTML.replace(/<br>/g, "\n") + '</div>');
+                return (html.length > 0 ? html.text() : innerHTML);
+              }
+            }
           }
         }
       ]
@@ -229,6 +210,9 @@ function getCombinedTOMs(docId) {
           container: 'body'
         });
       }, 1000);
+
+      // Gruppierte Spalten ausblenden
+      $('#overalltoms tr:not(.dtrg-group) th:nth-child(1), #overalltoms tr:not(.dtrg-group) th:nth-child(2), #overalltoms tr:not(.dtrg-group) td:nth-child(1), #overalltoms tr:not(.dtrg-group) td:nth-child(2)').addClass('hidden');
     });
   }).fail((jqXHR, error, errorThrown) => {
     showError('Einsammeln der TOMs', false, { 'jqXHR': jqXHR, 'error': error, 'errorThrown': errorThrown });

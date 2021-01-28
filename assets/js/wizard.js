@@ -1163,7 +1163,7 @@ function genHTMLforPDF(draft = false) {
 
   /* TOM Liste formatieren */
   toSend.find('#tom_accordion').find('.panel-collapse').each(function() {
-    if(!$(this).closest('.panel .infoEmptyCat').hasClass('hidden')) {
+    if(!$(this).find('.infoEmptyCat').hasClass('hidden')) {
       $(this).closest('.panel').prev('h6').remove();
       $(this).remove();
       return;
