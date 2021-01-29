@@ -1,4 +1,8 @@
 BEGIN TRANSACTION;
+DELETE FROM ebene_rollen;
+DELETE FROM tom_rollen;
+DELETE FROM rollen;
+DELETE FROM toms_desc;
 DELETE FROM toms;
 INSERT INTO toms (Identifier, Category, Subcategory, Title, Description, Risklevel) VALUES ('A.1', 'Sicherheitsmanagement', 'Sicherheitsrichtlinien und -verfahren zum Schutz personenbezogener Daten', '', 'Die Hochschule hat ihre Richtlinien in Bezug auf die Verarbeitung personenbezogener Daten im Rahmen ihrer Informationssicherheitspolitik festgelegt.', 1);
 INSERT INTO toms (Identifier, Category, Subcategory, Title, Description, Risklevel) VALUES ('A.2', 'Sicherheitsmanagement', 'Sicherheitsrichtlinien und -verfahren zum Schutz personenbezogener Daten', '', 'Die Sicherheitspolitik wird jährlich überprüft und gegebenenfalls überarbeitet.', 1);

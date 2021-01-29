@@ -27,7 +27,7 @@
   # Globale Konfiguration setzen
   # ----------------------------------------
   $prog_name    = "SecDoc Demosystem";
-  $prog_version = "1.7 (2020.09.22)";
+  $prog_version = "1.8 (2021.01.29)";
   $prog_url     = 'http://localhost/';
 
   # Debugging
@@ -126,10 +126,10 @@
 
   # Besondere Nutzergruppen für Zugriffskonfiguration
   $userGroups       = [];             # Gruppe(n) für SecDoc-Nutzer (leer für alle)
-  $adminGroups      = ['demogroup'];  # Gruppe(n) für Administratoren
-  $debugGroups      = ['demogroup'];  # Gruppe(n) für Zugriff auf die Debug-Ausgaben haben
-  $dpoGroups        = ['demogroup'];  # Gruppe(n) für Datenschutzbeauftragte
-  $managerGroups    = ['demogroup'];  # Gruppe(n) für Bereichsleiter
+  $adminGroups      = ['demogroup1'];  # Gruppe(n) für Administratoren
+  $debugGroups      = ['demogroup1'];  # Gruppe(n) für Zugriff auf die Debug-Ausgaben haben
+  $dpoGroups        = ['demogroup1'];  # Gruppe(n) für Datenschutzbeauftragte
+  $managerGroups    = ['demogroup1'];  # Gruppe(n) für Bereichsleiter
   $dsbIDs           = ['demouser'];   # NutzerIDs für DSB-Zugriff
 
   # ----------------------------------------

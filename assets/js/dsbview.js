@@ -302,7 +302,7 @@ function loadTables(tier) {
       buttons: [{
           extend: 'print',
           title: 'Verfahren in Bearbeitung',
-          text: '<i class="fa fa-print"> Tabelle drucken',
+          text: '<i class="fa fa-print"></i> Tabelle drucken',
           exportOptions: {
             stripHtml: false,
             columns: ':not(.no-print)',
@@ -314,7 +314,7 @@ function loadTables(tier) {
         {
           extend: 'pdfHtml5',
           title: 'Verfahren in Bearbeitung',
-          text: '<i class="fa fa-file-pdf-o"> Tabelle als PDF speichern',
+          text: '<i class="fa fa-file-pdf-o"></i> Tabelle als PDF speichern',
           orientation: 'landscape',
           exportOptions: {
             stripHtml: false,

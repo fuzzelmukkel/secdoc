@@ -436,7 +436,7 @@ function loadSubpage() {
       userCanDSB = data['data'][0]['userCanDSB'];
       userIsManager = data['data'][0]['userIsManager'];
 
-      $('#userLabel').text(data['data'][0]['name'] + (userIsDSB ? ' (Rolle: DSB/ISB)' : ' (Rolle: Nutzer)'));
+      $('#userLabel').text(data['data'][0]['name'] + (userIsDSB ? ' (Rolle: DSB/ISB)' : (userIsManager ? ' (Rolle: IVSB)' : ' (Rolle: Nutzer)')));
       $('#userLabel').attr('title', 'Kennung: ' + data['data'][0]['value']);
 
       if(userCanDSB) {

@@ -20,6 +20,7 @@
     $phpOutput = '';
     $step = isset($_REQUEST['step']) ? filter_var($_REQUEST['step'], FILTER_SANITIZE_NUMBER_INT) : 0;
     $action = isset($_REQUEST['do']) ? filter_var($_REQUEST['do'], FILTER_SANITIZE_STRING) : '';
+    $sqliteCLIAvailable = !empty(`command -v sqlite3 2> /dev/null`) ? TRUE : FALSE;
 
     ob_start();
     switch($action) {
@@ -50,20 +51,27 @@
         break;
 
       case 'load_suggestions':
-        $opt = [
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_PERSISTENT => TRUE,
-            PDO::ATTR_EMULATE_PREPARES => FALSE,
-            PDO::ATTR_TIMEOUT => 300
-        ];
-        $pdo = new PDO('sqlite:' . $db_dir . DIRECTORY_SEPARATOR . $db_name, '', '', $opt);
-        $pdo->exec('PRAGMA journal_mode = wal;');
-
         if(!file_exists(__DIR__ . DIRECTORY_SEPARATOR . 'assets/php/Default_Suggestions.sql')) {
           $error = 'Konnte Datei mit Standardvorschlägen (<code>' . __DIR__ . DIRECTORY_SEPARATOR . 'assets/php/Default_Suggestions.sql'. '</code>) nicht finden!';
         }
         else {
+          if($sqliteCLIAvailable) {
+            $cmd = "sqlite3 $db_dir" . DIRECTORY_SEPARATOR . "$db_name < " . __DIR__ . DIRECTORY_SEPARATOR . 'assets/php/Default_Suggestions.sql 2>&1';
+            $output = shell_exec($cmd);
+            if(empty($output)) break;
+            $error .= "Konnte Standardvorschläge nicht per SQLite CLI laden (<code>$output</code>), versuche PHP Schnittstelle<br />";
+          }
+
+          $opt = [
+              PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+              PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+              PDO::ATTR_PERSISTENT => TRUE,
+              PDO::ATTR_EMULATE_PREPARES => FALSE,
+              PDO::ATTR_TIMEOUT => 300
+          ];
+          $pdo = new PDO('sqlite:' . $db_dir . DIRECTORY_SEPARATOR . $db_name, '', '', $opt);
+          $pdo->exec('PRAGMA journal_mode = wal;');
+
           $file = new SplFileObject(__DIR__ . DIRECTORY_SEPARATOR . 'assets/php/Default_Suggestions.sql');
 
           if($file) {
@@ -101,6 +109,12 @@
         else {
           switch(filter_var($_REQUEST['tomlist'], FILTER_SANITIZE_STRING)) {
             case 'enisa':
+              if($sqliteCLIAvailable) {
+                $cmd = "sqlite3 $db_dir" . DIRECTORY_SEPARATOR . "$db_name < " . __DIR__ . DIRECTORY_SEPARATOR . 'assets/php/ENISA_TOM_List.sql 2>&1';
+                $output = shell_exec($cmd);
+                if(empty($output)) break;
+                $error .= "Konnte TOM Liste nicht per SQLite CLI laden (<code>$output</code>), versuche PHP Schnittstelle<br />";
+              }
               $file = new SplFileObject(__DIR__ . DIRECTORY_SEPARATOR . 'assets/php/ENISA_TOM_List.sql');
 
               if($file) {
@@ -116,11 +130,18 @@
                 $file = null;
               }
               else {
-                $error = 'Konnte Datei mit Standardvorschlägen (<code>' . __DIR__ . DIRECTORY_SEPARATOR . 'assets/php/Default_Suggestions.sql'. '</code>) nicht öffnen!';
+                $error = 'Konnte Datei mit ENISA TOMs (<code>' . __DIR__ . DIRECTORY_SEPARATOR . 'assets/php/ENISA_TOM_List.sql'. '</code>) nicht öffnen!';
               }
               break;
 
             case 'bsi':
+              if($sqliteCLIAvailable) {
+                $cmd = "sqlite3 $db_dir" . DIRECTORY_SEPARATOR . "$db_name < " . __DIR__ . DIRECTORY_SEPARATOR . 'assets/php/BSI_TOM_List.sql 2>&1';
+                $output = shell_exec($cmd);
+                if(empty($output)) break;
+                $error .= "Konnte TOM Liste nicht per SQLite CLI laden (<code>$output</code>), versuche PHP Schnittstelle<br />";
+              }
+
               $file = new SplFileObject(__DIR__ . DIRECTORY_SEPARATOR . 'assets/php/BSI_TOM_List.sql');
 
               if($file) {
@@ -136,7 +157,7 @@
                 $file = null;
               }
               else {
-                $error = 'Konnte Datei mit Standardvorschlägen (<code>' . __DIR__ . DIRECTORY_SEPARATOR . 'assets/php/Default_Suggestions.sql'. '</code>) nicht öffnen!';
+                $error = 'Konnte Datei mit BSI TOMs (<code>' . __DIR__ . DIRECTORY_SEPARATOR . 'assets/php/BSI_TOM_List.sql'. '</code>) nicht öffnen!';
               }
               break;
 
@@ -161,7 +182,7 @@
           Hier kann die Datenbank für SecDoc erstellt werden und mit den TOM-Listen und Ausfüllvorschlägen befüllt werden. Nach Abschluss sollte die Datei <code>install.php</code> unbedingt verschoben oder gelöscht werden!
           <form method="post">
             <input type="hidden" name="do" value="del_install" />
-            <input class="btn btn-default" type="submit" value="Installationsskript löschen" />
+            <input class="btn btn-danger" type="submit" value="Installationsskript löschen" />
           </form>
         </p>
 
@@ -178,6 +199,15 @@
             <p>
               <h4>PHP Output:</h4>
               <textare disabled><?= $phpOutput ?></textare>
+            </p>
+          </div>
+        <?php } ?>
+
+        <?php if($sqliteCLIAvailable) {?>
+          <div class="alert alert-info">
+            <p>
+              <h4>SQLite CLI vorhanden</h4>
+              Kommandozeilentool von SQLite wurde gefunden. Es wird versucht Datenbank-Imports damit auszuführen (weniger Probleme gegenüber der PHP-Schnittstelle).
             </p>
           </div>
         <?php } ?>
@@ -223,7 +253,7 @@
                 <strong>Hinweis:</strong> Die Funktion muss ggf. mehrfach aufgerufen werden, da pro Aufruf nur eine Aktualisierung auf die nächst höhere Version stattfindet.
                 <form method="post">
                   <input type="hidden" name="do" value="update_db" />
-                  <input class="btn btn-default" type="submit" value="Datenbank aktualisieren" />
+                  <input class="btn btn-danger" type="submit" value="Datenbank aktualisieren" />
                 </form>
               </p>
             </div>
@@ -236,7 +266,7 @@
                 <strong>Achtung:</strong> Dies leert die Tabelle der Vorschläge und befüllt sie neu. Eventuelle manuelle Ergänzungen gehen verloren!
                 <form method="post">
                   <input type="hidden" name="do" value="load_suggestions" />
-                  <input class="btn btn-default" type="submit" value="Standardvorschläge laden" />
+                  <input class="btn btn-warning" type="submit" value="Standardvorschläge laden" />
                 </form>
               </p>
             </div>
@@ -246,7 +276,7 @@
             <div class="panel-body">
               <p>
                 Es stehen aktuell TOM-Listen des BSI und der ENISA zur Verfügung. Sie benötigen mindestens eine Liste, damit SecDoc funktionieren kann.
-                Es sollte die BSI Liste verwendet werden, da diese bei der weiteren Entwicklung bevorzugt wird.
+                <strong>Hinweis:</strong> Es sollte die BSI Liste verwendet werden, da diese als Vorlage für die weitere Entwicklung genutzt wird!
                 <strong>Achtung:</strong> Es findet kein Mapping zwischen den verschiedenen Listen statt! Sollte die TOM-Liste gewechselt werden, müssen die TOMs neu eingetragen werden.
                 <form method="post">
                   <input type="hidden" name="do" value="load_toms" />
@@ -262,7 +292,7 @@
                       ENISA TOMs auf allen Ebenen verwenden
                     </label>
                   </div>
-                  <input class="btn btn-default" type="submit" value="TOM Liste(n) laden" />
+                  <input class="btn btn-warning" type="submit" value="TOM Liste laden" />
                 </form>
               </p>
             </div>
